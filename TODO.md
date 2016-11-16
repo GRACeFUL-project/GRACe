@@ -3,7 +3,7 @@
 ## GCM
 * Actions
 * Goals
-* Code-Generation
+* Code-Generation with output
 * Generalise the pattern of
   creating a GCM compoenent from
   a function like `Port x -> Port y -> Port z -> CP ()`
