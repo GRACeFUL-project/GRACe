@@ -1,6 +1,7 @@
 module Examples where
 import CP
 import Port
+import GCM
 
 -- A pipe with a specific flow capacity
 pipe :: Float -> Port Float -> Port Float -> CP ()
@@ -15,14 +16,35 @@ storage :: Float -> Port Float -> Port Float -> CP ()
 storage capacity ip op =
     do
         inflow  <- value ip
-        outflow <- value op
-        assert  $  outflow === min' 0 (inflow - lit capacity)
+        overflow <- value op
+        assert $ overflow === min' 0 (inflow - lit capacity)
 
--- A forked pipe
-forkedPipe :: Port Float -> Port Float -> Port Float -> CP ()
-forkedPipe ip op1 op2 =
+-- A pump with capacity c m^3
+pump :: Float -> Port Float -> CP ()
+pump c p =
     do
-        inflow   <- value ip
-        outflow1 <- value op1
-        outflow2 <- value op2
-        assert   $  inflow === outflow1 + outflow2
+        inflow <- value p
+        assert $  inflow .<= lit c
+
+-- X m^3 of rain
+rain :: Float -> Port Float -> CP ()
+rain x p =
+    do
+        outflow <- value p
+        assert  $  outflow === lit x
+
+-- A pump as a GCM component
+pumpGCM :: Float ->  GCM (Port Float)
+pumpGCM k =
+    do
+        p <- createPort
+        component $ pump k p
+        return p
+
+-- Rain as a GCM component
+rainGCM :: Float -> GCM (Port Float)
+rainGCM k =
+    do
+        p <- createPort
+        component $ rain k p
+        return p

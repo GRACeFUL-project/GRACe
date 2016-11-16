@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 module CP ((.<),
+           (.<=),
            (===),
            nt,
            lit,
@@ -27,6 +28,7 @@ data CPExp a where
     Lit     :: (CPType a)        => a          -> CPExp a
     Equal   :: (CPType a, Eq a)  => CPExp a    -> CPExp a    -> CPExp Bool
     LeThan  :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
+    LtEq    :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
     Add     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a
     Mul     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
     Sub     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
@@ -50,7 +52,10 @@ instance (Num a, CPType a) => Num (CPExp a) where
     fromInteger = lit . fromInteger
 
 (.<) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
-(.<)  = LeThan
+(.<) = LeThan
+
+(.<=) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
+(.<=) = LtEq
 
 (===) :: (CPType a, Eq a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal

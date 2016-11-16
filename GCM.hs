@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM where 
+module GCM (GCM, link, createPort, component, fun) where 
 import Port
 import Program
 import CP
