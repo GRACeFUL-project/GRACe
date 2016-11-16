@@ -57,6 +57,8 @@ instance (Num a, CPType a) => Num (CPExp a) where
 (===) :: (CPType a, Eq a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal
 
+infixr 0 ===
+
 nt :: CPExp Bool -> CPExp Bool
 nt  = Not
 
