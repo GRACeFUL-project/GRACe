@@ -24,7 +24,7 @@ pump :: Float -> Port Float -> CP ()
 pump c p =
     do
         inflow <- value p
-        assert $  inflow .<= lit c
+        assert $  (inflow .<= lit c) .&& (0 .<= inflow)
 
 -- X m^3 of rain
 rain :: Float -> Port Float -> CP ()
