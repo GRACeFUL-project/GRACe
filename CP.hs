@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs #-}
-module CP ((.+),
-           (.*),
-           (.<),
+module CP ((.<),
            (===),
            nt,
            lit,
            (.&&),
+           max',
+           min',
            CP,
            CPExp,
            assert,
@@ -17,50 +17,44 @@ import Program
 -- Names of variables
 type Name = Int
 
--- Things that support equality
-class Eq' a
-instance Eq' Int
-instance Eq' Bool
-
--- Things that support Ordering
-class Ord' a
-instance Ord' Int
-
--- Things that support numeric expressions
-class Num' a
-instance Num' Int
-
 -- Things that are supported by the CP runtime
 class CPType a
 instance CPType Int
+instance CPType Float
 instance CPType Bool
 
 -- Constraint program expressions
 data CPExp a where
-    ValueOf :: (CPType a)         => Port a     -> CPExp a
-    Lit     :: (CPType a)         => a          -> CPExp a
-    Equal   :: (CPType a, Eq' a)  => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord' a) => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num' a) => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num' a) => CPExp a    -> CPExp a    -> CPExp a 
-    Not     ::                       CPExp Bool -> CPExp Bool
-    And     ::                       CPExp Bool -> CPExp Bool -> CPExp Bool
+    ValueOf :: (CPType a)        => Port a     -> CPExp a
+    Lit     :: (CPType a)        => a          -> CPExp a
+    Equal   :: (CPType a, Eq a)  => CPExp a    -> CPExp a    -> CPExp Bool
+    LeThan  :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
+    Add     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a
+    Mul     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
+    Sub     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
+    Max     :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp a
+    Min     :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp a
+    Not     ::                      CPExp Bool -> CPExp Bool
+    And     ::                      CPExp Bool -> CPExp Bool -> CPExp Bool
 
 -- Constraint program commands
 data CPCommands a where
     Assert  ::               CPExp Bool -> CPCommands ()
 
 -- Syntactic sugar for expressions
-(.+) :: (CPType a, Num' a) => CPExp a    -> CPExp a    -> CPExp a 
-(.+)  = Add
+instance (Num a, CPType a) => Num (CPExp a) where
+    (+) = Add
+    (*) = Mul
+    (-) = Sub
+    negate x = (lit 0) - x
+    abs = undefined
+    signum = undefined
+    fromInteger = lit . fromInteger
 
-(.*) :: (CPType a, Num' a) => CPExp a    -> CPExp a    -> CPExp a
-(.*)  = Mul
-
-(.<) :: (CPType a, Ord' a) => CPExp a    -> CPExp a    -> CPExp Bool
+(.<) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
 (.<)  = LeThan
 
-(===) :: (CPType a, Eq' a) => CPExp a    -> CPExp a    -> CPExp Bool
+(===) :: (CPType a, Eq a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal
 
 nt :: CPExp Bool -> CPExp Bool
@@ -71,6 +65,12 @@ lit  = Lit
 
 (.&&) :: CPExp Bool -> CPExp Bool -> CPExp Bool
 (.&&) = And
+
+max' :: (CPType a, Ord a) => CPExp a -> CPExp a -> CPExp a
+max' = Max
+
+min' :: (CPType a, Ord a) => CPExp a -> CPExp a -> CPExp a
+min' = Min
 
 -- Constraint programs
 type CP a = Program CPCommands a
