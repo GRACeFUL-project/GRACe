@@ -9,13 +9,11 @@ module CP ((.<),
            CP,
            CPExp,
            assert,
-           value
+           value,
+           CPType
           ) where
 import Port
 import Program
-
--- Names of variables
-type Name = Int
 
 -- Things that are supported by the CP runtime
 class CPType a
