@@ -17,11 +17,20 @@ module CP ((.<),
 import Port
 import Program
 
+data Proxy a = Proxy
+
 -- Things that are supported by the CP runtime
-class CPType a
-instance CPType Int
-instance CPType Float
-instance CPType Bool
+class CPType a where
+    name :: Proxy a -> String 
+
+instance CPType Int where
+    name = const "int"
+
+instance CPType Float where
+    name = const "float"
+
+instance CPType Bool where
+    name = const "bool"
 
 -- Constraint program expressions
 data CPExp a where
