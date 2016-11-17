@@ -43,7 +43,10 @@ fun f = do
             return (pin, pout)
 
 -- Compilation
-data CompilationState = CompilationState {outputs :: [String], expressions :: [String], declarations :: [String], nextVarId :: Int}
+data CompilationState = CompilationState {outputs      :: [String],
+                                          expressions  :: [String],
+                                          declarations :: [String],
+                                          nextVarId    :: Int}
 type IntermMonad a = State CompilationState a
 
 -- Translation
