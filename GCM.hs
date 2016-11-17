@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, link, createPort, component, fun, compileGCM) where 
+module GCM (GCM, output, link, createPort, component, fun, compileGCM) where 
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -8,7 +8,7 @@ import CP
 
 -- A GRACeFUL concept map command
 data GCMCommand a where
-    Output     :: (CPType a) => Port a  -> GCMCommand ()
+    Output     :: (CPType a) => Port a -> String  -> GCMCommand ()
     CreatePort :: (CPType a) => Proxy a -> GCMCommand (Port a)
     Component  :: CP () -> GCMCommand ()
 
@@ -16,8 +16,8 @@ data GCMCommand a where
 type GCM a = Program GCMCommand a
 
 -- Syntactic sugars
-output :: (CPType a, Show a) => Port a -> GCM ()
-output = Instr . Output
+output :: (CPType a, Show a) => Port a -> String -> GCM ()
+output p = Instr . (Output p)
 
 createPort :: (CPType a) => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
@@ -48,10 +48,10 @@ type IntermMonad a = State CompilationState a
 
 -- Translation
 translateGCMCommand :: GCMCommand a -> IntermMonad a
-translateGCMCommand (Output (Port x)) =
+translateGCMCommand (Output (Port x) s) =
     do
         state <- get
-        put $ state {outputs = ("v"++(show x)++"=\\(v"++(show x)++")\\n"):(outputs state)}
+        put $ state {outputs = (s++"=\\(v"++(show x)++")\\n"):(outputs state)}
 translateGCMCommand (CreatePort proxy) =
     do
         state <- get
@@ -71,4 +71,4 @@ translateGCMCommand (Component cp) =
 compileGCM :: GCM a -> String
 compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm 
     where
-        stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput "++(show outs)++";"
+        stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(unlines outs)++"\"];"

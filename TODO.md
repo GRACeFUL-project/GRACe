@@ -8,10 +8,8 @@
   so they can fit together easily
 * Actions
 * Goals
-* Code-Generation with output
 
 ## CP
-* Code-Generation
 * More types
 
 ## Notes

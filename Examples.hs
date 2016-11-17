@@ -63,4 +63,13 @@ pump =
 
 -- Storage as a GCM component
 storage :: Float -> GCM (Port Float, Port Float)
-storage k = fun (\inflow -> min' 0 (inflow - lit k))
+storage k = fun (\inflow -> max' 0 (inflow - lit k))
+
+-- Simple example with outputs and everything
+example :: GCM ()
+example =
+    do
+      rainP <- rain 10
+      (sin, sof) <- storage 3
+      link rainP sin
+      output sof "overflow"
