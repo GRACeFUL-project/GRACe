@@ -73,7 +73,7 @@ data CPCommands a where
     Assert :: CPExp Bool -> CPCommands ()
 
 translateCPCommands :: CPCommands a -> Writer [String] a
-translateCPCommands (Assert bexp) = tell (["constraint " ++ paren (compileCPExp bexp)])
+translateCPCommands (Assert bexp) = tell (["constraint " ++ paren (compileCPExp bexp)++";"])
 
 -- Syntactic sugar for expressions
 instance (Num a, CPType a) => Num (CPExp a) where
