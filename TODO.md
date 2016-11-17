@@ -1,5 +1,8 @@
 # TODO
 
+## Generic
+* How to interface with the graphics?
+
 ## GCM
 * Generalise the return types for GCM components,
   so they can fit together easily
@@ -9,8 +12,9 @@
 
 ## CP
 * Code-Generation
+* More types
 
-## General notes
+## Notes
 Maybe we need to be able to expose parameters, for two reasons:
 1. To be able to affect them using actions
 2. To be able to pose constraints like:

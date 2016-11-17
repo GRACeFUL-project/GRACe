@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, RankNTypes, ScopedTypeVariables #-}
 module Program where
 import Control.Monad
 
@@ -21,3 +21,9 @@ instance Applicative (Program instr) where
 -- Obvious instance
 instance Functor (Program instr) where
     fmap = liftM
+
+-- Interpret
+interpret :: (Monad m) => (forall b. instr b -> m b) -> Program instr a -> m a
+interpret interp (Return a) = return a
+interpret interp (m :>>= f) = interpret interp m >>= (interpret interp . f)
+interpret interp (Instr  i) = interp i
