@@ -1,14 +1,11 @@
 # TODO
 
 ## GCM
+* Generalise the return types for GCM components,
+  so they can fit together easily
 * Actions
 * Goals
 * Code-Generation with output
-* Generalise the pattern of
-  creating a GCM compoenent from
-  a function like `Port x -> Port y -> Port z -> CP ()`
-  by using a generalised product type
-  and some typeclass magic
 
 ## CP
 * Code-Generation

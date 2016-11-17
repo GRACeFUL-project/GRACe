@@ -3,48 +3,39 @@ import CP
 import Port
 import GCM
 
--- A pipe with a specific flow capacity
-pipe :: Float -> Port Float -> Port Float -> CP ()
-pipe f ip op = do
-                inflow  <- value ip
-                outflow <- value op
-                assert  $  inflow === lit f
-                assert  $  outflow === inflow
-
--- A storage facility with a capacity, an inflow, and a runoff
-storage :: Float -> Port Float -> Port Float -> CP () 
-storage capacity ip op =
-    do
-        inflow  <- value ip
-        overflow <- value op
-        assert $ overflow === min' 0 (inflow - lit capacity)
-
--- A pump with capacity c m^3
-pump :: Float -> Port Float -> CP ()
-pump c p =
-    do
-        inflow <- value p
-        assert $  (inflow .<= lit c) .&& (0 .<= inflow)
-
--- X m^3 of rain
-rain :: Float -> Port Float -> CP ()
-rain x p =
-    do
-        outflow <- value p
-        assert  $  outflow === lit x
-
 -- A pump as a GCM component
-pumpGCM :: Float ->  GCM (Port Float)
-pumpGCM k =
+pump :: Float ->  GCM (Port Float)
+pump k =
     do
         p <- createPort
-        component $ pump k p
+        component $ do
+                     inflow <- value p
+                     assert $  (inflow .<= lit k) .&& (0 .<= inflow)
         return p
 
 -- Rain as a GCM component
-rainGCM :: Float -> GCM (Port Float)
-rainGCM k =
+rain :: Float -> GCM (Port Float)
+rain k =
     do
         p <- createPort
-        component $ rain k p
+        component $ do
+                      outflow <- value p
+                      assert  $  outflow === lit k
         return p
+
+-- A pipe as a GCM component
+pipe :: Float -> GCM (Port Float, Port Float)
+pipe k =
+    do
+        ip <- createPort
+        op <- createPort
+        component $ do
+                      inflow  <- value ip
+                      outflow <- value op
+                      assert  $ (inflow .<= lit k) .&& (0 .<= inflow) 
+                      assert  $ outflow === inflow
+        return (ip, op)
+
+-- Storage as a GCM component
+storage :: Float -> GCM (Port Float, Port Float)
+storage k = fun (\inflow -> min' 0 (inflow - lit k))
