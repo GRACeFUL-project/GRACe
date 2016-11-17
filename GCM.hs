@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, link, createPort, component, fun) where 
+module GCM (GCM, link, createPort, component, fun, compileGCM) where 
 import Port
 import Program
 import CP
@@ -39,3 +39,6 @@ fun f = do
                             o <- value pout
                             assert $ o === f i
             return (pin, pout)
+
+-- Compilation
+data IntermType 

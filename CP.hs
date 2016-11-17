@@ -13,7 +13,8 @@ module CP ((.<),
            value,
            CPType,
            inRange,
-           Proxy
+           Proxy,
+           compileCPCommands
           ) where
 import Port
 import Program
@@ -21,7 +22,7 @@ import Program
 data Proxy a = Proxy
 
 -- Things that are supported by the CP runtime
-class CPType a where
+class (Show a) => CPType a where
     name :: Proxy a -> String 
 
 instance CPType Int where
@@ -35,22 +36,42 @@ instance CPType Bool where
 
 -- Constraint program expressions
 data CPExp a where
-    ValueOf :: (CPType a)        => Port a     -> CPExp a
-    Lit     :: (CPType a)        => a          -> CPExp a
-    Equal   :: (CPType a, Eq a)  => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
-    LtEq    :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
-    Sub     :: (CPType a, Num a) => CPExp a    -> CPExp a    -> CPExp a 
-    Max     :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp a
-    Min     :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp a
-    Not     ::                      CPExp Bool -> CPExp Bool
-    And     ::                      CPExp Bool -> CPExp Bool -> CPExp Bool
+    ValueOf :: (CPType a)         => Port a     -> CPExp a
+    Lit     :: (CPType a, Show a) => a          -> CPExp a
+    Equal   :: (CPType a, Eq a)   => CPExp a    -> CPExp a    -> CPExp Bool
+    LeThan  :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
+    LtEq    :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
+    Add     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
+    Mul     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a 
+    Sub     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a 
+    Max     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
+    Min     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
+    Not     ::                       CPExp Bool -> CPExp Bool
+    And     ::                       CPExp Bool -> CPExp Bool -> CPExp Bool
+
+compileCPExp :: (CPType a) => CPExp a -> String
+compileCPExp (ValueOf (Port i)) = "v"++ (show i)
+compileCPExp (Lit l)            = show l
+compileCPExp (Equal a b)        = (paren (compileCPExp a)) ++ " == " ++ (paren (compileCPExp b))
+compileCPExp (LeThan a b)       = (paren (compileCPExp a)) ++ " < "  ++ (paren (compileCPExp b))
+compileCPExp (LtEq a b)         = (paren (compileCPExp a)) ++ " <= " ++ (paren (compileCPExp b))
+compileCPExp (Add a  b)         = (paren (compileCPExp a)) ++ " + "  ++ (paren (compileCPExp b))
+compileCPExp (Mul a  b)         = (paren (compileCPExp a)) ++ " * "  ++ (paren (compileCPExp b))
+compileCPExp (Sub a  b)         = (paren (compileCPExp a)) ++ " - "  ++ (paren (compileCPExp b))
+compileCPExp (Max a  b)         = "max" ++ paren ((paren (compileCPExp a)) ++ "," ++ (paren (compileCPExp b)))
+compileCPExp (Min a  b)         = "min" ++ paren ((paren (compileCPExp a)) ++ "," ++ (paren (compileCPExp b)))
+compileCPExp (And a  b)         = (paren (compileCPExp a)) ++ " /\\ " ++ (paren (compileCPExp b))
+compileCPExp (Not a)            = "not " ++ paren (compileCPExp a)
+
+paren :: String -> String
+paren s = "(" ++ s ++ ")"
 
 -- Constraint program commands
 data CPCommands a where
     Assert  ::               CPExp Bool -> CPCommands ()
+
+compileCPCommands :: CPCommands a -> String
+compileCPCommands (Assert bexp) = "constraint " ++ paren (compileCPExp bexp)
 
 -- Syntactic sugar for expressions
 instance (Num a, CPType a) => Num (CPExp a) where
@@ -71,7 +92,7 @@ instance (Num a, CPType a) => Num (CPExp a) where
 (===) :: (CPType a, Eq a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal
 
-infixr 0 ===
+infix 4 ===
 
 nt :: CPExp Bool -> CPExp Bool
 nt  = Not
