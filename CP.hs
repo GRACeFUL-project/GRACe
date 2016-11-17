@@ -11,7 +11,8 @@ module CP ((.<),
            CPExp,
            assert,
            value,
-           CPType
+           CPType,
+           inRange
           ) where
 import Port
 import Program
@@ -87,3 +88,7 @@ assert bexp = Instr (Assert bexp)
 -- Unsure about if this is the best programming model for this
 value  :: (CPType a) => Port a -> CP (CPExp a)
 value p = return (ValueOf p)
+
+-- Some derived operators
+inRange :: (CPType a, Ord a) => CPExp a -> (CPExp a, CPExp a) -> CPExp Bool
+inRange a (low, high) = (low .<= a) .&& (a .<= high)
