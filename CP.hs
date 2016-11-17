@@ -25,7 +25,7 @@ data Proxy a = Proxy
 
 -- Things that are supported by the CP runtime
 class (Show a) => CPType a where
-    typeDec :: Proxy a -> String 
+    typeDec :: Proxy a -> String
 
 instance CPType Int where
     typeDec = const "int"
@@ -44,8 +44,8 @@ data CPExp a where
     LeThan  :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
     LtEq    :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
     Add     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a 
-    Sub     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a 
+    Mul     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
+    Sub     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
     Max     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
     Min     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
     Not     ::                       CPExp Bool -> CPExp Bool
@@ -54,16 +54,19 @@ data CPExp a where
 compileCPExp :: (CPType a) => CPExp a -> String
 compileCPExp (ValueOf (Port i)) = "v"++ (show i)
 compileCPExp (Lit l)            = show l
-compileCPExp (Equal a b)        = (paren (compileCPExp a)) ++ " == " ++ (paren (compileCPExp b))
-compileCPExp (LeThan a b)       = (paren (compileCPExp a)) ++ " < "  ++ (paren (compileCPExp b))
-compileCPExp (LtEq a b)         = (paren (compileCPExp a)) ++ " <= " ++ (paren (compileCPExp b))
-compileCPExp (Add a  b)         = (paren (compileCPExp a)) ++ " + "  ++ (paren (compileCPExp b))
-compileCPExp (Mul a  b)         = (paren (compileCPExp a)) ++ " * "  ++ (paren (compileCPExp b))
-compileCPExp (Sub a  b)         = (paren (compileCPExp a)) ++ " - "  ++ (paren (compileCPExp b))
-compileCPExp (Max a  b)         = "max" ++ paren ((paren (compileCPExp a)) ++ "," ++ (paren (compileCPExp b)))
-compileCPExp (Min a  b)         = "min" ++ paren ((paren (compileCPExp a)) ++ "," ++ (paren (compileCPExp b)))
-compileCPExp (And a  b)         = (paren (compileCPExp a)) ++ " /\\ " ++ (paren (compileCPExp b))
+compileCPExp (Equal a b)        = comp2paren a " == " b
+compileCPExp (LeThan a b)       = comp2paren a " < "  b
+compileCPExp (LtEq a b)         = comp2paren a " <= " b
+compileCPExp (Add a  b)         = comp2paren a " + "  b
+compileCPExp (Mul a  b)         = comp2paren a " * "  b
+compileCPExp (Sub a  b)         = comp2paren a " - "  b
+compileCPExp (Max a  b)         = "max" ++ paren (comp2paren a "," b)
+compileCPExp (Min a  b)         = "min" ++ paren (comp2paren a "," b)
+compileCPExp (And a  b)         = comp2paren a " /\\ "b
 compileCPExp (Not a)            = "not " ++ paren (compileCPExp a)
+
+comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> String
+comp2paren a op b = paren (compileCPExp a) ++ op ++ paren (compileCPExp b)
 
 paren :: String -> String
 paren s = "(" ++ s ++ ")"

@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, compileGCM) where 
+module GCM (GCM, output, link, createPort, component, fun, compileGCM) where
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -72,6 +72,6 @@ translateGCMCommand (Component cp) =
 
 -- Final compilation
 compileGCM :: GCM a -> String
-compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm 
+compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm
     where
         stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(concat outs)++"\"];"

@@ -8,11 +8,11 @@ Unpack the tarball and add the folder to your path.
 
 ## Running a constraint program
 To generate a constraint program run:
-```
+```haskell
 Main> writeFile "model.mzn" (compileGCM example)
 ```
 This will generate the file "model.mzn".
 To invoke the solver:
-```
+```shell
 $> mzn-gecode model.mzn
 ```
