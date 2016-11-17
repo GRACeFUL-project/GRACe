@@ -12,7 +12,8 @@ module CP ((.<),
            assert,
            value,
            CPType,
-           inRange
+           inRange,
+           Proxy
           ) where
 import Port
 import Program
