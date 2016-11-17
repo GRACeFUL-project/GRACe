@@ -7,7 +7,6 @@ import CP
 -- A GRACeFUL concept map command
 data GCMCommand a where
     Output     :: (CPType a, Show a) => Port a -> GCMCommand ()
-    Link       :: (CPType a) => Port a -> Port a -> GCMCommand ()
     CreatePort :: (CPType a) => GCMCommand (Port a)
     Component  :: CP () -> GCMCommand ()
 
@@ -24,10 +23,13 @@ createPort = Instr CreatePort
 component :: CP () -> GCM ()
 component = Instr . Component
 
-link :: (CPType a) => Port a -> Port a -> GCM ()
-link p1 p2 = Instr (Link p1 p2)
-
 -- Some derived operators
+link :: (CPType a, Eq a) => Port a -> Port a -> GCM ()
+link p1 p2 = component $ do
+                            v1 <- value p1
+                            v2 <- value p2
+                            assert $ v1 === v2
+
 fun :: (CPType a, CPType b, Eq b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
 fun f = do
             pin  <- createPort
