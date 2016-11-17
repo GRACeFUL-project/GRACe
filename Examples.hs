@@ -73,3 +73,4 @@ example =
       (sin, sof) <- storage 3
       link rainP sin
       output sof "overflow"
+      output sin "inflow"
