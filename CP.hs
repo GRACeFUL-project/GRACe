@@ -13,26 +13,28 @@ module CP ((.<),
            value,
            CPType,
            inRange,
-           Proxy,
-           compileCPCommands
+           Proxy(..),
+           translateCPCommands,
+           typeDec
           ) where
 import Port
 import Program
+import Control.Monad.Writer
 
 data Proxy a = Proxy
 
 -- Things that are supported by the CP runtime
 class (Show a) => CPType a where
-    name :: Proxy a -> String 
+    typeDec :: Proxy a -> String 
 
 instance CPType Int where
-    name = const "int"
+    typeDec = const "int"
 
 instance CPType Float where
-    name = const "float"
+    typeDec = const "float"
 
 instance CPType Bool where
-    name = const "bool"
+    typeDec = const "bool"
 
 -- Constraint program expressions
 data CPExp a where
@@ -68,10 +70,10 @@ paren s = "(" ++ s ++ ")"
 
 -- Constraint program commands
 data CPCommands a where
-    Assert  ::               CPExp Bool -> CPCommands ()
+    Assert :: CPExp Bool -> CPCommands ()
 
-compileCPCommands :: CPCommands a -> String
-compileCPCommands (Assert bexp) = "constraint " ++ paren (compileCPExp bexp)
+translateCPCommands :: CPCommands a -> Writer [String] a
+translateCPCommands (Assert bexp) = tell (["constraint " ++ paren (compileCPExp bexp)])
 
 -- Syntactic sugar for expressions
 instance (Num a, CPType a) => Num (CPExp a) where

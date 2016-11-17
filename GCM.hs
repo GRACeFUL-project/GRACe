@@ -1,13 +1,15 @@
 {-# LANGUAGE GADTs #-}
 module GCM (GCM, link, createPort, component, fun, compileGCM) where 
+import Control.Monad.Writer
+import Control.Monad.State.Lazy
 import Port
 import Program
 import CP
 
 -- A GRACeFUL concept map command
 data GCMCommand a where
-    Output     :: (CPType a, Show a) => Port a -> GCMCommand ()
-    CreatePort :: (CPType a) => GCMCommand (Port a)
+    Output     :: (CPType a) => Port a  -> GCMCommand ()
+    CreatePort :: (CPType a) => Proxy a -> GCMCommand (Port a)
     Component  :: CP () -> GCMCommand ()
 
 -- A GRACeFUL concept map
@@ -18,7 +20,7 @@ output :: (CPType a, Show a) => Port a -> GCM ()
 output = Instr . Output
 
 createPort :: (CPType a) => GCM (Port a)
-createPort = Instr CreatePort
+createPort = Instr (CreatePort Proxy)
 
 component :: CP () -> GCM ()
 component = Instr . Component
@@ -41,4 +43,32 @@ fun f = do
             return (pin, pout)
 
 -- Compilation
-data IntermType 
+data CompilationState = CompilationState {outputs :: [String], expressions :: [String], declarations :: [String], nextVarId :: Int}
+type IntermMonad a = State CompilationState a
+
+-- Translation
+translateGCMCommand :: GCMCommand a -> IntermMonad a
+translateGCMCommand (Output (Port x)) =
+    do
+        state <- get
+        put $ state {outputs = ("v"++(show x)++"=\\(v"++(show x)++")\\n"):(outputs state)}
+translateGCMCommand (CreatePort proxy) =
+    do
+        state <- get
+        let vid = nextVarId state
+            dec = "var " ++ (typeDec proxy) ++ ": v"++(show vid)++";"
+            state' = state {nextVarId = vid+1, declarations = dec:(declarations state)}
+        put state'
+        return $ Port vid
+translateGCMCommand (Component cp) =
+    do
+        state <- get
+        let (_, exprs) = runWriter $ interpret translateCPCommands cp
+            state'     = state {expressions = (expressions state) ++ exprs}
+        put state'
+
+-- Final compilation
+compileGCM :: GCM a -> String
+compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm 
+    where
+        stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\noutput "++(show outs) 

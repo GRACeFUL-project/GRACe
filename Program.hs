@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RankNTypes, ScopedTypeVariables #-}
-module Program where
+module Program (Program(..), interpret) where
 import Control.Monad
 
 -- Generic programs, parameterised over some instruction set
