@@ -3,7 +3,7 @@
 ## Installing
 To install the required minizinc software grab
 the minizinc distribution from here:
-https://github.com/MiniZinc/MiniZincIDE/releases/download/2.1.0/MiniZincIDE-2.1.0-bundle-linux-x86_64.tgz
+http://www.minizinc.org/software.html
 Unpack the tarball and add the folder to your path.
 
 ## Running a constraint program
