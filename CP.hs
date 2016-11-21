@@ -117,9 +117,6 @@ min' = Min
 -- Constraint programs
 type CP a = Program CPCommands a
 
--- Actions
-type Action a = Program ActionCommands a
-
 -- Syntactic sugar for expressions in the CP "monad"
 assert :: CPExp Bool -> CP ()
 assert bexp = Instr (Assert bexp)
