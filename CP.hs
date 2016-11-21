@@ -38,32 +38,32 @@ instance CPType Bool where
 
 -- Constraint program expressions
 data CPExp a where
-    ValueOf :: (CPType a)         => Port a     -> CPExp a
-    Lit     :: (CPType a, Show a) => a          -> CPExp a
-    Equal   :: (CPType a, Eq a)   => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
-    LtEq    :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
-    Sub     :: (CPType a, Num a)  => CPExp a    -> CPExp a    -> CPExp a
-    Max     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
-    Min     :: (CPType a, Ord a)  => CPExp a    -> CPExp a    -> CPExp a
-    Not     ::                       CPExp Bool -> CPExp Bool
-    And     ::                       CPExp Bool -> CPExp Bool -> CPExp Bool
+    ValueOf :: (CPType a, IsPort p) => p a        -> CPExp a
+    Lit     :: (CPType a, Show a)   => a          -> CPExp a
+    Equal   :: (CPType a, Eq a)     => CPExp a    -> CPExp a    -> CPExp Bool
+    LeThan  :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
+    LtEq    :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
+    Add     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+    Mul     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+    Sub     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+    Max     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
+    Min     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
+    Not     ::                         CPExp Bool -> CPExp Bool
+    And     ::                         CPExp Bool -> CPExp Bool -> CPExp Bool
 
 compileCPExp :: (CPType a) => CPExp a -> String
-compileCPExp (ValueOf (Port i)) = "v"++ (show i)
-compileCPExp (Lit l)            = show l
-compileCPExp (Equal a b)        = comp2paren a " == " b
-compileCPExp (LeThan a b)       = comp2paren a " < "  b
-compileCPExp (LtEq a b)         = comp2paren a " <= " b
-compileCPExp (Add a  b)         = comp2paren a " + "  b
-compileCPExp (Mul a  b)         = comp2paren a " * "  b
-compileCPExp (Sub a  b)         = comp2paren a " - "  b
-compileCPExp (Max a  b)         = "max" ++ paren (comp2paren a "," b)
-compileCPExp (Min a  b)         = "min" ++ paren (comp2paren a "," b)
-compileCPExp (And a  b)         = comp2paren a " /\\ "b
-compileCPExp (Not a)            = "not " ++ paren (compileCPExp a)
+compileCPExp (ValueOf p)  = "v"++ (show (portID p))
+compileCPExp (Lit l)      = show l
+compileCPExp (Equal a b)  = comp2paren a " == " b
+compileCPExp (LeThan a b) = comp2paren a " < "  b
+compileCPExp (LtEq a b)   = comp2paren a " <= " b
+compileCPExp (Add a  b)   = comp2paren a " + "  b
+compileCPExp (Mul a  b)   = comp2paren a " * "  b
+compileCPExp (Sub a  b)   = comp2paren a " - "  b
+compileCPExp (Max a  b)   = "max" ++ paren (comp2paren a "," b)
+compileCPExp (Min a  b)   = "min" ++ paren (comp2paren a "," b)
+compileCPExp (And a  b)   = comp2paren a " /\\ "b
+compileCPExp (Not a)      = "not " ++ paren (compileCPExp a)
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> String
 comp2paren a op b = paren (compileCPExp a) ++ op ++ paren (compileCPExp b)
@@ -122,7 +122,7 @@ assert :: CPExp Bool -> CP ()
 assert bexp = Instr (Assert bexp)
 
 -- Unsure about if this is the best programming model for this
-value  :: (CPType a) => Port a -> CP (CPExp a)
+value  :: (CPType a, IsPort p) => p a -> CP (CPExp a)
 value p = return (ValueOf p)
 
 -- Some derived operators

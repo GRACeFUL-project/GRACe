@@ -10,7 +10,7 @@ import CP
 data GCMCommand a where
     Output     :: (CPType a) => Port a -> String  -> GCMCommand ()
     CreatePort :: (CPType a) => Proxy a -> GCMCommand (Port a)
-    CreateParameter :: (CPType a) =>  Proxy a -> a -> GCMCommand (Port a)
+    CreateParameter :: (CPType a) =>  Proxy a -> a -> GCMCommand (ParameterPort a)
     Component  :: CP () -> GCMCommand ()
 
 -- A GRACeFUL concept map
@@ -23,7 +23,7 @@ output p = Instr . (Output p)
 createPort :: (CPType a) => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
 
-createParameter :: (CPType a) => a -> GCM (Port a)
+createParameter :: (CPType a) => a -> GCM (ParameterPort a)
 createParameter = Instr . (CreateParameter Proxy)
 
 component :: CP () -> GCM ()
@@ -77,12 +77,12 @@ translateGCMCommand (CreateParameter proxy def) =
             -- has been acted upon
             dec2 = "var bool: a"++(show vid)++";"
             -- default value
-            exp = "not a"++(show vid)++" ==> (v"++(show vid)++" == "++(show def)++")"
+            exp = "(not a"++(show vid)++") ==> (v"++(show vid)++" == "++(show def)++")"
             state' = state {nextVarId = vid+1,
                             expressions = exp:(expressions state),
                             declarations = dec:dec2:(declarations state)}
         put state'
-        return $ Port vid
+        return $ ParameterPort def vid
 translateGCMCommand (Component cp) =
     do
         state <- get
