@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, createParameter, component, fun, compileGCM) where
+module GCM (GCM, output, link, createPort, component, fun, compileGCM) where
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -8,10 +8,10 @@ import CP
 
 -- A GRACeFUL concept map command
 data GCMCommand a where
-    Output     :: (CPType a) => Port a -> String  -> GCMCommand ()
-    CreatePort :: (CPType a) => Proxy a -> GCMCommand (Port a)
-    CreateParameter :: (CPType a) =>  Proxy a -> a -> GCMCommand (ParameterPort a)
-    Component  :: CP () -> GCMCommand ()
+    Output          :: (CPType a) => Port a    -> String -> GCMCommand ()
+    CreatePort      :: (CPType a) => Proxy a   -> GCMCommand (Port a)
+    CreateParameter :: (CPType a) => Proxy a   -> a -> GCMCommand (ParameterPort a)
+    Component       ::               CP ()     -> GCMCommand ()
 
 -- A GRACeFUL concept map
 type GCM a = Program GCMCommand a
@@ -77,7 +77,7 @@ translateGCMCommand (CreateParameter proxy def) =
             -- has been acted upon
             dec2 = "var bool: a"++(show vid)++";"
             -- default value
-            exp = "(not a"++(show vid)++") ==> (v"++(show vid)++" == "++(show def)++")"
+            exp = "constraint ((not a"++(show vid)++") ==> (v"++(show vid)++" == "++(show def)++"));"
             state' = state {nextVarId = vid+1,
                             expressions = exp:(expressions state),
                             declarations = dec:dec2:(declarations state)}
