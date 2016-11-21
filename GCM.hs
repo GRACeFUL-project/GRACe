@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, compileGCM) where 
+module GCM (GCM, output, link, createPort, createParameter, component, fun, compileGCM) where 
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -10,6 +10,7 @@ import CP
 data GCMCommand a where
     Output     :: (CPType a) => Port a -> String  -> GCMCommand ()
     CreatePort :: (CPType a) => Proxy a -> GCMCommand (Port a)
+    CreateParameter :: (CPType a) =>  Proxy a -> a -> GCMCommand (Port a)
     Component  :: CP () -> GCMCommand ()
 
 -- A GRACeFUL concept map
@@ -21,6 +22,9 @@ output p = Instr . (Output p)
 
 createPort :: (CPType a) => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
+
+createParameter :: (CPType a) => a -> GCM (Port a)
+createParameter = Instr . (CreateParameter Proxy)
 
 component :: CP () -> GCM ()
 component = Instr . Component
@@ -51,16 +55,32 @@ type IntermMonad a = State CompilationState a
 
 -- Translation
 translateGCMCommand :: GCMCommand a -> IntermMonad a
-translateGCMCommand (Output (Port x) s) =
+translateGCMCommand (Output p s) =
     do
+        let i = portID p
         state <- get
-        put $ state {outputs = (s++"=\\(v"++(show x)++")\\n"):(outputs state)}
+        put $ state {outputs = (s++"=\\(v"++(show i)++")\\n"):(outputs state)}
 translateGCMCommand (CreatePort proxy) =
     do
         state <- get
         let vid = nextVarId state
             dec = "var " ++ (typeDec proxy) ++ ": v"++(show vid)++";"
             state' = state {nextVarId = vid+1, declarations = dec:(declarations state)}
+        put state'
+        return $ Port vid
+translateGCMCommand (CreateParameter proxy def) =
+    do
+        state <- get
+        let vid = nextVarId state
+            -- the value
+            dec = "var " ++ (typeDec proxy) ++ ": v"++(show vid)++";"
+            -- has been acted upon
+            dec2 = "var bool: a"++(show vid)++";"
+            -- default value
+            exp = "not a"++(show vid)++" ==> (v"++(show vid)++" == "++(show def)++")"
+            state' = state {nextVarId = vid+1,
+                            expressions = exp:(expressions state),
+                            declarations = dec:dec2:(declarations state)}
         put state'
         return $ Port vid
 translateGCMCommand (Component cp) =
