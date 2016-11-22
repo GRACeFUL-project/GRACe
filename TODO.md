@@ -17,11 +17,7 @@
       to false at the end of compilation if the port
       has not been touched by an action. To figure out how to
       best implement this we need a programming model for actions.
-* Goals
-    * What programming model do we want for goals?
-* Output
-    * Maybe we should output the results as a JSON
-      object straight from minizinc somehow?
+* Fractional etc. instances
 * Arrays and Sets...
 
 ## CP

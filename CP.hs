@@ -21,6 +21,7 @@ module CP ((.<),
            translateCPCommands,
            typeDec
           ) where
+import Data.Char
 import Port
 import Program
 import Control.Monad.Writer
@@ -63,7 +64,7 @@ data CPExp a where
 
 compileCPExp :: (CPType a) => CPExp a -> String
 compileCPExp (ValueOf p)  = "v"++ (show (portID p))
-compileCPExp (Lit l)      = show l
+compileCPExp (Lit l)      = map toLower $ show l
 compileCPExp (Equal a b)  = comp2paren a " == " b
 compileCPExp (LeThan a b) = comp2paren a " < "  b
 compileCPExp (LtEq a b)   = comp2paren a " <= " b

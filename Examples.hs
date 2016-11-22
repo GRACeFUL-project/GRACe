@@ -1,4 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 module Examples where
 import CP
 import Port
@@ -23,53 +22,83 @@ sink a =
         return p
 
 -- Rain is a source of Floats
-rain :: Float -> GCM (Port Float)
+rain :: (Num a, CPType a) => a -> GCM (Port a)
 rain = source
 
--- A pipe as a GCM component
-data Pipe = Pipe {inflow  :: Port Float,
-                  outflow :: Port Float}
-
 -- A pipe with a fixed capacity
-pipe :: Float -> GCM Pipe
+pipe :: (Num a, Ord a, CPType a) => a -> GCM (Port a)
 pipe k =
     do
-        ip <- createPort
-        op <- createPort
+        flow <- createPort
         component $ do
-                      inflow  <- value ip
-                      outflow <- value op
-                      assert  $ inflow `inRange` (0, lit k)
-                      assert  $ outflow === inflow
-        return $ Pipe ip op
-
--- A pump with a variable capacity as a GCM component
-data Pump = Pump {capacity :: Port Float,
-                  inflow   :: Port Float,
-                  outflow  :: Port Float}
-
--- GCM component
-pump :: GCM Pump 
-pump =
-    do
-        cp <- createPort
-        ip <- createPort
-        op <- createPort
-        link cp ip
-        link ip op
-        return $ Pump cp ip op
+                      f <- value flow
+                      assert  $ f `inRange` (0, lit k)
+        return flow
 
 -- Storage as a GCM component
-storage :: Float -> GCM (Port Float, Port Float)
+storage :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)
 storage k = fun (\inflow -> max' 0 (inflow - lit k))
 
+-- Fill inputs in order
+fill :: (Num a, Ord a, CPType a) => Port a -> [(Maybe (Port a), Port a)] -> GCM ()
+fill p [] = return ()
+fill p ((Just cap, x):xs) =
+    do
+        residual <- createPort
+        component $
+            do
+              res <- value residual
+              pv  <- value p
+              xv  <- value x
+              c   <- value cap
+              assert $ xv  === max' 0 (min' c pv)
+              assert $ res === pv - xv
+        fill residual xs
+fill p ((Nothing, x):xs) =
+    do
+        link p x
+        sequence_ $ map (\p -> set (snd p) 0) xs
+
+-- A pump has a maximum capacity and a flow
+pump :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)
+pump cmax =
+    do
+        cap <- createPort
+        flow <- createPort
+        component $
+            do
+                f <- value flow
+                c <- value cap
+                assert $ c `inRange` (0, lit cmax)
+                assert $ f `inRange` (0, c)
+        return (flow, cap)
+    
 -- Simple example with outputs and everything
 example :: GCM ()
 example =
     do
+      -- The rain
       rainP <- rain 10
+
+      -- The storage
       (sin, sof) <- storage 3
-      link rainP sin
+
+      -- The pump
+      (pump_flow, pump_cap) <- pump 6
+
+      -- Rain first goes in to the pump, and then the store
+      fill rainP [(Just pump_cap, pump_flow), (Nothing, sin)]
+
+      -- Minimise overflow goal
+      goal <- createGoal
+      component $ do
+                    v <- value sof
+                    g <- value goal
+                    assert $ g === 0 - v
+
+      -- Outputs
+      output pump_cap "pump capacity"
+      output pump_flow "pump flow"
       output sof "overflow"
       output sin "inflow"
 

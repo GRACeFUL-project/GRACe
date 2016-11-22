@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, set, foldGCM, sumGCM, compileGCM, runGCM) where
+module GCM (GCM, output, link, createPort, createGoal, component, fun, set, foldGCM, sumGCM, compileGCM, runGCM) where
 import System.Process
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
@@ -11,6 +11,7 @@ import CP
 data GCMCommand a where
     Output          :: (CPType a) => Port a    -> String -> GCMCommand ()
     CreatePort      :: (CPType a) => Proxy a   -> GCMCommand (Port a)
+    CreateGoal      ::               GCMCommand (Goal Int) -- Unsure that hardcoding this to Int is a good idea
     CreateParameter :: (CPType a) => Proxy a   -> a -> GCMCommand (ParameterPort a)
     Component       ::               CP ()     -> GCMCommand ()
 
@@ -23,6 +24,9 @@ output p = Instr . (Output p)
 
 createPort :: (CPType a) => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
+
+createGoal :: GCM (Goal Int)
+createGoal = Instr CreateGoal
 
 createParameter :: (CPType a) => a -> GCM (ParameterPort a)
 createParameter = Instr . (CreateParameter Proxy)
@@ -71,6 +75,7 @@ sumGCM i = foldGCM i (+) 0
 data CompilationState = CompilationState {outputs      :: [String],
                                           expressions  :: [String],
                                           declarations :: [String],
+                                          goals        :: [Int],
                                           nextVarId    :: Int}
 type IntermMonad a = State CompilationState a
 
@@ -89,6 +94,14 @@ translateGCMCommand (CreatePort proxy) =
             state' = state {nextVarId = vid+1, declarations = dec:(declarations state)}
         put state'
         return $ Port vid
+translateGCMCommand CreateGoal =
+    do
+        state <- get
+        let vid = nextVarId state
+            goal = "var int: v"++(show vid)++";"
+            state' = state {nextVarId = vid+1, goals = vid:(goals state), declarations = goal:(declarations state)}
+        put state'
+        return (Goal vid)
 translateGCMCommand (CreateParameter proxy def) =
     do
         state <- get
@@ -113,10 +126,13 @@ translateGCMCommand (Component cp) =
 
 -- Final compilation (this function is _very_ ugly!)
 compileGCM :: GCM a -> String
-compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm
+compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] [] 0) $ interpret translateGCMCommand gcm
     where
-        stateToString (CompilationState outs exprs declrs _) =
-            unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(concat outs)++"\"];"
+        stateToString (CompilationState outs exprs declrs goals _) =
+            unlines [unlines declrs, unlines exprs] ++ (makeGoals goals) ++ "\noutput [\""++(concat outs)++"\"];"
+            where
+                makeGoals [] = "\nsolve satisfy;"
+                makeGoals gls = "\nsolve maximize ("++ (foldl (\s gid -> s++"+v"++(show gid)) "0" gls) ++ ");"
 
 -- Crude run function
 runGCM :: GCM a -> IO ()

@@ -1,10 +1,12 @@
-module Port (Port(..), ParameterPort(..), IsPort(..)) where
+module Port (Port(..), ParameterPort(..), IsPort(..), Goal(..)) where
 
 -- A port is just an address
 data Port a = Port Int
 
 -- A parameter port is a port with a default value
 data ParameterPort a = ParameterPort a Int
+
+data Goal a = Goal Int
 
 -- Can I get a port ID
 class IsPort p where
@@ -15,3 +17,6 @@ instance IsPort Port where
 
 instance IsPort ParameterPort where
     portID (ParameterPort _ id) = id
+
+instance IsPort Goal where
+    portID (Goal id) = id
