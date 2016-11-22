@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, set, foldGCM, sumGCM, compileGCM) where
+module GCM (GCM, output, link, createPort, component, fun, set, foldGCM, sumGCM, compileGCM, runGCM) where
+import System.Process
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -115,3 +116,11 @@ compileGCM :: GCM a -> String
 compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm
     where
         stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(concat outs)++"\"];"
+
+-- Crude run function
+runGCM :: GCM a -> IO ()
+runGCM gcm =
+    do
+        writeFile "model.mzn" (compileGCM gcm)
+        callCommand "mzn-gecode model.mzn"
+        callCommand "rm model.mzn"

@@ -94,46 +94,60 @@ requirement xs =
 energySystem :: GCM ()
 energySystem =
     do
-       (bio_outs, biobr) <- sumGCM 5
-       (foss_outs, foss) <- sumGCM 5
-       vind              <- createPort
-       nuclear           <- createPort
-       hydro             <- createPort
-       (waste_heat_outs, waste_heat)        <- sumGCM 2
-       heatpump          <- createPort
+       (bio_outs, biobr)                          <- sumGCM 5
+       (foss_outs, foss)                          <- sumGCM 5
+       wind                                       <- createPort
+       nuclear                                    <- createPort
+       hydro                                      <- createPort
+       (waste_heat_outs, waste_heat)              <- sumGCM 2
+       heatpump                                   <- createPort
        (district_heating_outs, district_heating)  <- sumGCM 2
-       propulsion        <- createPort
-       (electricity_outs, electricity) <- sumGCM 4
+       propulsion                                 <- createPort
+       (electricity_outs, electricity)            <- sumGCM 4
 
-       transport         <- requirement [(propulsion, 1, 0.2)]
+       transport <- requirement [(propulsion, 1, 0.2)]
        set transport 18
 
-       industry_heat     <- requirement [(bio_outs !! 0, 0.4, 0.9), (foss_outs !! 2, 0.56, 0.9), (district_heating_outs !! 0, 0.04, 0.81)]
+       industry_heat <- requirement [(bio_outs !! 0, 0.4, 0.9),
+                                     (foss_outs !! 2, 0.56, 0.9),
+                                     (district_heating_outs !! 0, 0.04, 0.81)]
        set industry_heat 121
 
-       living_heat       <- requirement [(bio_outs !! 1, 0.13, 0.8), (district_heating_outs !! 1, 0.49, 0.81), (foss_outs !! 4, 0.15, 0.8), (electricity_outs !! 1, 0.23, 0.9)]
+       living_heat <- requirement [(bio_outs !! 1, 0.13, 0.8),
+                                   (district_heating_outs !! 1, 0.49, 0.81),
+                                   (foss_outs !! 4, 0.15, 0.8),
+                                   (electricity_outs !! 1, 0.23, 0.9)]
        set living_heat 90
 
-       living_elec       <- requirement [(electricity_outs !! 2, 1, 0.9)]
+       living_elec <- requirement [(electricity_outs !! 2, 1, 0.9)]
        set living_elec 55
 
-       industry_elec    <- requirement [(electricity_outs !! 3, 1, 0.9)]
+       industry_elec <- requirement [(electricity_outs !! 3, 1, 0.9)]
        set industry_elec 53
 
-       district_heating_rec <- requirement [(bio_outs !! 2, 0.61, 0.85), (foss_outs !! 3, 0.1, 0.85), (heatpump, 0.22, 3), (waste_heat_outs !! 1, 0.07, 1)]
+       district_heating_rec <- requirement [(bio_outs !! 2, 0.61, 0.85),
+                                            (foss_outs !! 3, 0.1, 0.85),
+                                            (heatpump, 0.22, 3),
+                                            (waste_heat_outs !! 1, 0.07, 1)]
        link district_heating_rec district_heating
 
        heatpump_rec <- requirement [(electricity_outs !! 0, 1, 0.9)]
        link heatpump heatpump_rec
 
-       propulsion_rec <- requirement [(bio_outs !! 3, 0.06, 0.5), (foss_outs !! 0, 0.94, 0.9)]
+       propulsion_rec <- requirement [(bio_outs !! 3, 0.06, 0.5),
+                                      (foss_outs !! 0, 0.94, 0.9)]
        link propulsion propulsion_rec
 
-       electricity_rec <- requirement [(bio_outs !! 4, 0.04, 0.3), (foss_outs !! 1, 0.02, 0.35), (vind, 0.03, 1), (nuclear, 0.39, 0.34), (hydro, 0.48, 1), (waste_heat_outs !! 0, 0.04, 1)]
+       electricity_rec <- requirement [(bio_outs !! 4, 0.04, 0.3),
+                                       (foss_outs !! 1, 0.02, 0.35),
+                                       (wind, 0.03, 1),
+                                       (nuclear, 0.39, 0.34),
+                                       (hydro, 0.48, 1),
+                                       (waste_heat_outs !! 0, 0.04, 1)]
        link electricity_rec electricity
 
        output biobr "bio\\t"
        output foss "fossile\\t"
-       output vind "wind\\t"
+       output wind "wind\\t"
        output nuclear "nuclear\\t"
        output hydro "hydro\\t"
