@@ -1,4 +1,7 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs,
+             FlexibleInstances,
+             UndecidableInstances
+ #-}
 module CP ((.<),
            (.<=),
            (===),
@@ -12,6 +15,7 @@ module CP ((.<),
            assert,
            value,
            CPType,
+           CPBaseType,
            inRange,
            Proxy(..),
            translateCPCommands,
@@ -24,17 +28,23 @@ import Control.Monad.Writer
 data Proxy a = Proxy
 
 -- Things that are supported by the CP runtime
+class (Show a, Eq a) => CPBaseType a where
+    typeDecBase :: Proxy a -> String -> String
+
 class (Show a, Eq a) => CPType a where
-    typeDec :: Proxy a -> String
+    typeDec :: Proxy a -> String -> String
 
-instance CPType Int where
-    typeDec = const "int"
+instance CPBaseType Int where
+    typeDecBase = const (++" int")
 
-instance CPType Float where
-    typeDec = const "float"
+instance CPBaseType Float where
+    typeDecBase = const (++" float")
 
-instance CPType Bool where
-    typeDec = const "bool"
+instance CPBaseType Bool where
+    typeDecBase = const (++" bool")
+
+instance (CPBaseType a, Show a, Eq a) => CPType a where
+    typeDec = typeDecBase
 
 -- Constraint program expressions
 data CPExp a where

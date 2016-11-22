@@ -85,7 +85,7 @@ translateGCMCommand (CreatePort proxy) =
     do
         state <- get
         let vid = nextVarId state
-            dec = "var " ++ (typeDec proxy) ++ ": v"++(show vid)++";"
+            dec = (typeDec proxy "var") ++ ": v"++(show vid)++";"
             state' = state {nextVarId = vid+1, declarations = dec:(declarations state)}
         put state'
         return $ Port vid
@@ -94,7 +94,7 @@ translateGCMCommand (CreateParameter proxy def) =
         state <- get
         let vid = nextVarId state
             -- the value
-            dec = "var " ++ (typeDec proxy) ++ ": v"++(show vid)++";"
+            dec = (typeDec proxy "var") ++ ": v"++(show vid)++";"
             -- has been acted upon
             dec2 = "var bool: a"++(show vid)++";"
             -- default value
@@ -111,11 +111,12 @@ translateGCMCommand (Component cp) =
             state'     = state {expressions = (expressions state) ++ exprs}
         put state'
 
--- Final compilation
+-- Final compilation (this function is _very_ ugly!)
 compileGCM :: GCM a -> String
 compileGCM gcm = stateToString $ (flip execState) (CompilationState [] [] [] 0) $ interpret translateGCMCommand gcm
     where
-        stateToString (CompilationState outs exprs declrs _) = unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(concat outs)++"\"];"
+        stateToString (CompilationState outs exprs declrs _) =
+            unlines [unlines declrs, unlines exprs] ++ "\nsolve satisfy;\noutput [\""++(concat outs)++"\"];"
 
 -- Crude run function
 runGCM :: GCM a -> IO ()
