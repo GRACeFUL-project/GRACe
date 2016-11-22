@@ -5,7 +5,7 @@ import Port
 import GCM
 
 -- A source of flow a
-source :: (CPType a, Eq a) => a -> GCM (Port a)
+source :: (CPType a) => a -> GCM (Port a)
 source a =
     do
         p <- createPort

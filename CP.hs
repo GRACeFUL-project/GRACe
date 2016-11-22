@@ -24,7 +24,7 @@ import Control.Monad.Writer
 data Proxy a = Proxy
 
 -- Things that are supported by the CP runtime
-class (Show a) => CPType a where
+class (Show a, Eq a) => CPType a where
     typeDec :: Proxy a -> String
 
 instance CPType Int where
@@ -39,8 +39,8 @@ instance CPType Bool where
 -- Constraint program expressions
 data CPExp a where
     ValueOf :: (CPType a, IsPort p) => p a        -> CPExp a
-    Lit     :: (CPType a, Show a)   => a          -> CPExp a
-    Equal   :: (CPType a, Eq a)     => CPExp a    -> CPExp a    -> CPExp Bool
+    Lit     :: (CPType a)           => a          -> CPExp a
+    Equal   :: (CPType a)           => CPExp a    -> CPExp a    -> CPExp Bool
     LeThan  :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
     LtEq    :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
     Add     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
@@ -94,7 +94,7 @@ instance (Num a, CPType a) => Num (CPExp a) where
 (.<=) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
 (.<=) = LtEq
 
-(===) :: (CPType a, Eq a) => CPExp a    -> CPExp a    -> CPExp Bool
+(===) :: (CPType a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal
 
 infix 4 ===

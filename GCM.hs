@@ -30,13 +30,13 @@ component :: CP () -> GCM ()
 component = Instr . Component
 
 -- Some derived operators
-link :: (CPType a, Eq a) => Port a -> Port a -> GCM ()
+link :: (CPType a) => Port a -> Port a -> GCM ()
 link p1 p2 = component $ do
                             v1 <- value p1
                             v2 <- value p2
                             assert $ v1 === v2
 
-fun :: (CPType a, CPType b, Eq b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
+fun :: (CPType a, CPType b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
 fun f = do
             pin  <- createPort
             pout <- createPort
@@ -46,13 +46,13 @@ fun f = do
                             assert $ o === f i
             return (pin, pout)
 
-set :: (CPType a, Eq a) => Port a -> a -> GCM ()
+set :: (CPType a) => Port a -> a -> GCM ()
 set p a =
     component $ do
                  v <- value p
                  assert $ v === lit a
 
-foldGCM :: (CPType a, Eq a, CPType b, Eq b) => Int -> (CPExp b -> CPExp a -> CPExp b) -> CPExp b -> GCM ([Port a], Port b)
+foldGCM :: (CPType a, CPType b) => Int -> (CPExp b -> CPExp a -> CPExp b) -> CPExp b -> GCM ([Port a], Port b)
 foldGCM i f v =
     do
       inputs <- sequence $ replicate i createPort
@@ -63,7 +63,7 @@ foldGCM i f v =
                    assert $ outv === (foldl f v values)
       return (inputs, output)
 
-sumGCM :: (CPType a, Num a, Eq a) => Int -> GCM ([Port a], Port a)
+sumGCM :: (CPType a, Num a) => Int -> GCM ([Port a], Port a)
 sumGCM i = foldGCM i (+) 0
 
 -- Compilation
