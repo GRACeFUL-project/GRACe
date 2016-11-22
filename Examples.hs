@@ -92,19 +92,6 @@ requirement xs =
                       | (p, per, eff) <- xs]
         return totalP
 
--- This can probably be generalised to a foldGCM
-sumGCM :: (Num a, CPType a, Eq a) => Int -> GCM ([Port a], Port a)
-sumGCM i =
-    do
-        ports <- sequence $ replicate i createPort
-        total <- createPort
-        component $
-            do  
-             values <- sequence $ map value ports
-             totalV <- value total
-             assert $ totalV === sum values
-        return (ports, total)
-
 -- A GCM representing a simluation of the swedish energy system
 energySystem :: GCM ()
 energySystem =

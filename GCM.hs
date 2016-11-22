@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, set, compileGCM) where
+module GCM (GCM, output, link, createPort, component, fun, set, foldGCM, sumGCM, compileGCM) where
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -47,9 +47,24 @@ fun f = do
             return (pin, pout)
 
 set :: (CPType a, Eq a) => Port a -> a -> GCM ()
-set p a = component $ do
-                        v <- value p
-                        assert $ v === lit a
+set p a =
+    component $ do
+                 v <- value p
+                 assert $ v === lit a
+
+foldGCM :: (CPType a, Eq a, CPType b, Eq b) => Int -> (CPExp b -> CPExp a -> CPExp b) -> CPExp b -> GCM ([Port a], Port b)
+foldGCM i f v =
+    do
+      inputs <- sequence $ replicate i createPort
+      output <- createPort
+      component $ do
+                   values <- sequence $ map value inputs
+                   outv   <- value output
+                   assert $ outv === (foldl f v values)
+      return (inputs, output)
+
+sumGCM :: (CPType a, Num a, Eq a) => Int -> GCM ([Port a], Port a)
+sumGCM i = foldGCM i (+) 0
 
 -- Compilation
 data CompilationState = CompilationState {outputs      :: [String],

@@ -22,6 +22,7 @@
 * Output
     * Maybe we should output the results as a JSON
       object straight from minizinc somehow?
+* Maybe arrows?
 
 ## CP
 * More types, like arrays and sets for an instance.
