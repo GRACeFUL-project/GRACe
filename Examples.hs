@@ -9,9 +9,7 @@ source :: (CPType a, Eq a) => a -> GCM (Port a)
 source a =
     do
         p <- createPort
-        component $ do
-                      outflow <- value p
-                      assert $ outflow === lit a
+        set p a
         return p
 
 -- A sink of capacity a
