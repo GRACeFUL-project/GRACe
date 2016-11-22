@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module GCM (GCM, output, link, createPort, component, fun, compileGCM) where
+module GCM (GCM, output, link, createPort, component, fun, set, compileGCM) where
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Port
@@ -46,6 +46,11 @@ fun f = do
                             assert $ o === f i
             return (pin, pout)
 
+set :: (CPType a, Eq a) => Port a -> a -> GCM ()
+set p a = component $ do
+                        v <- value p
+                        assert $ v === lit a
+
 -- Compilation
 data CompilationState = CompilationState {outputs      :: [String],
                                           expressions  :: [String],
@@ -59,7 +64,7 @@ translateGCMCommand (Output p s) =
     do
         let i = portID p
         state <- get
-        put $ state {outputs = (s++"=\\(v"++(show i)++")\\n"):(outputs state)}
+        put $ state {outputs = outputs state ++ [(s++" = \\(v"++(show i)++")\\n")]}
 translateGCMCommand (CreatePort proxy) =
     do
         state <- get
