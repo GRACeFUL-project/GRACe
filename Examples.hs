@@ -78,6 +78,7 @@ example =
 -- GCM component to represent energy requirement
 type Per = Float
 type Eff = Float
+
 requirement :: [(Port Float, Per, Eff)] -> GCM (Port Float)
 requirement xs =
     do
@@ -91,6 +92,7 @@ requirement xs =
                       | (p, per, eff) <- xs]
         return totalP
 
+-- This can probably be generalised to a foldGCM
 sumGCM :: (Num a, CPType a, Eq a) => Int -> GCM ([Port a], Port a)
 sumGCM i =
     do
