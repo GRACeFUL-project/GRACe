@@ -60,10 +60,10 @@ set p a =
 foldGCM :: (CPType a, CPType b) => Int -> (CPExp b -> CPExp a -> CPExp b) -> CPExp b -> GCM ([Port a], Port b)
 foldGCM i f v =
     do
-      inputs <- sequence $ replicate i createPort
+      inputs <- replicateM i createPort
       output <- createPort
       component $ do
-                   values <- sequence $ map value inputs
+                   values <- mapM value inputs
                    outv   <- value output
                    assert $ outv === (foldl f v values)
       return (inputs, output)

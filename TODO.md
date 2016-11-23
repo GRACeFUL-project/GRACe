@@ -1,7 +1,14 @@
 # TODO
 
-## Generic
-* How to interface with the graphics?
+## General
+* Some form of graphical interface
+* Should we hide much of the prelude
+  to have nicer syntax?
+    I think you can make a good argument
+    for this, as the user is mean to write
+    simple modules in the language and using
+    the GUI to do the "gluing", thus there won't
+    be that much mixing of normal Haskell and the DSL.
 
 ## GCM
 * Generalise the return types for GCM components,
@@ -18,7 +25,6 @@
       has not been touched by an action. To figure out how to
       best implement this we need a programming model for actions.
 * Fractional etc. instances
-* Arrays and Sets...
 
 ## CP
-* More types, like arrays and sets for an instance.
+* Arrays and sets in the CP world

@@ -57,7 +57,7 @@ fill p ((Just cap, x):xs) =
 fill p ((Nothing, x):xs) =
     do
         link p x
-        sequence_ $ map (\p -> set (snd p) 0) xs
+        mapM_ (\p -> set (snd p) 0) xs
 
 -- A pump has a maximum capacity and a flow
 pump :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)

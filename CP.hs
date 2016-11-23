@@ -5,9 +5,11 @@
 module CP ((.<),
            (.<=),
            (===),
+           (==>),
            nt,
            lit,
            (.&&),
+           (.||),
            max',
            min',
            CP,
@@ -61,6 +63,7 @@ data CPExp a where
     Min     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
     Not     ::                         CPExp Bool -> CPExp Bool
     And     ::                         CPExp Bool -> CPExp Bool -> CPExp Bool
+    Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
 
 compileCPExp :: (CPType a) => CPExp a -> String
 compileCPExp (ValueOf p)  = "v"++ (show (portID p))
@@ -71,6 +74,7 @@ compileCPExp (LtEq a b)   = comp2paren a " <= " b
 compileCPExp (Add a  b)   = comp2paren a " + "  b
 compileCPExp (Mul a  b)   = comp2paren a " * "  b
 compileCPExp (Sub a  b)   = comp2paren a " - "  b
+compileCPExp (Div a  b)   = comp2paren a " / "  b
 compileCPExp (Max a  b)   = "max" ++ paren (comp2paren a "," b)
 compileCPExp (Min a  b)   = "min" ++ paren (comp2paren a "," b)
 compileCPExp (And a  b)   = comp2paren a " /\\ "b
@@ -94,10 +98,14 @@ instance (Num a, CPType a) => Num (CPExp a) where
     (+) = Add
     (*) = Mul
     (-) = Sub
-    negate x = (lit 0) - x
+    negate x = 0 - x
     abs = undefined
     signum = undefined
     fromInteger = lit . fromInteger
+
+instance (Fractional a, CPType a) => Fractional (CPExp a) where
+    (/) = Div
+    fromRational = lit . fromRational
 
 (.<) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
 (.<) = LeThan
@@ -107,6 +115,9 @@ instance (Num a, CPType a) => Num (CPExp a) where
 
 (===) :: (CPType a) => CPExp a    -> CPExp a    -> CPExp Bool
 (===) = Equal
+
+(==>) :: CPExp Bool -> CPExp Bool -> CPExp Bool
+a ==> b = nt ((nt a) .&& b)
 
 infix 4 ===
 
@@ -118,6 +129,9 @@ lit  = Lit
 
 (.&&) :: CPExp Bool -> CPExp Bool -> CPExp Bool
 (.&&) = And
+
+(.||) :: CPExp Bool -> CPExp Bool -> CPExp Bool
+a .|| b = nt (nt a .&& nt b)
 
 max' :: (CPType a, Ord a) => CPExp a -> CPExp a -> CPExp a
 max' = Max
