@@ -24,7 +24,6 @@
       to false at the end of compilation if the port
       has not been touched by an action. To figure out how to
       best implement this we need a programming model for actions.
-* Fractional etc. instances
 
 ## CP
 * Arrays and sets in the CP world
