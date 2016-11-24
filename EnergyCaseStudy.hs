@@ -3,7 +3,7 @@ import CP
 import Examples
 
 -- Wind power production in MWh by hour
-windPowerProduction25_08_2016 :: [Float]
+windPowerProduction25_08_2016 :: [Int]
 windPowerProduction25_08_2016 =
     [
         2201,
@@ -33,7 +33,7 @@ windPowerProduction25_08_2016 =
     ]
 
 -- Total power production in MWh by hou
-totalPowerProduction25_08_2016 :: [Float]
+totalPowerProduction25_08_2016 :: [Int]
 totalPowerProduction25_08_2016 =
     [
         11197,
@@ -63,8 +63,8 @@ totalPowerProduction25_08_2016 =
     ]
 
 -- Swedish energy price in öre/KWh, averaged across SE1-SE4
-averageEnergyPrice25_08_2016 :: [Float]
-averageEnergyPrice25_08_2016 =
+averageEnergyPrice25_08_2016 :: [Int]
+averageEnergyPrice25_08_2016 = map round
     [
         22.63,
         22.40,
