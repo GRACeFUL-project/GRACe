@@ -1,6 +1,9 @@
+{-# LANGUAGE FlexibleInstances #-}
+import Port
 import GCM
 import CP
 import Examples
+import Control.Monad
 
 -- Wind power production in MWh by hour
 windPowerProduction25_08_2016 :: [Int]
@@ -32,7 +35,13 @@ windPowerProduction25_08_2016 =
         1451
     ]
 
--- Total power production in MWh by hou
+-- Estimated power production in MWh by hour from nuclear
+nuclearPowerProduction25_08_2016 :: [Int]
+nuclearPowerProduction25_08_2016 =
+    replicate 24 6335 -- Assume they are always producing
+                      -- at full capacity
+
+-- Total power production in MWh by hour
 totalPowerProduction25_08_2016 :: [Int]
 totalPowerProduction25_08_2016 =
     [
@@ -62,7 +71,37 @@ totalPowerProduction25_08_2016 =
         11444
     ]
 
--- Swedish energy price in öre/KWh, averaged across SE1-SE4
+-- Total power consumption in MWh by hour
+totalPowerConsumption25_08_2016 :: [Int]
+totalPowerConsumption25_08_2016 =
+    [
+        10892,
+        10566,
+        10371,
+        10359,
+        10551,
+        10842,
+        12551,
+        14058,
+        14724,
+        14918,
+        15262,
+        15281,
+        15116,
+        15176,
+        14894,
+        14872,
+        14760,
+        14838,
+        14528,
+        14450,
+        14321,
+        13491,
+        12611,
+        11554
+    ]
+
+-- Swedish energy price in EUR/MWh, averaged across SE1-SE4
 averageEnergyPrice25_08_2016 :: [Int]
 averageEnergyPrice25_08_2016 = map round
     [
@@ -91,3 +130,55 @@ averageEnergyPrice25_08_2016 = map round
         28.88,
         26.50
     ]
+
+instance Num [Int] where
+    (+) = zipWith (+)
+    (*) = zipWith (*)
+    (-) = zipWith (-)
+    fromInteger = repeat . fromInteger
+    abs = map abs
+    signum = map signum
+
+fillList :: (Num a, Ord a, CPType a) => [Port a] -> [([Maybe (Port a)], [Port a])] -> GCM ()
+fillList p lst = sequence_ [fill (p !! i) [(m !! i, prt !! i) | (m, prt) <- lst] | i <- [0..(length p - 1)]]
+
+constraintModel :: GCM ()
+constraintModel =
+    do
+        -- Total power consumption
+        powerConsumption       <- mapM source totalPowerConsumption25_08_2016
+
+        -- Capacity for hydropower
+        hydropowerCapacity     <- replicateM 24 $ source 16200
+        -- Total hydropower production
+        hydropowerProduction   <- replicateM 24 createPort
+
+        -- The factor by which wind has to increase to meet demand
+        windFactor             <- createPort
+        component $ do
+                        wf <- value windFactor
+                        assert $ wf `inRange` (0, 10)
+        --  Wind production
+        windCapacity         <- replicateM 24 createPort
+        -- Wind production increase
+        component $ mapM_ (\(wp, n) -> do
+                                        v <- value wp
+                                        f <- value windFactor
+                                        assert $ v === f * (lit n)
+                          ) $ zip windCapacity windPowerProduction25_08_2016
+        windProduction <- replicateM 24 createPort 
+
+        residual <- replicateM 24 createPort
+        mapM_ ((flip set) 0) residual
+
+        fillList powerConsumption [(map Just windCapacity, windProduction), (map Just hydropowerCapacity, hydropowerProduction), (replicate 24 Nothing, residual)]
+
+        g <- createGoal
+        component $
+            do  
+                vg <- value g
+                vw <- value windFactor
+                assert $ vg === 0 - vw
+
+        mapM_ (\(p, i) -> output p ("water " ++ (show i))) $ zip hydropowerProduction [0..]
+        output windFactor "wind factor"
