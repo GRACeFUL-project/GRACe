@@ -142,6 +142,9 @@ instance Num [Int] where
 fillList :: (Num a, Ord a, CPType a) => [Port a] -> [([Maybe (Port a)], [Port a])] -> GCM ()
 fillList p lst = sequence_ [fill (p !! i) [(m !! i, prt !! i) | (m, prt) <- lst] | i <- [0..(length p - 1)]]
 
+outputList :: (CPType a) => [Port a] -> String -> GCM ()
+outputList xs s = mapM_ (\(p, i) -> output p (s ++ "[" ++ (show i)++ "]")) $ zip xs [0..]
+
 constraintModel :: GCM ()
 constraintModel =
     do
@@ -157,7 +160,8 @@ constraintModel =
         windFactor             <- createPort
         component $ do
                         wf <- value windFactor
-                        assert $ wf `inRange` (0, 10)
+                        assert $ wf `inRange` (0, 3)
+
         --  Wind production
         windCapacity         <- replicateM 24 createPort
         -- Wind production increase
@@ -168,10 +172,20 @@ constraintModel =
                           ) $ zip windCapacity windPowerProduction25_08_2016
         windProduction <- replicateM 24 createPort 
 
+        (inputs, loadFactor) <- sumGCM 24
+        zipWithM_ link inputs hydropowerProduction
+
+        component $
+            do
+                lf <- value loadFactor
+                assert $ lf `inRange` (0, 16200*12)
+        
         residual <- replicateM 24 createPort
         mapM_ ((flip set) 0) residual
 
-        fillList powerConsumption [(map Just windCapacity, windProduction), (map Just hydropowerCapacity, hydropowerProduction), (replicate 24 Nothing, residual)]
+        fillList powerConsumption [(map Just windCapacity, windProduction),
+                                   (map Just hydropowerCapacity, hydropowerProduction),
+                                   (replicate 24 Nothing, residual)]
 
         g <- createGoal
         component $
@@ -180,5 +194,6 @@ constraintModel =
                 vw <- value windFactor
                 assert $ vg === 0 - vw
 
-        mapM_ (\(p, i) -> output p ("water " ++ (show i))) $ zip hydropowerProduction [0..]
+        outputList hydropowerProduction "water"
+        outputList windProduction "wind"
         output windFactor "wind factor"
