@@ -78,7 +78,7 @@ compileCPExp (Div a  b)   = comp2paren a " / "  b
 compileCPExp (Max a  b)   = "max" ++ paren (comp2paren a "," b)
 compileCPExp (Min a  b)   = "min" ++ paren (comp2paren a "," b)
 compileCPExp (And a  b)   = comp2paren a " /\\ "b
-compileCPExp (Not a)      = "not " ++ paren (compileCPExp a)
+compileCPExp (Not a)      = paren $ "not " ++ paren (compileCPExp a)
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> String
 comp2paren a op b = paren (compileCPExp a) ++ op ++ paren (compileCPExp b)

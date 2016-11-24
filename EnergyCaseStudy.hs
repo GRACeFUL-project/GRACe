@@ -145,47 +145,81 @@ fillList p lst = sequence_ [fill (p !! i) [(m !! i, prt !! i) | (m, prt) <- lst]
 outputList :: (CPType a) => [Port a] -> String -> GCM ()
 outputList xs s = mapM_ (\(p, i) -> output p (s ++ "[" ++ (show i)++ "]")) $ zip xs [0..]
 
-constraintModel :: GCM ()
-constraintModel =
+constraintModel :: (Int, Int) -> [Int] -> [Int] -> GCM ()
+constraintModel (start, len_) wind_ total_ =
     do
+        let wind = take len_ $ drop start wind_ 
+            total = take len_ $ drop start total_ 
+            len = length wind
         -- Total power consumption
-        powerConsumption       <- mapM source totalPowerConsumption25_08_2016
+        powerConsumption       <- mapM source total
 
         -- Capacity for hydropower
-        hydropowerCapacity     <- replicateM 24 $ source 16200
+        hydropowerCapacity     <- replicateM len $ source 162000 -- swedish hydropower capacity
         -- Total hydropower production
-        hydropowerProduction   <- replicateM 24 createPort
+        hydropowerProduction   <- replicateM len createPort
 
         -- The factor by which wind has to increase to meet demand
         windFactor             <- createPort
         component $ do
                         wf <- value windFactor
-                        assert $ wf `inRange` (0, 3)
-
+                        assert $ wf `inRange` (0, 100)
+        
         --  Wind production
-        windCapacity         <- replicateM 24 createPort
+        windCapacity         <- replicateM len createPort
         -- Wind production increase
         component $ mapM_ (\(wp, n) -> do
                                         v <- value wp
                                         f <- value windFactor
                                         assert $ v === f * (lit n)
-                          ) $ zip windCapacity windPowerProduction25_08_2016
-        windProduction <- replicateM 24 createPort 
+                          ) $ zip windCapacity wind
+        windProduction <- replicateM len createPort 
 
-        (inputs, loadFactor) <- sumGCM 24
+        windSavedEnergy <- replicateM len createPort
+        component $ mapM_ (\(wse, i) -> do
+                                         v <- value wse
+                                         wp <- value (windProduction !! i)
+                                         wc <- value (windCapacity !! i)
+
+                                         assert $ (2*v) `inRange` ((wc - wp)-1, (wc - wp)) -- 2*v from losses in storage
+                          ) $ zip windSavedEnergy [0..]
+
+        (inputs, sumWindStored) <- sumGCM len
+        zipWithM_ link inputs windSavedEnergy
+
+        transferCapacity <- replicateM len $ source 10000
+        transferTotal <- replicateM len createPort
+
+        (inputs, transferTotalSum) <- sumGCM len
+        zipWithM_ link inputs transferTotal
+
+        energyStoreCapacity <- replicateM len createPort
+        energyStoreUsed <- replicateM len createPort
+        set (energyStoreCapacity !! 0) 0
+        component $ mapM_ (\(es, i) -> do
+                                        e <- value es
+                                        esc <- value $ energyStoreCapacity !! (i - 1)
+                                        wse <- value $ windSavedEnergy !! (i - 1)
+                                        ese <- value $ energyStoreUsed !! (i - 1)
+                                        assert $ e ===  esc + wse - ese
+                          ) $ zip (tail energyStoreCapacity) [1..]
+
+        (inputs, loadFactor) <- sumGCM len 
         zipWithM_ link inputs hydropowerProduction
 
         component $
             do
                 lf <- value loadFactor
-                assert $ lf `inRange` (0, 16200*12)
+                assert $ lf `inRange` (0, lit (16200*(len `div` 2))) -- load factor on hydropower needs to not really exceed 0.5, as this would consume more energy than we have in total
         
-        residual <- replicateM 24 createPort
+        residual <- replicateM len createPort
         mapM_ ((flip set) 0) residual
 
         fillList powerConsumption [(map Just windCapacity, windProduction),
+                                   (map Just energyStoreCapacity, energyStoreUsed),
                                    (map Just hydropowerCapacity, hydropowerProduction),
-                                   (replicate 24 Nothing, residual)]
+                                   (map Just transferCapacity, transferTotal),
+                                   (replicate len Nothing, residual)]
 
         g <- createGoal
         component $
@@ -194,6 +228,24 @@ constraintModel =
                 vw <- value windFactor
                 assert $ vg === 0 - vw
 
-        outputList hydropowerProduction "water"
-        outputList windProduction "wind"
+        (inputs, nonZeroSaved) <- sumGCM len
+        component $ mapM_ (\(inpt, i) -> do
+                                    saved <- value $ windSavedEnergy !! i
+                                    inp   <- value $ inpt
+                                    assert $ inp === (min' saved (min' saved 1))
+                          ) $ zip inputs [0..]
+
+        --outputList hydropowerProduction "water"
+        --outputList windProduction "wind"
+
+        --outputList energyStoreUsed "used"
+        --outputList energyStoreCapacity "store"
+        --outputList windSavedEnergy "wind saved"
+        --outputList powerConsumption "power consumption"
+        --outputList windCapacity "wind capacity"
+        --outputList windProduction "wind production"
+
         output windFactor "wind factor"
+        output transferTotalSum "transfer"
+        --output nonZeroSaved "non zero saved"
+        --output (energyStoreCapacity !! (len - 1)) "wind saved energy"
