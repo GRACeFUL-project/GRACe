@@ -37,7 +37,11 @@ pipe k =
 
 -- Storage as a GCM component
 storage :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)
-storage k = fun (\inflow -> max' 0 (inflow - lit k))
+storage k = do
+                inf <- createPort
+                ovf <- createPort
+                fun (\inflow -> max' 0 (inflow - lit k)) inf ovf
+                return (inf, ovf)
 
 -- Fill inputs in order
 fill :: (Num a, Ord a, CPType a) => Port a -> [(Maybe (Port a), Port a)] -> GCM ()

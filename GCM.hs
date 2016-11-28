@@ -41,15 +41,11 @@ link p1 p2 = component $ do
                             v2 <- value p2
                             assert $ v1 === v2
 
-fun :: (CPType a, CPType b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
-fun f = do
-            pin  <- createPort
-            pout <- createPort
-            component $ do
-                            i <- value pin
-                            o <- value pout
+fun :: (CPType a, CPType b, IsPort pa, IsPort pb) => (CPExp a -> CPExp b) -> pa a -> pb b -> GCM ()
+fun f a b = component $ do
+                            i <- value a
+                            o <- value b
                             assert $ o === f i
-            return (pin, pout)
 
 set :: (CPType a) => Port a -> a -> GCM ()
 set p a =
