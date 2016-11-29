@@ -28,8 +28,8 @@ should be composable. The GL will be made up of components written in the DSL.
 
     Insert current status here.
 
-At the time of writing (2016-11-28) there is a prototype including a GCM monad
-for outlining "components" in the graph, such as specifying what connections
+Currently there is a prototype including a GCM monad for describing 
+"components" in the graph, such as specifying what connections
 they have and of what type. Moreover, the components can be decorated with
 constraints expressable in some MiniZinc compatible expression format.
 
@@ -70,7 +70,7 @@ storage c =
         return (inflow, overflow)
 
 -- Small example
-example :: Int -> GCM ()
+example :: GCM ()
 example =
     do
       -- Instantiate components
