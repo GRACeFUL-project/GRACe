@@ -31,7 +31,7 @@ should be composable. The GL will be made up of components written in the DSL.
 At the time of writing (2016-11-28) there is a prototype including a GCM monad
 for outlining "components" in the graph, such as specifying what connections
 they have and of what type. Moreover, the components can be decorated with
-constraints expressable in some MiniZinc compatible expression format.
+constraints expressable in the CP monad.
 
 ## Examples
 
