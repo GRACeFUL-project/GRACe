@@ -22,11 +22,7 @@ flows and storages of some quantity. Hence the need for a richer language able
 to express these things (and others). Moreover, components written in the DSL
 should be composable. The GL will be made up of components written in the DSL.
 
-    More stuff here
-
 ## Current status
-
-    Insert current status here.
 
 Currently there is a prototype including a GCM monad for describing 
 "components" in the graph, such as specifying what connections
@@ -36,6 +32,10 @@ constraints expressed in the CP monad.
 ## Examples
 
 ```haskell
+import CP
+import Port
+import GCM
+
 -- A source of rain
 rain :: Int -> GCM (Port Int)
 rain s = 
@@ -66,8 +66,9 @@ storage c =
                       pmp <- value pump
                       ovf <- value overflow
                       assert $ ovf === max' 0 (inf - pmp - lit c)
-                      assert $ inf === ovf + pmp + lit c
-        return (inflow, overflow)
+                      let sumFlow = ovf + pmp
+                      assert $ inf `inRange` (sumFlow, sumFlow + lit c)
+        return (inflow, pump, overflow)
 
 -- Small example
 example :: GCM ()
@@ -75,7 +76,7 @@ example =
     do
       -- Instantiate components
       r <- rain 10
-      p <- pump 4
+      p <- pump 7
       (inf, pmp, ovf) <- storage 4
 
       -- Link ports
@@ -92,12 +93,12 @@ example =
 We run the small example
 ```
 ghci> runGCM example
-pump operation = 4
+pump operation = 6
 --------
 ========
 ``` 
 
-
-## TBD
-
-    Insert TBD here.
+## Questions
+* What are the user interface requirements? (We have a pretty good idéa, but we want to make sure we are on the same page)
+* Can we get some example constraints from CLOCKWISe from T
+* Can we get someone to try it out and give some feedback?

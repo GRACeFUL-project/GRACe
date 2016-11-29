@@ -32,7 +32,8 @@ storage c =
                       pmp <- value pump
                       ovf <- value overflow
                       assert $ ovf === max' 0 (inf - pmp - lit c)
-                      assert $ inf === ovf + pmp + lit c
+                      let sumFlow = ovf + pmp
+                      assert $ inf `inRange` (sumFlow, sumFlow + lit c)
         return (inflow, pump, overflow)
 
 -- Small example
@@ -41,7 +42,7 @@ example =
     do
       -- Instantiate components
       r <- rain 10
-      p <- pump 4
+      p <- pump 7
       (inf, pmp, ovf) <- storage 4
 
       -- Link ports
