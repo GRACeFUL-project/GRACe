@@ -2,10 +2,11 @@
 
 ## Background
 
-Following the Delft workshop we decided on revising the structure of the DSL
-to be used in the modelling tools. The new DSL will be of increased expressivity
-and should be able to capture the same type of constraint programs as expressed
-in the CLOCWISe tool.
+Following the Delft work sprint we decided on revising the structure of the DSL
+to be used in the modelling tools. The new DSL should be able to capture the
+same type of constraint programs as expressed in the CLOCWISe tool. The key
+contribution of the DSL will be a language for expressing reusable components
+to support reasoning about systems like the small example from the Delft work sprint.
 
 ## Motivations
 
