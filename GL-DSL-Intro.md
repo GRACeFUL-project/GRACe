@@ -13,7 +13,7 @@ to support reasoning about systems like the small example from the Delft work sp
 The following issues were brought up during the Delft work sprint:
 
 * Solving the Casual Loop Diagrams (CLD) would not be as useful as initially 
-  thought. It is still possible that they would still be valuable in the Group 
+  thought. It is still possible that they could be valuable in the Group 
   Model Building sessions, however.
 * The Generic Library (GL) is more important than previously thought.
 
