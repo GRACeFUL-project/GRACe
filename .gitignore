@@ -4,3 +4,4 @@
 *.mzn
 *~
 .stack-work/
+dist/

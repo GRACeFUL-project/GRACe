@@ -1,28 +1,19 @@
-{-# LANGUAGE GADTs,
-             FlexibleInstances,
-             UndecidableInstances
- #-}
-module CP ((.<),
-           (.<=),
-           (===),
-           (==>),
-           nt,
-           lit,
-           (.&&),
-           (.||),
-           max',
-           min',
-           CP,
-           CPExp,
-           assert,
-           value,
-           CPType,
-           CPBaseType,
-           inRange,
-           Proxy(..),
-           translateCPCommands,
-           typeDec
-          ) where
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+module CP 
+  ( (.<), (.<=), (===), (==>), nt, lit, (.&&), (.||)
+  , max', min'
+  , CP, CPExp
+  , assert, value
+  , CPType, CPBaseType
+  , inRange
+  , Proxy(..)
+  , translateCPCommands
+  , typeDec
+  ) where
+
 import Data.Char
 import Port
 import Program
@@ -30,43 +21,64 @@ import Control.Monad.Writer
 
 data Proxy a = Proxy
 
--- Things that are supported by the CP runtime
+-- * Constraint Programming
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- | Base types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPBaseType a where
     typeDecBase :: Proxy a -> String -> String
 
+-- | Types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPType a where
     typeDec :: Proxy a -> String -> String
 
 instance CPBaseType Int where
-    typeDecBase = const (++" int")
+    typeDecBase = const (++ " int")
 
 instance CPBaseType Float where
-    typeDecBase = const (++" float")
+    typeDecBase = const (++ " float")
 
 instance CPBaseType Bool where
-    typeDecBase = const (++" bool")
+    typeDecBase = const (++ " bool")
 
 instance (CPBaseType a, Show a, Eq a) => CPType a where
     typeDec = typeDecBase
 
--- Constraint program expressions
+-- | Expressions in the Constraint Programming monad.
 data CPExp a where
-    ValueOf :: (CPType a, IsPort p) => p a        -> CPExp a
-    Lit     :: (CPType a)           => a          -> CPExp a
-    Equal   :: (CPType a)           => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
-    LtEq    :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Sub     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Max     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
-    Min     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
-    Not     ::                         CPExp Bool -> CPExp Bool
-    And     ::                         CPExp Bool -> CPExp Bool -> CPExp Bool
-    Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
+  ValueOf :: (CPType a, IsPort p) => p a        -> CPExp a
+  -- ^ This will require extra documentation.
+  Lit     :: (CPType a)           => a          -> CPExp a
+  Equal   :: (CPType a)           => CPExp a    -> CPExp a    -> CPExp Bool
+  LeThan  :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
+  LtEq    :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
+  Add     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+  Mul     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+  Sub     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
+  Max     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
+  Min     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
+  Not     ::                         CPExp Bool -> CPExp Bool
+  And     ::                         CPExp Bool -> CPExp Bool -> CPExp Bool
+  Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
 
+instance (Num a, CPType a) => Num (CPExp a) where
+  (+)         = Add
+  (*)         = Mul
+  (-)         = Sub
+  abs         = undefined
+  signum      = undefined
+  fromInteger = lit . fromInteger
+
+instance (Fractional a, CPType a) => Fractional (CPExp a) where
+  (/)          = Div
+  fromRational = lit . fromRational
+
+-- * Pretty-printing
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- | Pretty-printer for `CPExp` expressions.
 compileCPExp :: (CPType a) => CPExp a -> String
-compileCPExp (ValueOf p)  = "v"++ (show (portID p))
+compileCPExp (ValueOf p)  = "v" ++ show (portID p)
 compileCPExp (Lit l)      = map toLower $ show l
 compileCPExp (Equal a b)  = comp2paren a " == " b
 compileCPExp (LeThan a b) = comp2paren a " < "  b
@@ -86,26 +98,20 @@ comp2paren a op b = paren (compileCPExp a) ++ op ++ paren (compileCPExp b)
 paren :: String -> String
 paren s = "(" ++ s ++ ")"
 
--- Constraint program commands
+-- * Commands
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- | Instructions in the constraint programming monad.
 data CPCommands a where
     Assert :: CPExp Bool -> CPCommands ()
 
+-- | Compiles `CPCommands` to a sequence of `String`s.
 translateCPCommands :: CPCommands a -> Writer [String] a
-translateCPCommands (Assert bexp) = tell (["constraint " ++ paren (compileCPExp bexp)++";"])
+translateCPCommands (Assert bexp) = 
+  tell ["constraint " ++ paren (compileCPExp bexp) ++ ";"]
 
--- Syntactic sugar for expressions
-instance (Num a, CPType a) => Num (CPExp a) where
-    (+) = Add
-    (*) = Mul
-    (-) = Sub
-    negate x = 0 - x
-    abs = undefined
-    signum = undefined
-    fromInteger = lit . fromInteger
-
-instance (Fractional a, CPType a) => Fractional (CPExp a) where
-    (/) = Div
-    fromRational = lit . fromRational
+-- * Another section
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (.<) :: (CPType a, Ord a) => CPExp a    -> CPExp a    -> CPExp Bool
 (.<) = LeThan
@@ -117,7 +123,7 @@ instance (Fractional a, CPType a) => Fractional (CPExp a) where
 (===) = Equal
 
 (==>) :: CPExp Bool -> CPExp Bool -> CPExp Bool
-a ==> b = nt ((nt a) .&& b)
+a ==> b = nt (nt a) .&& b
 
 infix 4 ===
 
@@ -142,14 +148,18 @@ min' = Min
 -- Constraint programs
 type CP a = Program CPCommands a
 
+-- * Another section
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 -- Syntactic sugar for expressions in the CP "monad"
 assert :: CPExp Bool -> CP ()
-assert bexp = Instr (Assert bexp)
+assert = Instr . Assert 
 
 -- Unsure about if this is the best programming model for this
 value  :: (CPType a, IsPort p) => p a -> CP (CPExp a)
-value p = return (ValueOf p)
+value = return . ValueOf
 
 -- Some derived operators
 inRange :: (CPType a, Ord a) => CPExp a -> (CPExp a, CPExp a) -> CPExp Bool
 inRange a (low, high) = (low .<= a) .&& (a .<= high)
+
