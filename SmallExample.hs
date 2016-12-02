@@ -1,14 +1,16 @@
+module SmallExample where
+
 import CP
 import Port
 import GCM
 
 -- A source of rain
 rain :: Int -> GCM (Port Int)
-rain s = 
+rain s =
     do
       p <- createPort
       set p s
-      return p 
+      return p
 
 -- A pump with a fixed capacity
 pump :: Int -> GCM (Port Int)
