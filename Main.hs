@@ -1,4 +1,8 @@
-import SmallExample
+import SmallExample as Small
+import Examples as E
 import GCM
 
-main = runGCM example
+main = do
+  runGCM Small.example
+  runGCM E.example
+  runGCM E.energySystem
