@@ -1,4 +1,6 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs      #-}
+{-# LANGUAGE LambdaCase #-} 
+
 module GCM 
   ( GCM
   , output, link, createPort, createGoal
@@ -102,49 +104,41 @@ type IntermMonad = State CompilationState
 
 -- Translation
 translateGCMCommand :: GCMCommand a -> IntermMonad a
-translateGCMCommand (Output p s) = do
-  let i = portID p
-  state <- get
-  put $ state {outputs = outputs state ++ [s ++ " = \\(v" ++ show i ++ ")\\n"]}
-translateGCMCommand (CreatePort proxy) = do
-  state <- get
-  let vid = nextVarId state
-      dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
-      state' = state { nextVarId = vid + 1
-                     , declarations = dec : declarations state 
-                     }
-  put state'
-  return $ Port vid
-translateGCMCommand CreateGoal = do
-  state <- get
-  let vid    = nextVarId state
-      goal   = "var int: v" ++ show vid ++ ";"
-      state' = state { nextVarId = vid + 1
-                     , goals = vid : goals state 
-                     , declarations = goal : declarations state 
-                     }
-  put state'
-  return (Goal vid)
-translateGCMCommand (CreateParameter proxy def) = do
-  state <- get
-  let vid = nextVarId state
-      -- the value
-      dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
-      -- has been acted upon
-      dec2 = "var bool: a" ++ show vid ++ ";"
-      -- default value
-      exp = "constraint ((not a" ++ show vid ++ ") ==> (v" ++ show vid ++ " == " ++ show def ++ "));"
-      state' = state { nextVarId = vid + 1
-                     , expressions = exp : expressions state
-                     , declarations = dec : dec2 : declarations state 
-                     }
-  put state'
-  return $ ParameterPort def vid
-translateGCMCommand (Component cp) = do
-  state <- get
-  let (_, exprs) = runWriter $ interpret translateCPCommands cp
-      state'     = state {expressions = expressions state ++ exprs}
-  put state'
+translateGCMCommand = \case
+  Output p s -> do
+    let i = portID p
+    modify $ \st -> st { outputs = outputs st ++ [s ++ " = \\(v" ++ show i ++ ")\\n"]}
+  CreatePort proxy -> do
+    vid <- gets nextVarId
+    let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
+    modify $ \st -> st { nextVarId = vid + 1
+                       , declarations = dec : declarations st
+                       }
+    return $ Port vid
+  CreateGoal -> do
+    vid <- gets nextVarId 
+    let goal = "var int: v" ++ show vid ++ ";"
+    modify $ \st -> st { nextVarId = vid + 1
+                       , goals = vid : goals st
+                       , declarations = goal : declarations st
+                       }
+    return (Goal vid)
+  CreateParameter proxy def -> do
+    vid <- gets nextVarId
+        -- the value
+    let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
+        -- has been acted upon
+        dec2 = "var bool: a" ++ show vid ++ ";"
+        -- default value
+        exp = "constraint ((not a" ++ show vid ++ ") ==> (v" ++ show vid ++ " == " ++ show def ++ "));"
+    modify $ \st -> st { nextVarId    = vid + 1
+                       , expressions  = exp : expressions st
+                       , declarations = dec : dec2 : declarations st
+                       }
+    return $ ParameterPort def vid
+  Component cp -> do
+    let (_, exprs) = runWriter $ interpret translateCPCommands cp
+    modify $ \st -> st {expressions = expressions st ++ exprs}
 
 -- Final compilation (this function is _very_ ugly!)
 compileGCM :: GCM a -> String
