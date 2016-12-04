@@ -1,8 +1,6 @@
 module SmallExample where
 
-import CP
-import Port
-import GCM
+import GL
 
 -- A source of rain
 rain :: Int -> GCM (Port Int)
@@ -13,14 +11,16 @@ rain s =
       return p
 
 -- A pump with a fixed capacity
-pump :: Int -> GCM (Port Int)
+pump :: Int -> GCM (Port Int, Param Int)
 pump c =
     do
         flow <- createPort
+        cap  <- createParam c
         component $ do
                       f <- value flow
-                      assert  $ f `inRange` (0, lit c)
-        return flow
+                      c <- value cap
+                      assert  $ f `inRange` (0, c)
+        return (flow, cap)
 
 -- A storage with a fixed capacity and a pump
 storage :: Int -> GCM (Port Int, Port Int, Port Int)
@@ -38,14 +38,25 @@ storage c =
                       assert $ inf `inRange` (sumFlow, sumFlow + lit c)
         return (inflow, pump, overflow)
 
+-- | Increases pump capacity by doubling.
+increaseCap :: Param Int -> GCM (Action Int)
+increaseCap p = do
+  a <- createAction p
+  action $ act (\a defaultValue -> 2*a*defaultValue) a
+  return a
+
 -- Small example
 example :: GCM ()
 example =
     do
       -- Instantiate components
       r <- rain 10
-      p <- pump 7
+      (p, pcap) <- pump 2
       (inf, pmp, ovf) <- storage 4
+
+      -- Create an action
+      a  <- increaseCap pcap
+      a' <- taken a
 
       -- Link ports
       link inf r
@@ -57,3 +68,4 @@ example =
 
       -- Output the solution
       output p "pump operation"
+      output a' "pump increased"

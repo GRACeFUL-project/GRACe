@@ -1,7 +1,5 @@
 module Examples where
-import CP
-import Port
-import GCM
+import GL
 
 -- A source of flow a
 source :: (CPType a) => a -> GCM (Port a)
