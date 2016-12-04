@@ -1,37 +1,42 @@
--- | Some intended structure to work towards.
---
--- @undefined@s need to be implemented. Some will require us to poke more deeply
--- into the constraint programming side.
+{-# LANGUAGE RecordWildCards #-}
 
+-- | Some intended structure to work towards.
 module Main where
 
 import Control.Monad
-import CP
-import GCM
-import Port
+import GL
 
-type M3s = Float
+-- | A pump has connections for input, output and exports a capacity.
+data Pump = Pump
+  { pin, pout :: Port  Float
+  , cap       :: Param Float
+  }
 
-data Action a = Action a
-type Param = ParameterPort
+-- | Some virtual pump with a capacity.
+pump :: GCM Pump
+pump = do
+  -- Create ports, and a parameter which controls capacity.
+  -- This parameter is exported, and accepts actions operating on
+  -- the variable somehow.
+  pin  <- createPort
+  pout <- createPort
+  cap  <- createParam (5 :: Float)
 
-prg :: GCM (Port M3s, Param M3s)
-prg = do
-  pump <- createPort
-  cap  <- createParam (5 :: Int)
-
+  -- Declare some constraints
   component $ do
-    x <- value pump
+    x <- value pin
+    z <- value pout
     y <- value cap
-    assert $ x `inRange` (0, y)
+    assert $ x `inRange` (0, y) .&& x === z
 
-  return (pump, cap)
+  return Pump {..}
 
-icop :: GCM (Action Int)
-icop = do
+-- | Increases pump capacity by doubling.
+increaseCap :: GCM (Action Float)
+increaseCap = do
   a <- createAction
-  action $ 
-    act (*2) a       -- (a -> b) -> CPExpr a -> CPExpr b
+  action $           -- Is the `action` thing really necessary?
+    act (*2) a       -- (a -> b) -> Action a -> m (Action b)
 
   {- or this way:
      action $ 
@@ -42,47 +47,22 @@ icop = do
 
   return a
 
--- Work to be done:
-pump         = undefined
-createParam  = undefined
-createAction = undefined
-action       = undefined
-act          = undefined
-
 -- Tidy example.
 example :: GCM ()
 example = void $ do
-  (pmp, cap) <- pump
-  a <- icop
-  b <- icop
-  a `actsUpon` cap
-  b `actsUpon` cap
-  a `mutex` b
+  -- Declare a pump
+  Pump pin pout cap <- pump
 
--- ``This is also a difficult one.''
---
---   Maximilian Algehed, Chalmers Uni.
-actsUpon :: Action a -> Param a -> GCM ()
-actsUpon = undefined
+  -- Declare two capacity increasing actions
+  act1 <- increaseCap
+  act2 <- increaseCap
 
--- See if the action was taken. Powerful stuff.
---
--- (Doing the reflection; this is the hard one)
-taken :: Action a -> GCM (Port Int)
-taken = undefined
+  -- Declare that the actions acts on the capacity
+  act1 `actsUpon` cap
+  act2 `actsUpon` cap
 
--- Ensure that actions are mutually exclusive.
-mutex :: Action a -> Action b -> GCM ()
-mutex a1 a2 = do
-  p1 <- taken a1
-  p2 <- taken a2
-  component $ do
-    v1 <- value p1
-    v2 <- value p2
-    assert $ nt ((v1 .> 0) .&& (v2 .> 0))
-
-a .> b = b .< a
-
+  -- Declare that actions act1 and act2 are mutually exclusive
+  act1 `mutex` act2
 
 main :: IO ()
 main = putStrLn "hello"
