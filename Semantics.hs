@@ -32,11 +32,11 @@ pump = do
   return Pump {..}
 
 -- | Increases pump capacity by doubling.
-increaseCap :: GCM (Action Float)
-increaseCap = do
-  a <- createAction
-  action $           -- Is the `action` thing really necessary?
-    act (*2) a       -- (a -> b) -> Action a -> m (Action b)
+increaseCap :: Param Float -> GCM (Action Float)
+increaseCap p = do
+  a <- createAction p
+  action $           -- Is the `action` thing really necessary? (No, but it creates a separation of concerns)
+    act (\a defaultValue -> 2*(i2f a)*defaultValue) a
 
   {- or this way:
      action $ 
@@ -54,12 +54,8 @@ example = void $ do
   Pump pin pout cap <- pump
 
   -- Declare two capacity increasing actions
-  act1 <- increaseCap
-  act2 <- increaseCap
-
-  -- Declare that the actions acts on the capacity
-  act1 `actsUpon` cap
-  act2 `actsUpon` cap
+  act1 <- increaseCap cap
+  act2 <- increaseCap cap
 
   -- Declare that actions act1 and act2 are mutually exclusive
   act1 `mutex` act2

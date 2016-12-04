@@ -1,6 +1,6 @@
 import SmallExample as Small
 import Examples as E
-import GCM
+import GL
 
 main = do
   runGCM Small.example
