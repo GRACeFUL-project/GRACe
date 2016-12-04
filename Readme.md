@@ -10,7 +10,7 @@
 
 1. Download and install the complete MiniZinc distribution from 
   [the MiniZinc page](http://www.minizinc.org/index.html). 
-2. The MiniZinc binaries will now be located (hopefully) under
+2. The MiniZinc binaries will now be located under
   `/Applications/MiniZincIDE.app/Contents/Resources`. Add this directory to your
   path, like so:
 
