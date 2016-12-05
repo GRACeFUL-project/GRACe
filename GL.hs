@@ -40,18 +40,18 @@ instance (CPBaseType a, Show a, Eq a) => CPType a where
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
     -- | This will require extra documentation.
-    ValueOf :: (CPType a, IsPort p) => p a        -> CPExp a
-    Lit     :: (CPType a)           => a          -> CPExp a
-    Equal   :: (CPType a)           => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
-    LtEq    :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Sub     :: (CPType a, Num a)    => CPExp a    -> CPExp a    -> CPExp a
-    Max     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
-    Min     :: (CPType a, Ord a)    => CPExp a    -> CPExp a    -> CPExp a
-    Not     ::                         CPExp Bool -> CPExp Bool
-    And     ::                         CPExp Bool -> CPExp Bool -> CPExp Bool
+    ValueOf :: (CPType a, IsPort p)     => p a        -> CPExp a
+    Lit     :: CPType a                 => a          -> CPExp a
+    Equal   :: CPType a                 => CPExp a    -> CPExp a    -> CPExp Bool
+    LeThan  :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
+    LtEq    :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
+    Add     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+    Mul     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+    Sub     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+    Max     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
+    Min     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
+    Not     ::                             CPExp Bool -> CPExp Bool
+    And     ::                             CPExp Bool -> CPExp Bool -> CPExp Bool
     Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
     I2F     :: CPExp Int -> CPExp Float
 
@@ -154,14 +154,14 @@ infixl 4 .>=
 
 -- | GRACeFUL Concept Map commands.
 data GCMCommand a where
-    Output       :: (CPType a) => Port a    -> String -> GCMCommand ()
-    CreatePort   :: (CPType a) => Proxy a   -> GCMCommand (Port a)
+    Output       :: CPType a => Port a    -> String -> GCMCommand ()
+    CreatePort   :: CPType a => Proxy a   -> GCMCommand (Port a)
     -- | Unsure that hardcoding this to Int is a good idea
-    CreateGoal   ::               GCMCommand (Goal Int) 
-    CreateParam  :: (CPType a) => Proxy a   -> a -> GCMCommand (Param a)
-    CreateAction :: (CPType a) => Param a   -> GCMCommand (Action a)
-    EmbedAction  ::               ActM a    -> GCMCommand ()
-    Component    ::               CP ()     -> GCMCommand ()
+    CreateGoal   ::             GCMCommand (Goal Int) 
+    CreateParam  :: CPType a => Proxy a   -> a -> GCMCommand (Param a)
+    CreateAction :: CPType a => Param a   -> GCMCommand (Action a)
+    EmbedAction  ::             ActM a    -> GCMCommand ()
+    Component    ::             CP ()     -> GCMCommand ()
 
 -- | A GRACeFUL Concept Map.
 type GCM = Program GCMCommand
@@ -170,7 +170,7 @@ type GCM = Program GCMCommand
 data Action a = Action Int (Param a)
 
 data ActCommand a where
-    Act :: (CPType a) => CPExp a -> Action a -> ActCommand ()
+    Act :: CPType a => CPExp a -> Action a -> ActCommand ()
 
 type ActM = Program ActCommand
 
@@ -218,7 +218,7 @@ taken :: CPType a => Action a -> GCM (Port Int)
 taken (Action i _) = return (Port i)
 
 -- | @'link' p1 p2@ creates a connection from port @p1@ to port @p2@.
-link :: (CPType a) => Port a -> Port a -> GCM ()
+link :: CPType a => Port a -> Port a -> GCM ()
 link p1 p2 = component $ do
     v1 <- value p1
     v2 <- value p2
@@ -270,120 +270,6 @@ foldGCM i f v = do
 sumGCM :: (CPType a, Num a) => Int -> GCM ([Port a], Port a)
 sumGCM i = foldGCM i (+) 0
 
--- Compilation
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- TODO: Stages, cleanup
-
-data CompilationState = CompilationState 
-    { outputs      :: [String]
-    , expressions  :: [String]
-    , declarations :: [String]
-    , goals        :: [Int]
-    , nextVarId    :: Int
-    }
-
-type IntermMonad = State CompilationState
-
--- | Pretty-printer for `CPExp` expressions.
-compileCPExp :: (CPType a) => CPExp a -> String
-compileCPExp = \case
-    ValueOf p  -> "v" ++ show (portID p)
-    Lit l      -> map toLower $ show l
-    Equal a b  -> comp2paren a " == " b
-    LeThan a b -> comp2paren a " < "  b
-    LtEq a b   -> comp2paren a " <= " b
-    Add a  b   -> comp2paren a " + "  b
-    Mul a  b   -> comp2paren a " * "  b
-    Sub a  b   -> comp2paren a " - "  b
-    Div a  b   -> comp2paren a " / "  b
-    Max a  b   -> "max" ++ paren (comp2paren a "," b)
-    Min a  b   -> "min" ++ paren (comp2paren a "," b)
-    And a  b   -> comp2paren a " /\\ "b
-    Not a      -> paren $ "not " ++ paren (compileCPExp a)
-    I2F a      -> "int2float" ++ paren (compileCPExp a)
-
-comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> String
-comp2paren a op b = paren (compileCPExp a) ++ op ++ paren (compileCPExp b)
-
-paren :: String -> String
-paren s = "(" ++ s ++ ")"
-
--- | Compiles `CPCommands` to a sequence of `String`s.
-translateCPCommands :: CPCommands a -> Writer [String] a
-translateCPCommands (Assert bexp) = 
-    tell ["constraint " ++ paren (compileCPExp bexp) ++ ";"]
-
-translateActionCommands :: ActCommand a -> Writer [String] a
-translateActionCommands (Act expr (Action i (Param _ j))) =
-    tell ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren (compileCPExp expr) ++ "));"]
-
--- Translation
-translateGCMCommand :: GCMCommand a -> IntermMonad a
-translateGCMCommand = \case
-    Output p s -> do
-        let i = portID p
-        modify $ \st -> st { outputs = outputs st ++ [s ++ " = \\(v" ++ show i ++ ")\\n"]}
-    CreatePort proxy -> do
-        vid <- gets nextVarId
-        let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
-        modify $ \st -> st { nextVarId = vid + 1
-                           , declarations = dec : declarations st
-                           }
-        return $ Port vid
-    CreateGoal -> do
-        vid <- gets nextVarId 
-        let goal = "var int: v" ++ show vid ++ ";"
-        modify $ \st -> st { nextVarId = vid + 1
-                           , goals = vid : goals st
-                           , declarations = goal : declarations st
-                           }
-        return (Goal vid)
-    CreateParam proxy def -> do
-        vid <- gets nextVarId
-            -- the value
-        let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
-            -- has been acted upon
-            dec2 = "var bool: a" ++ show vid ++ ";"
-            -- default value
-            exp = "constraint ((not a" ++ show vid ++ ") -> (v" ++ show vid ++ " == " ++ show def ++ "));"
-        modify $ \st -> st { nextVarId    = vid + 1
-                           , expressions  = exp : expressions st
-                           , declarations = dec : dec2 : declarations st
-                           }
-        return $ Param def vid
-    CreateAction p@(Param a j) -> do
-        vid <- gets nextVarId
-        let dec = "var int: v" ++ show vid ++ ";"
-            exp = "constraint (v" ++ show vid ++ ">= 0);"
-            exp2 = "constraint ((v" ++ show vid ++ "> 0) -> a" ++ show j ++ ");"
-        modify $ \st -> st { nextVarId    = vid + 1
-                           , expressions  = exp : exp2 : expressions st
-                           , declarations = dec : declarations st
-                           }
-        return $ Action vid p
-    Component cp -> do
-        let (_, exprs) = runWriter $ interpret translateCPCommands cp
-        modify $ \st -> st {expressions = expressions st ++ exprs}
-    EmbedAction actm -> do
-        let (_, exprs) = runWriter $ interpret translateActionCommands actm
-        modify $ \st -> st {expressions = expressions st ++ exprs}
-
--- Final compilation (this function is _very_ ugly!)
-compileGCM :: GCM a -> String
-compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0) $ interpret translateGCMCommand gcm
-    where
-        makeGoals [] = "\nsolve satisfy;"
-        makeGoals gls = "\nsolve maximize ("++ foldl (\s gid -> s++"+v"++ show gid) "0" gls ++ ");"
-        stateToString (CompilationState outs exprs declrs goals _) =
-          unlines [unlines declrs, unlines exprs] ++ makeGoals goals ++ "\noutput [\""++ concat outs ++"\"];"
-
--- Crude run function
-runGCM :: GCM a -> IO ()
-runGCM gcm = do
-    writeFile "model.mzn" (compileGCM gcm)
-    callCommand "mzn-gecode -p 4 model.mzn"
-    callCommand "rm model.mzn"
-
 -- * Ports 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -411,3 +297,4 @@ instance IsPort Param where
 
 instance IsPort Goal where
     portID (Goal id) = id
+
