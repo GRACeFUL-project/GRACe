@@ -160,7 +160,6 @@ data GCMCommand a where
     CreateGoal   ::               GCMCommand (Goal Int) 
     CreateParam  :: (CPType a) => Proxy a   -> a -> GCMCommand (Param a)
     CreateAction :: (CPType a) => Param a   -> GCMCommand (Action a)
-    Taken        :: (CPType a) => Action a  -> GCMCommand (Port Int)
     EmbedAction  ::               ActM a    -> GCMCommand ()
     Component    ::               CP ()     -> GCMCommand ()
 
@@ -178,21 +177,34 @@ type ActM = Program ActCommand
 -- * Base GCM operations
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- | Document this.
+-- | @'output' p str@ displays the value at @p@ with label @str@ during solver
+-- output.
 output :: (CPType a, Show a) => Port a -> String -> GCM ()
 output p = Instr . Output p
 
-createAction :: (CPType a) => Param a -> GCM (Action a)
+-- | Instantiate a action in the `GCM` monad.
+createAction :: CPType a => Param a -> GCM (Action a)
 createAction = Instr . CreateAction 
 
-createPort :: (CPType a) => GCM (Port a)
+-- | Instantiate a port in the `GCM` monad.
+createPort :: CPType a => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
 
+-- | Instantiate a goal in the `GCM` monad.
 createGoal :: GCM (Goal Int)
 createGoal = Instr CreateGoal
 
-createParam :: (CPType a) => a -> GCM (Param a)
+-- | Instantiate a parameter in the `GCM` monad.
+createParam :: CPType a => a -> GCM (Param a)
 createParam = Instr . CreateParam Proxy
+
+-- | Run actions in the `GCM` monad.
+action :: ActM a -> GCM ()
+action = Instr . EmbedAction
+
+-- | @'act' f a@ applies the function @f@ to the action @a@.
+act :: CPType a => (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
+act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf (Port i)) (lit a)) act)
 
 -- | Document this.
 component :: CP () -> GCM ()
@@ -201,18 +213,9 @@ component = Instr . Component
 -- * Derived GCM operations
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- TODO:
--- Is this really necessary? (No, but separation of concerns and super-clarity)
-action :: ActM a -> GCM ()
-action = Instr . EmbedAction
-
--- Mammoth function of death...
-act :: (CPType a) => (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
-act foo (Action i (Param a j)) = Instr (Act (foo (ValueOf (Port i)) (lit a)) (Action i (Param a j)))
-
--- See if the action was taken. Powerful stuff.
-taken :: (CPType a) => Action a -> GCM (Port Int)
-taken = Instr . Taken
+-- See if the action was taken.
+taken :: CPType a => Action a -> GCM (Port Int)
+taken (Action i _) = return (Port i)
 
 -- | @'link' p1 p2@ creates a connection from port @p1@ to port @p2@.
 link :: (CPType a) => Port a -> Port a -> GCM ()
@@ -358,7 +361,6 @@ translateGCMCommand = \case
                            , declarations = dec : declarations st
                            }
         return $ Action vid p
-    Taken (Action i _) -> return (Port i)
     Component cp -> do
         let (_, exprs) = runWriter $ interpret translateCPCommands cp
         modify $ \st -> st {expressions = expressions st ++ exprs}
