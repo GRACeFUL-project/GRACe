@@ -1,5 +1,13 @@
+{-# LANGUAGE LambdaCase#-}
+{-# LANGUAGE GADTs                #-}
 module Compile0 where
 
+import Control.Monad.Writer
+import Control.Monad.State.Lazy
+import Data.Char
+import System.Process
+
+import Program
 import GL
 
 runGCM :: GCM a -> IO ()
@@ -12,7 +20,7 @@ runGCM gcm = do
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- TODO: Stages, cleanup
 
-data CompilationState = CompilationState 
+data CompilationState = CompilationState
     { outputs      :: [String]
     , expressions  :: [String]
     , declarations :: [String]
@@ -48,7 +56,7 @@ paren s = "(" ++ s ++ ")"
 
 -- | Compiles `CPCommands` to a sequence of `String`s.
 translateCPCommands :: CPCommands a -> Writer [String] a
-translateCPCommands (Assert bexp) = 
+translateCPCommands (Assert bexp) =
     tell ["constraint " ++ paren (compileCPExp bexp) ++ ";"]
 
 translateActionCommands :: ActCommand a -> Writer [String] a
@@ -69,7 +77,7 @@ translateGCMCommand = \case
                            }
         return $ Port vid
     CreateGoal -> do
-        vid <- gets nextVarId 
+        vid <- gets nextVarId
         let goal = "var int: v" ++ show vid ++ ";"
         modify $ \st -> st { nextVarId = vid + 1
                            , goals = vid : goals st
@@ -114,4 +122,3 @@ compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0)
         makeGoals gls = "\nsolve maximize ("++ foldl (\s gid -> s++"+v"++ show gid) "0" gls ++ ");"
         stateToString (CompilationState outs exprs declrs goals _) =
           unlines [unlines declrs, unlines exprs] ++ makeGoals goals ++ "\noutput [\""++ concat outs ++"\"];"
-
