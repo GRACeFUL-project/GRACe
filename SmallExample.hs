@@ -41,9 +41,9 @@ storage c =
 -- | Increases pump capacity by doubling.
 increaseCap :: Param Int -> GCM (Action Int)
 increaseCap p = do
-  a <- createAction p
-  action $ act (\a defaultValue -> 2*a*defaultValue) a
-  return a
+    a <- createAction p
+    action $ act (\a defaultValue -> 2*a*defaultValue) a
+    return a
 
 -- Small example
 example :: GCM ()
