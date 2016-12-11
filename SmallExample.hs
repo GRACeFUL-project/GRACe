@@ -80,10 +80,12 @@ prop_pump =
         
         (pmp, cap) <- liftGCM $ pump k
 
+        {-
         liftGCM $ do
                     p <- createPort
                     set p k
                     output p "k"
                     output pmp "pmp"
+        -}
 
-        property $ val pmp .<= val cap
+        property $ val pmp .<= lit k 
