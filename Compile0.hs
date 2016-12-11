@@ -13,7 +13,7 @@ import GL
 runGCM :: GCM a -> IO ()
 runGCM gcm = do
     writeFile "model.mzn" (compileGCM gcm)
-    callCommand "mzn-gecode -p 4 model.mzn"
+    callCommand "mzn-gecode -p 4 -a model.mzn"
     callCommand "rm model.mzn"
 
 -- Compilation
@@ -68,7 +68,7 @@ translateGCMCommand :: GCMCommand a -> IntermMonad a
 translateGCMCommand = \case
     Output p s -> do
         let i = portID p
-        modify $ \st -> st { outputs = outputs st ++ [s ++ " = \\(v" ++ show i ++ ")\\n"]}
+        modify $ \st -> st { outputs = outputs st ++ [s ++ " : \\(v" ++ show i ++ ")\\n"]}
     CreatePort proxy -> do
         vid <- gets nextVarId
         let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"

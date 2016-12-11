@@ -117,6 +117,9 @@ i2f = I2F
 value  :: (CPType a, IsPort p) => p a -> CP (CPExp a)
 value = return . ValueOf
 
+val  :: (CPType a, IsPort p) => p a -> CPExp a
+val = ValueOf
+
 infixr 3 .&&
 infixl 4 .<
 infixl 4 .<=

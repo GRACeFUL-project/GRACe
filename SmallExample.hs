@@ -1,6 +1,9 @@
 module SmallExample where
 
+import Compile0
 import GL
+import GCMP
+import qualified Test.QuickCheck as QC
 
 -- A source of rain
 rain :: Int -> GCM (Port Int)
@@ -69,3 +72,18 @@ example =
       -- Output the solution
       output p "pump operation"
       output a' "pump increased"
+
+prop_pump :: GCMP ()
+prop_pump =
+    do
+        k <- forall (fmap abs QC.arbitrary)
+        
+        (pmp, cap) <- liftGCM $ pump k
+
+        liftGCM $ do
+                    p <- createPort
+                    set p k
+                    output p "k"
+                    output pmp "pmp"
+
+        property $ val pmp .<= val cap
