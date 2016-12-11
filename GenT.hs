@@ -2,6 +2,8 @@
 -- Most of the code is borrowed from 
 -- <http://haskell.1045720.n5.nabble.com/darcs-patch-GenT-monad-transformer-variant-of-Gen-QuickCheck-2-td3172136.html a mailing list discussion>.
 -- Therefor, credits go to Paul Johnson and Felix Martini.
+
+-- This code is an adaptation of: http://hackage.haskell.org/package/QuickCheck-GenT
 module GenT where
 
 import qualified Test.QuickCheck.Gen as QC
