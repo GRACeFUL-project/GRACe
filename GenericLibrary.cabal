@@ -27,24 +27,24 @@ library
     mtl
   default-language:
     Haskell2010
-  
+
 executable GenericLibrary
-  main-is:             
+  main-is:
     Main.hs
-  other-modules:       
+  other-modules:
     GL,
-    SmallExample, 
+    SmallExample,
     Examples
-  other-extensions:    
-    GADTs, 
-    FlexibleInstances, 
-    UndecidableInstances, 
-    RankNTypes, 
+  other-extensions:
+    GADTs,
+    FlexibleInstances,
+    UndecidableInstances,
+    RankNTypes,
     ScopedTypeVariables
-  build-depends:       
-    base    >=4.9 && <4.10, 
-    process >=1.4 && <1.5, 
+  build-depends:
+    base    >=4.9 && <4.10,
+    process >=1.4 && <1.5,
     mtl
   -- hs-source-dirs:
-  default-language:    Haskell2010
-
+  default-language:
+    Haskell2010
