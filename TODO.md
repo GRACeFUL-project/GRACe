@@ -23,3 +23,9 @@
 * Regression testing further ahead.
 * Property based testing of user code (generators).
 
+### By priority
+0. A "main" function
+0. Examples
+1. Shrinking
+2. Informative output
+3. QuickCheck-style statistics gathering
