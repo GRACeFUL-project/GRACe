@@ -8,6 +8,8 @@
 --    output ["pump cap : ", show(cap), "\noverflow : ", show(of)];
 module OutParser (module OutParser) where
 
+import System.Process
+
 import Text.Parsec
 import Text.ParserCombinators.Parsec.Number
 
@@ -127,10 +129,41 @@ lbls :: Output -> [Label]
 lbls (Sat (x:_) _) = map fst x
 lbls _ = []
 
--- | Run @minizinc@ on the given input string and parse the result.
-run :: String -> IO Output
-run = undefined
+type Args = String
 
--- | Run @minizinc@ on the given file path and parse the result.
-runFile :: FilePath -> IO Output
-runFile = undefined
+-- | @mzn-gecode@ default arguments
+--
+-- > -p 4 -n 10
+defArgs :: Args
+defArgs = "-p 4 -n 10"
+
+-- | Run @mzn-gecode@ on the given input string, arguments and parse the result.
+--
+-- Creates a temporary file called @tmp.mzn@,
+-- if it exists it will be overwritten.
+run :: Args -> String -> IO Output
+run args s = do
+  let tmp = "tmp.mzn"
+  writeFile tmp s
+  out <- readProcess "mzn-gecode" (tmp:words args) ""
+  callProcess "rm" [tmp]
+  return (par out)
+
+-- | Run @mzn-gecode@ on the given input string, default arguments
+-- and parse the result.
+--
+-- Creates a temporary file called @tmp.mzn@,
+-- if it exists it will be overwritten.
+runDef :: String -> IO Output
+runDef = run defArgs
+
+-- | Run @mzn-gecode@ on the given file path and parse the result.
+runFile :: Args -> FilePath -> IO Output
+runFile args file = do
+  out <- readProcess "mzn-gecode" (file:words args) ""
+  return (par out)
+
+-- | Run @mzn-gecode@ on the given file path, default arguments
+-- and parse the result.
+runFileDef :: FilePath -> IO Output
+runFileDef = runFile defArgs
