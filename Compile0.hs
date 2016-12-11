@@ -6,6 +6,7 @@ import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Data.Char
 import System.Process
+import qualified Data.Set as S
 
 import Program
 import GL
@@ -26,6 +27,7 @@ data CompilationState = CompilationState
     , declarations :: [String]
     , goals        :: [Int]
     , nextVarId    :: Int
+    , unconParams  :: S.Set Int
     }
 
 type IntermMonad = State CompilationState
@@ -95,6 +97,7 @@ translateGCMCommand = \case
         modify $ \st -> st { nextVarId    = vid + 1
                            , expressions  = exp : expressions st
                            , declarations = dec : dec2 : declarations st
+                           , unconParams  = S.insert vid (unconParams st)
                            }
         return $ Param def vid
     CreateAction p@(Param a j) -> do
@@ -105,6 +108,7 @@ translateGCMCommand = \case
         modify $ \st -> st { nextVarId    = vid + 1
                            , expressions  = exp : exp2 : expressions st
                            , declarations = dec : declarations st
+                           , unconParams  = S.delete vid (unconParams st)
                            }
         return $ Action vid p
     Component cp -> do
@@ -116,9 +120,11 @@ translateGCMCommand = \case
 
 -- Final compilation (this function is _very_ ugly!)
 compileGCM :: GCM a -> String
-compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0) $ interpret translateGCMCommand gcm
+compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0 S.empty) $ interpret translateGCMCommand gcm
     where
         makeGoals [] = "\nsolve satisfy;"
         makeGoals gls = "\nsolve maximize ("++ foldl (\s gid -> s++"+v"++ show gid) "0" gls ++ ");"
-        stateToString (CompilationState outs exprs declrs goals _) =
-          unlines [unlines declrs, unlines exprs] ++ makeGoals goals ++ "\noutput [\""++ concat outs ++"\"];"
+        stateToString (CompilationState outs exprs declrs goals _ uncon) =
+          unlines [unlines declrs, unlines exprs] ++ (makeUncon (S.toList uncon)) ++ makeGoals goals ++ "\noutput [\""++ concat outs ++"\"];"
+        makeUncon [] = ""
+        makeUncon (i:uncons) = "constraint (not a"++show i++");\n" ++ (makeUncon uncons)
