@@ -6,10 +6,29 @@ import Test.Tasty.QuickCheck
 
 import OutParser
 
+-- | Main to run OutParser tests exclusively.
+main :: IO ()
+main = defaultMain $ tests
+
 tests :: TestTree
 tests = testGroup "OutParser tests"
   [ unitTests
   ]
+
+instance Arbitrary Value where
+  arbitrary = oneof [B <$> arbitrary, I <$> arbitrary, D <$> arbitrary]
+
+instance Arbitrary Output where
+  arbitrary = frequency [(10, sat), (1, unsat), (1, err)]
+    where
+      sat = Sat <$> listOf1 sol <*> frequency [(1, sol), (5, return [])]
+      sol = listOf1 var
+      var = do
+        lbl <- listOf1 $ elements (['a'..'z'] ++ ['A'..'Z'] ++ "   ")
+        v <- arbitrary
+        return (lbl, v)
+      unsat = Unsat <$> arbitrary
+      err = ParseErr <$> arbitrary
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests"
