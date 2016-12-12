@@ -1,5 +1,5 @@
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE FlexibleInstances      #-}
 
 module Main where
 
@@ -10,6 +10,18 @@ type Volume   = Int
 type Cost     = Int
 type Nuisance = Int
 type Damage   = Int
+
+{-{-# LANGUAGE MultiParamTypeClasses  #-}-}
+{-{-# LANGUAGE FunctionalDependencies #-}-}
+{-class IsPort p' => Pipe p' p | p -> p' where-}
+  {-capacity   :: p -> p' Int-}
+  {-throughput :: p -> Port Int-}
+  
+{-newtype Flow a = Flow (Port a, Port a)-}
+
+{-instance Pipe Port (Flow Int) where-}
+  {-capacity   (Flow (p, _)) = p-}
+  {-throughput (Flow (_, p)) = p-}
 
 -- * Actions
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,27 +120,17 @@ sewerStorage = storage
 -- * Damages
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-- TODO
 floodNuisance :: Nuisance -> GCM (Port Bool)
 floodNuisance nuis = do
   flooding <- createPort
-
-  component $ do
-    flood <- value flooding
-    assert $ f (flood) 
-
   return flooding
-      where f = undefined -- TODO
-  
+
+-- TODO
 floodDamage :: Damage -> GCM (Port Bool)
 floodDamage dmg = do
   flooding <- createPort
-
-  component $ do
-    flood <- value flooding
-    assert $ f (flood)
-
   return flooding
-      where f = undefined
 
 -- * Costs
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -190,6 +192,11 @@ dubbeldam = do
   link (outlet runOff) floodIn            -- Beige blob    -> Flooding
   link floodOut        dmg                -- Flooding      -> Flood-damage
   link floodOut        nuis               -- Flooding      -> Flood-nuisance
+
+  -- Outputs
+  output (overflow sewer) "overflow sewer"
+  output (overflow runOff) "overflow runOff"
+  output (flow     pump)  "pump flow"
 
 -- * IO
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
