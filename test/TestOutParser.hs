@@ -13,6 +13,7 @@ main = defaultMain $ tests
 tests :: TestTree
 tests = testGroup "OutParser tests"
   [ unitTests
+  , propTests
   ]
 
 instance Arbitrary Value where
@@ -29,6 +30,8 @@ instance Arbitrary Output where
         return (lbl, v)
       unsat = Unsat <$> arbitrary
       err = ParseErr <$> arbitrary
+
+---- Unit tests ----------------------------------------------------------------
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests"
@@ -140,3 +143,13 @@ unit_unsat = expected @=? actual
       ]
     expected = Unsat out
     actual = par out
+
+---- Property tests ------------------------------------------------------------
+
+propTests :: TestTree
+propTests = testGroup "Property tests"
+  [ testProperty "par . show == id" prop_show_par
+  ]
+
+prop_show_par :: Output -> Bool
+prop_show_par out = par (show out) == out
