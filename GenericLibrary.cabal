@@ -52,8 +52,11 @@ executable GenericLibrary
   build-depends:
     base    >=4.9 && <4.10,
     process >=1.4 && <1.5,
-    mtl
-  -- hs-source-dirs:
+    mtl,
+    QuickCheck,
+    random,
+    transformers,
+    containers >= 0.5.7.1
   default-language:    Haskell2010
 
 test-suite test
