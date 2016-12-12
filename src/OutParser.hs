@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | Parser for the minizinc output.
 -- Unsat not parsed into anything useful at the moment, the message
 -- is returned as a string.
@@ -27,13 +29,34 @@ data Output
     -- ^ The unsat message.
   | ParseErr String
     -- ^ Parsec error message.
-  deriving (Show, Eq)
+  deriving Eq
+
+-- | Show instance to match the parsing.
+--
+-- show . par == id
+instance Show Output where
+  show = \case
+    Sat sols optSol -> unlines $ showSols sols optSol
+      where
+        showSols ss os =
+         concatMap  showSol ss ++ if null os then [] else ["=========="]
+        showSol s =
+          map (\(lbl, v) -> lbl ++ " : " ++ show v) s ++ ["----------"]
+    Unsat msg -> msg
+    ParseErr msg -> msg
 
 data Value
   = B Bool
   | I Int
   | D Double
-  deriving (Show, Eq)
+  deriving Eq
+
+-- | Show a parsed value.
+instance Show Value where
+  show = \case
+    B b -> if b then "true" else "false"
+    I n -> show n
+    D d -> show d
 
 (>>|) :: Monad m => m a -> b -> m b
 a >>| b = a >> return b

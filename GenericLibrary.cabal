@@ -27,7 +27,8 @@ library
     FlexibleInstances,
     UndecidableInstances,
     RankNTypes,
-    ScopedTypeVariables
+    ScopedTypeVariables,
+    LambdaCase
   build-depends:
     base           >= 4.9 && <4.10,
     process        >= 1.4 && <1.5,
@@ -104,4 +105,3 @@ test-suite test
     test
   default-language:
     Haskell2010
-
