@@ -133,7 +133,7 @@ output = try sat <|> unsat
   where
     sat = do
       sols <- solution `sepEndBy1` newline
-      optimal <- option [] (newline >> equs >>| last sols)
+      optimal <- option [] (equs >>| last sols)
       return $ Sat sols optimal
     unsat = Unsat <$> manyTill anyToken eof
 
