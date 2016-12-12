@@ -105,7 +105,7 @@ var = do
 --
 -- > [("a", I 3), ("b", B True)]
 solution :: Parser [(Label, Value)]
-solution = var `sepEndBy1` spaces <* dash
+solution = var `sepEndBy1` newline <* dash
 
 -- | Top level parser.
 --
