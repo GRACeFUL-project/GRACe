@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main where
 
@@ -10,95 +11,96 @@ type Cost     = Int
 type Nuisance = Int
 type Damage   = Int
 
--- | A pump component with capacity.
-data Pump = Pump
-  { flow :: Port Volume
-  , cap  :: Param Volume
-  }
-
--- | A storage component.
-data Storage = Storage
-  { inflow   :: Port Volume
-  , outlet   :: Port Volume
-  , overflow :: Port Volume
-  -- TODO: Has no action
-  }
-
--- | Something bad from a volume. TODO: What nonsense
-data Bad a = Bad
-  { volume :: Param Volume
-  , cost   :: Port a
-  } 
-
 -- * Actions
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- TODO: Several increaseStorage actions available
 
---  TODO
-increaseStorage :: Volume -> GCM (Action Volume)
-increaseStorage = undefined
+--  TODO: Docs
+increaseStorage :: Param Volume -> GCM (Action Volume)
+increaseStorage vol = do
+  a <- createAction vol
+  action $ act (\a d -> d + a) a
+  return a
 
--- TODO
-increasePump :: Volume -> GCM (Action Volume)
-increasePump = undefined
+-- TODO: Docs
+increasePump :: Param Volume -> GCM (Action Volume)
+increasePump vol = do
+  a <- createAction vol
+  action $ act (\a d -> d + a) a
+  return a
 
 -- * Components
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- | A rainfall event.
+-- | @'rainfall' s@ creates a rainfaill event, parametrized on a measure of
+-- rainfall.
 rainfall :: Volume -> GCM (Port Volume)
 rainfall s = do
   p <- createPort
   set p s
   return p
 
--- | A pump with a fixed capacity.
+-- | A pump component with capacity.
+data Pump = Pump
+  { flow    :: Port Volume
+  , pumpCap :: Param Volume
+  }
+
+-- | @'pump' c@ creates a pump parametrized on its maximum capacity @c@.
 pump :: Volume -> GCM Pump
 pump c = do
-  flow <- createPort
-  cap  <- createParam c
+  flow    <- createPort
+  pumpCap <- createParam c
   component $ do
     f <- value flow
-    c <- value cap
+    c <- value pumpCap
     assert  $ f `inRange` (0, c)
   return Pump {..}
 
--- | The beige blob.
-runOffArea :: Volume -> GCM Storage
-runOffArea = storage
+-- | A storage component.
+data Storage = Storage
+  { inflow     :: Port Volume
+  , outlet     :: Port Volume
+  , overflow   :: Port Volume
+  , storageCap :: Param Volume
+  }
 
--- | A storage with a fixed capacity and a outlet.
--- TODO: Has no action.
+-- | @'storage' c@ creates a storage component parametrized on its capacity @c@.
 storage :: Int -> GCM Storage
 storage c = do
-  inflow   <- createPort
-  outlet   <- createPort
-  overflow <- createPort
+  inflow     <- createPort
+  outlet     <- createPort
+  overflow   <- createPort
+  storageCap <- createParam c
   
   component $ do
     inf <- value inflow
     pmp <- value outlet
     ovf <- value overflow
-    assert $ ovf === max' 0 (inf - pmp - lit c)
+    c   <- value storageCap
+    assert $ ovf === max' 0 (inf - pmp - c)
     let sumFlow = ovf + pmp
-    assert $ inf `inRange` (sumFlow, sumFlow + lit c)
+    assert $ inf `inRange` (sumFlow, sumFlow + c)
  
   return Storage {..} 
 
--- | Flooding.
-flooding :: GCM (Port Volume, Port Volume)
+-- | 'flooding' corresponds to the flooding node in the pocket case. If there is
+-- overflow (i.e. something on the incoming port), then there is flooding.
+flooding :: GCM (Port Volume, Port Bool)
 flooding = do
   runOff   <- createPort
   flooding <- createPort
 
-  component $ do 
-    ro  <- value runOff
-    fl  <- value flooding
-    assert $ f (ro, fl)
+  fun (.>0) flooding runOff
 
-  return (runOff, flooding)
-      where f = undefined -- TODO
+  return (flooding, runOff)
   
+-- | This is essentially the beige blob in the Dubbeldam pocket-case. 
+--
+-- TODO: Document.
+runOffArea :: Volume -> GCM Storage
+runOffArea = storage
+
 -- | Sewer critical area.
 sewerStorage :: Volume -> GCM Storage
 sewerStorage = storage
@@ -106,7 +108,7 @@ sewerStorage = storage
 -- * Damages
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-floodNuisance :: Nuisance -> GCM (Port Volume)
+floodNuisance :: Nuisance -> GCM (Port Bool)
 floodNuisance nuis = do
   flooding <- createPort
 
@@ -117,7 +119,7 @@ floodNuisance nuis = do
   return flooding
       where f = undefined -- TODO
   
-floodDamage :: Damage -> GCM (Port Volume)
+floodDamage :: Damage -> GCM (Port Bool)
 floodDamage dmg = do
   flooding <- createPort
 
@@ -131,31 +133,26 @@ floodDamage dmg = do
 -- * Costs
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-storageCost :: GCM (Bad Cost) 
-storageCost = do
-  volume <- createParam (20 :: Int)
-  cost   <- createPort
+-- | A cost associated with increasing storage.
+storageCost :: Action Volume -> GCM (Port Cost)
+storageCost a = do
+  cost  <- createPort
+  level <- taken a
+  fun (\l -> 100 * l) level cost
+  return cost
+
+-- | A cost associated with increasing pump capacity.
+pumpCapCost :: Action Volume -> GCM (Port Cost)
+pumpCapCost = storageCost
+
+-- | Restrict the space of possible actions.
+restrict :: CPBaseType a => Action a -> [Int] -> GCM ()
+restrict a bs = do
+  level <- taken a
 
   component $ do
-    vol <- value volume
-    cst <- value cost
-    assert $ f (vol, cost)
-
-  return Bad {..}
-    where f = undefined -- TODO
-
-pumpCapCost :: GCM (Bad Cost)
-pumpCapCost = do
-  volume <- createParam (1 :: Int)
-  cost   <- createPort
-
-  component $ do
-    vol <- value volume
-    cst <- value cost
-    assert $ f (vol, cost)
-
-  return Bad {..}
-    where f = undefined -- TODO
+    l <- value level
+    assert $ foldl (.||) (lit True) [ l === lit b | b <- bs ]
   
 -- * Composition
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,25 +176,20 @@ dubbeldam = do
   dmg  <- floodDamage 3
 
   -- Actions
-  -- TODO: incSewer etc would be one of 
-  --  * Bioswale on parking
-  --  * Bioswale instead of street
-  --  * Green roofs
-  incSewer <- increaseStorage 20 -- Increase sewer storage by 20
-  incPump  <- increaseStorage 20 -- Increase pump capacity by 20
+  incSewer <- increaseStorage (storageCap sewer)
+  incPump  <- increasePump    (pumpCap    pump)
 
   -- Actions cost €
-  costSewer <- storageCost     -- Cost for incSewer
-  pumpCost  <- pumpCapCost     -- Cost for incPump
+  costSewer <- storageCost incSewer    -- Cost for incSewer
+  pumpCost  <- pumpCapCost incPump     -- Cost for incPump
 
   -- Connections:
   link rain            (inflow runOff)    -- RainfallEvent -> Beige blob
-  link (outlet runOff) floodIn            -- Beige blob    -> Flooding
+  link (outlet sewer)  (flow   pump)      -- Sewer         -> Pump
   link (outlet runOff) (inflow sewer)     -- Beige blob    -> Sewer
-  link (outlet sewer)  (flow pump)        -- Sewer         -> Pump
+  link (outlet runOff) floodIn            -- Beige blob    -> Flooding
   link floodOut        dmg                -- Flooding      -> Flood-damage
   link floodOut        nuis               -- Flooding      -> Flood-nuisance
-  
 
 -- * IO
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
