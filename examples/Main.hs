@@ -1,3 +1,5 @@
+module Main where
+
 import SmallExample as Small
 import Examples as E
 import GL
