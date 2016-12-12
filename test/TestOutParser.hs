@@ -154,7 +154,7 @@ propTests = testGroup "Property tests"
 prop_show_par :: Output -> Bool
 prop_show_par out = par (show out) == out
 
-ex = unlines
+ex1 = unlines
   [ "rTLn : -7.329885850880368"
   , " Uf : 0"
   , "YlE : true"
@@ -162,4 +162,19 @@ ex = unlines
   , "----------"
   , "O : false"
   , "----------"
+  ]
+
+ex2 = unlines
+  [ "atHq : 8.440377240699787"
+  , "vWbM : true"
+  , "----------"
+  , "HPR : -3"
+  , "W  : -3"
+  , "vKb : true"
+  , "----------"
+  , " Db : -3.122568798608161"
+  , "glTj : -2.5730528796468577"
+  , "k : 4.8498010947897345"
+  , "----------"
+  , "=========="
   ]
