@@ -132,8 +132,8 @@ output :: Parser Output
 output = try sat <|> unsat
   where
     sat = do
-      sols <- solution `sepEndBy1` spaces
-      optimal <- option [] (spaces >> equs >>| last sols)
+      sols <- solution `sepEndBy1` newline
+      optimal <- option [] (newline >> equs >>| last sols)
       return $ Sat sols optimal
     unsat = Unsat <$> manyTill anyToken eof
 
