@@ -36,7 +36,7 @@ Build and execute using
 
 ```shell
 cabal build
-cabal run
+cabal run examples
 ```
 
 ### Using stack
