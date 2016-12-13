@@ -11,18 +11,6 @@ type Cost     = Int
 type Nuisance = Int
 type Damage   = Int
 
-{-{-# LANGUAGE MultiParamTypeClasses  #-}-}
-{-{-# LANGUAGE FunctionalDependencies #-}-}
-{-class IsPort p' => Pipe p' p | p -> p' where-}
-  {-capacity   :: p -> p' Int-}
-  {-throughput :: p -> Port Int-}
-  
-{-newtype Flow a = Flow (Port a, Port a)-}
-
-{-instance Pipe Port (Flow Int) where-}
-  {-capacity   (Flow (p, _)) = p-}
-  {-throughput (Flow (_, p)) = p-}
-
 -- * Actions
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- TODO: Several increaseStorage actions available
@@ -78,7 +66,7 @@ data Storage = Storage
   }
 
 -- | @'storage' c@ creates a storage component parametrized on its capacity @c@.
-storage :: Int -> GCM Storage
+storage :: Volume -> GCM Storage
 storage c = do
   inflow     <- createPort
   outlet     <- createPort
