@@ -45,7 +45,7 @@ Stack will automatically take care of dependencies. Build and execute using
 
 ```shell
 stack build
-stack exec GenericLibrary
+stack exec examples
 ```
 
 Copy executables to `~/.local/bin` (put them on PATH) with
