@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module TestOutParser where
 
 import Test.Tasty
@@ -18,6 +20,11 @@ tests = testGroup "OutParser tests"
 
 instance Arbitrary Value where
   arbitrary = oneof [B <$> arbitrary, I <$> arbitrary, D <$> arbitrary]
+  shrink = \case
+    B b -> B <$> shrink b
+    I n -> I <$> shrink n
+    D d -> D <$> shrink d
+
 
 instance Arbitrary Output where
   arbitrary = frequency [(10, sat), (1, unsat)]
