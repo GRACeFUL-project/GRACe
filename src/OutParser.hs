@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | Parser for the minizinc output.
 -- Unsat not parsed into anything useful at the moment, the message
 -- is returned as a string.
@@ -15,62 +17,87 @@ import Text.ParserCombinators.Parsec.Number
 
 type Parser a = Parsec String () a
 
-type Label = String
-
-type Solution = [(Label, Value)]
-
 data Output
-  = Sat [Solution] Solution
-    -- ^ @[Solution]@ contains all solutions,
-    -- @Solution@ is the optimal solution if it exists.
+  = Sat [Solution]
+    -- ^ @[Solution]@ contains all reported solutions,
   | Unsat String
     -- ^ The unsat message.
   | ParseErr String
     -- ^ Parsec error message.
-  deriving (Show, Eq)
+  deriving Eq
 
+-- | Show instance to match the parsing.
+--
+-- show . par == id
+instance Show Output where
+  show = \case
+    Sat sols -> concatMap show sols
+    Unsat msg -> msg
+    ParseErr msg -> msg
+
+-- | A solution with variables and their value assignments.
+data Solution
+  = Sol [(String, Value)]
+    -- ^ Non-optimal solution
+  | OptSol [(String, Value)]
+    -- ^ Optimal solution
+  deriving Eq
+
+instance Show Solution where
+  show = \case
+      Sol vars -> showVars vars
+      OptSol vars -> showVars vars ++ "==========\n"
+    where
+      showVars vs = unlines $ map showVar vs ++ ["----------"]
+      showVar (lbl, val) = lbl ++ " : " ++ show val
+
+-- | Currently supported MiniZinc data types.
 data Value
   = B Bool
-  | I Int
+  | N Int
   | D Double
-  deriving (Show, Eq)
 
-(>>|) :: Monad m => m a -> b -> m b
-a >>| b = a >> return b
+-- | Eq instance allow for some rounding errors between parsing and showing.
+--
+-- @eps = 1e-13@
+instance Eq Value where
+  B b1 == B b2 = b1 == b2
+  N n1 == N n2 = n1 == n2
+  D d1 == D d2 = let eps = 1e-13 in abs (d1 -d2) < eps
+  _ == _ = False
 
--- | Parse @----------@
-dash :: Parser ()
-dash = string "----------" >>| ()
-
--- | Parse @==========@
-equs :: Parser ()
-equs = string "==========" >>| ()
-
--- | Parse a decimal number, e.g. @-0.2@, @1e10@ or @1.11@.
-signedDouble :: Parser Double
-signedDouble = sign <*> floating
+-- | Show a parsed value.
+instance Show Value where
+  show = \case
+    B b -> if b then "true" else "false"
+    N n -> show n
+    D d -> show d
 
 -- | Parse a boolean @true@ or @false@.
-bool :: Parser Bool
-bool = (string "true" >>| True) <|> (string "false" >>| False)
+bool :: Parser Value
+bool = B <$> try (true <|> false)
+  where
+    true = True <$ string "true"
+    false = False <$ string "false"
 
--- | Parse boolean, integer or decimal output value.
-value :: Parser Value
-value = D <$> try signedDouble <|> I <$> try int <|> B <$> try bool
+-- | Parse a signed integer.
+integ :: Parser Value
+integ = N <$> try int
 
--- | Parse a label up to " : ".
--- Also consumes the " : " on successful parse.
-lbl :: Parser Label
-lbl = manyTill (alphaNum <|> space) (try (string " : "))
+-- | Parse a signed decimal value.
+sigDbl :: Parser Value
+sigDbl = D <$> try (sign <*> floating)
 
--- | Parse a line with label and its value.
-var :: Parser (Label, Value)
+-- | Parse a line with a label and its value.
+var :: Parser (String, Value)
 var = do
-  l <- lbl
-  v <- value
+  l <- manyTill (alphaNum <|> char ' ') (try (string " : "))
+  v <- sigDbl <|> integ <|> bool
   return (l, v)
 
 -- | Parse a solution.
+--
+-- Parsing
 --
 -- @
 -- a : 3
@@ -80,9 +107,13 @@ var = do
 --
 -- results in
 --
--- > [("a", I 3), ("b", B True)]
-solution :: Parser [(Label, Value)]
-solution = var `sepEndBy1` spaces <* dash
+-- > Sat [Sol [("a", N 3), ("b", B True)]]
+solution :: Parser Solution
+solution = do
+  vars <- var `sepEndBy1` newline
+  string "----------\n"
+  sol <- option Sol (OptSol <$ string "==========\n")
+  return $ sol vars
 
 -- | Top level parser.
 --
@@ -101,33 +132,33 @@ solution = var `sepEndBy1` spaces <* dash
 -- results in
 --
 -- @
--- Sat [ [("a", B True), ("b", I 1)]
---     , [("a", B False), ("b", I 2)] ] -- All solutions.
---     [("a", B False), ("b", I 2)]     -- Optimal solution.
+-- Sat [ Sol [("a", B True), ("b", N 1)]
+--     , OptSol [("a", B False), ("b", N 2)]
+--     ]
 -- @
 output :: Parser Output
-output = try sat <|> unsat
+output = try sat <|> unsat <|> parseErr
   where
-    sat = do
-      sols <- solution `sepEndBy1` spaces
-      optimal <- option [] (spaces >> equs >>| last sols)
-      return $ Sat sols optimal
+    sat = Sat <$> many1 solution
     unsat = Unsat <$> manyTill anyToken eof
+    parseErr = undefined
 
 -- | Run the top level parser.
 --
 -- @Parsec@ parse errors are wrapped in @ParseErr@.
 par :: String -> Output
 par s = case parse output "" s of
-          Left err -> ParseErr $ show err
-          Right out -> out
+  Left err -> ParseErr $ show err
+  Right out -> out
 
 -- | Extracts the labels printed in the solutions.
 --
 -- Only looks at the first solution.
-lbls :: Output -> [Label]
-lbls (Sat (x:_) _) = map fst x
-lbls _ = []
+lbls :: Output -> [String]
+lbls = \case
+  Sat (Sol vars:_) -> map fst vars
+  Sat (OptSol vars:_) -> map fst vars
+  _ -> []
 
 type Args = String
 
