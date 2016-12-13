@@ -20,16 +20,17 @@ instance Arbitrary Value where
   arbitrary = oneof [B <$> arbitrary, I <$> arbitrary, D <$> arbitrary]
 
 instance Arbitrary Output where
-  arbitrary = frequency [(10, sat), (1, unsat), (1, err)]
+  arbitrary = frequency [(10, sat), (1, unsat)]
     where
-      sat = Sat <$> listOf1 sol <*> frequency [(1, sol), (5, return [])]
       sol = listOf1 var
+      str = listOf1 $ elements (['a'..'z'] ++ ['A'..'Z'] ++ "   ")
       var = do
-        lbl <- listOf1 $ elements (['a'..'z'] ++ ['A'..'Z'] ++ "   ")
+        lbl <- str
         v <- arbitrary
         return (lbl, v)
-      unsat = Unsat <$> arbitrary
-      err = ParseErr <$> arbitrary
+      sat = Sat <$> listOf1 sol <*> frequency [(1, sol), (5, return [])]
+      unsat = Unsat <$> str
+      -- err = ParseErr <$> str -- Can't parse parse errors
 
 ---- Unit tests ----------------------------------------------------------------
 
