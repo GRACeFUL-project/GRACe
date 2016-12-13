@@ -28,7 +28,10 @@ instance Arbitrary Output where
         lbl <- str
         v <- arbitrary
         return (lbl, v)
-      sat = Sat <$> listOf1 sol <*> frequency [(1, sol), (5, return [])]
+      sat = do
+        sols <- listOf1 sol
+        optSol <- frequency [(1, return (last sols)), (5, return [])]
+        return $ Sat sols optSol
       unsat = Unsat <$> str
       -- err = ParseErr <$> str -- Can't parse parse errors
 
