@@ -13,8 +13,8 @@ Patrik has provided an [install script](doc/INSTALL.md) for Linux.
 
 ### macOS
 
-1. Download and install the complete MiniZinc distribution from 
-  [the MiniZinc page](http://www.minizinc.org/index.html). 
+1. Download and install the complete MiniZinc distribution from
+  [the MiniZinc page](http://www.minizinc.org/index.html).
 2. The MiniZinc binaries will now be located under
   `/Applications/MiniZincIDE.app/Contents/Resources`. Add this directory to your
   path, like so:
@@ -48,3 +48,36 @@ stack build
 stack exec GenericLibrary
 ```
 
+Copy executables to `~/.local/bin` (put them on PATH) with
+
+```shell
+stack install
+```
+
+The executables will then be available from the command line. For example
+
+```shell
+example
+```
+
+### Testing using stack
+
+Run entire test suite with
+
+```shell
+stack test
+```
+
+Load test modules in ghci by
+
+```shell
+stack ghci GenericLibrary:test:test
+```
+
+Run test suite for a single module with
+
+```shell
+stack runghc test/TestModule.hs
+```
+
+This assumes there is a main function in TestModule.hs.
