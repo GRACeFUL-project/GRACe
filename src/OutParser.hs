@@ -49,7 +49,15 @@ data Value
   = B Bool
   | I Int
   | D Double
-  deriving Eq
+
+-- | Eq instance allow for some rounding errors between parsing and showing.
+--
+-- @eps = 1e-12@
+instance Eq Value where
+  B b1 == B b2 = b1 == b2
+  I n1 == I n2 = n1 == n2
+  D d1 == D d2 = let eps = 1e-13 in abs (d1 -d2) < eps
+  _ == _ = False
 
 -- | Show a parsed value.
 instance Show Value where
