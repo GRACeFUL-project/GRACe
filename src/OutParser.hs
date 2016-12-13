@@ -92,7 +92,7 @@ sigDbl = D <$> try (sign <*> floating)
 var :: Parser (String, Value)
 var = do
   l <- manyTill (alphaNum <|> char ' ') (try (string " : "))
-  v <- bool <|> integ <|> sigDbl
+  v <- sigDbl <|> integ <|> bool
   return (l, v)
 
 -- | Parse a solution.
@@ -111,8 +111,8 @@ var = do
 solution :: Parser Solution
 solution = do
   vars <- var `sepEndBy1` newline
-  string "----------"
-  sol <- option Sol (OptSol <$ string "==========")
+  string "----------\n"
+  sol <- option Sol (OptSol <$ string "==========\n")
   return $ sol vars
 
 -- | Top level parser.
@@ -139,7 +139,7 @@ solution = do
 output :: Parser Output
 output = try sat <|> unsat <|> parseErr
   where
-    sat = Sat <$> solution `sepEndBy1` newline
+    sat = Sat <$> many1 solution
     unsat = Unsat <$> manyTill anyToken eof
     parseErr = undefined
 
