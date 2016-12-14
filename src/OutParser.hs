@@ -37,16 +37,13 @@ instance Show Output where
 
 -- | A solution with variables and their value assignments.
 data Solution
-  = Sol [(String, Value)]
-    -- ^ Non-optimal solution
-  | OptSol [(String, Value)]
-    -- ^ Optimal solution
+  = Sol [(String, Value)] Bool
+    -- ^ Bool true if solution is optimal
   deriving Eq
 
 instance Show Solution where
   show = \case
-      Sol vars -> showVars vars
-      OptSol vars -> showVars vars ++ "==========\n"
+      Sol vars opt -> showVars vars ++ if opt then "==========\n" else ""
     where
       showVars vs = unlines $ map showVar vs ++ ["----------"]
       showVar (lbl, val) = lbl ++ " : " ++ show val
@@ -112,8 +109,8 @@ solution :: Parser Solution
 solution = do
   vars <- var `sepEndBy1` newline
   string "----------\n"
-  sol <- option Sol (OptSol <$ string "==========\n")
-  return $ sol vars
+  opt <- option False (True <$ string "==========\n")
+  return $ Sol vars opt
 
 -- | Top level parser.
 --
@@ -156,8 +153,7 @@ par s = case parse output "" s of
 -- Only looks at the first solution.
 lbls :: Output -> [String]
 lbls = \case
-  Sat (Sol vars:_) -> map fst vars
-  Sat (OptSol vars:_) -> map fst vars
+  Sat (Sol vars _:_) -> map fst vars
   _ -> []
 
 type Args = String

@@ -2,7 +2,7 @@ module SmallExample where
 
 import Compile0
 import GL
-import GCMP
+import TestFW.GCMP
 import qualified Test.QuickCheck as QC
 
 -- A source of rain
@@ -77,7 +77,7 @@ prop_pump :: GCMP ()
 prop_pump =
     do
         k <- forall (fmap abs QC.arbitrary)
-        
+
         (pmp, cap) <- liftGCM $ pump k
 
         {-
@@ -88,4 +88,4 @@ prop_pump =
                     output pmp "pmp"
         -}
 
-        property $ val pmp .<= lit k 
+        property $ val pmp .<= lit k
