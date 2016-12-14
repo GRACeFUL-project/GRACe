@@ -29,16 +29,18 @@ instance Arbitrary Value where
     D d -> [D 0]
 
 instance Arbitrary Solution where
-  arbitrary = frequency [(5, Sol <$> sol), (1, OptSol <$> sol)]
+  arbitrary = sol
     where
-      sol = take 5 <$> listOf1 var
+      sol = do
+        vars <- take 5 <$> listOf1 var
+        b <- frequency [(5, return False), (1, return True)]
+        return $ Sol vars b
       var = do
         lbl <- listOf1 $ elements (['a'..'z'] ++ ['A'..'Z'] ++ "     ")
         v <- arbitrary
         return (take 35 lbl, v)
   shrink = \case
-      Sol vars -> Sol <$> shrink vars
-      OptSol vars -> OptSol <$> shrink vars
+      Sol vars b -> Sol <$> shrink vars <*> pure b
 
 instance Arbitrary Output where
   arbitrary = Sat . take 5 <$> listOf1 arbitrary
@@ -69,7 +71,7 @@ unit_single = expected @=? actual
       , "b : 1"
       , "----------"
       ]
-    expected = Sat [Sol [("a", N 1), ("b", N 1)]]
+    expected = Sat [Sol [("a", N 1), ("b", N 1)] False]
     actual = par out
 
 -- | Test parsing a single optimal result.
@@ -82,7 +84,7 @@ unit_single_opt = expected @=? actual
       , "----------"
       , "=========="
       ]
-    expected = Sat [OptSol [("a",N 10),("b",N 10)]]
+    expected = Sat [Sol [("a",N 10),("b",N 10)] True]
     actual = par out
 
 -- | Test parsing multiple sub-optimal results.
@@ -101,9 +103,9 @@ unit_multiple = expected @=? actual
       , "----------"
       ]
     expected = Sat
-      [ Sol [("a",N 1),("b",N 1)]
-      , Sol [("a",N 2),("b",N 2)]
-      , Sol [("a",N 3),("b",N 3)]
+      [ Sol [("a",N 1),("b",N 1)] False
+      , Sol [("a",N 2),("b",N 2)] False
+      , Sol [("a",N 3),("b",N 3)] False
       ]
     actual = par out
 
@@ -124,9 +126,9 @@ unit_multiple_opt = expected @=? actual
       , "=========="
       ]
     expected = Sat
-      [ Sol [("a",N 1), ("b",N 1)]
-      , Sol [("a",N 2), ("b",N 2)]
-      , OptSol [("a",N 3), ("b",N 3)]
+      [ Sol [("a",N 1), ("b",N 1)] False
+      , Sol [("a",N 2), ("b",N 2)] False
+      , Sol [("a",N 3), ("b",N 3)] True
       ]
     actual = par out
 
@@ -143,13 +145,13 @@ unit_many = expected @=? actual
       , "a : 10\nb : 3\nf : 13\ng : true\n----------\n=========="
       ]
     expected = Sat
-      [ Sol [("a", N 10),("b", N 3),("f", N 4),("g", B True)]
-      , Sol [("a", N 10),("b", N 3),("f", N 5),("g", B True)]
-      , Sol [("a", N 10),("b", N 3),("f", N 6),("g", B True)]
-      , Sol [("a", N 10),("b", N 3),("f", N 7),("g", B True)]
-      , Sol [("a", N 10),("b", N 3),("f", N 8),("g", B True)]
-      , Sol [("a", N 10),("b", N 3),("f", N 9),("g", B True)]
-      , OptSol [("a", N 10),("b", N 3),("f", N 13),("g", B True)]
+      [ Sol [("a", N 10),("b", N 3),("f", N 4),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 5),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 6),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 7),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 8),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 9),("g", B True)] False
+      , Sol [("a", N 10),("b", N 3),("f", N 13),("g", B True)] True
       ]
     actual = par out
 
