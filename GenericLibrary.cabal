@@ -16,12 +16,12 @@ cabal-version:       >=1.10
 library
   exposed-modules:
     GL,
-    GCMP,
+    TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
     Compile0
   other-modules:
-    GenT,
+    TestFW.GenT,
     Program
   other-extensions:
     GADTs,

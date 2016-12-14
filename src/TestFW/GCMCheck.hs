@@ -3,7 +3,7 @@ module TestFW.GCMCheck where
 import qualified Test.QuickCheck as QC
 
 import Compile0
-import GCMP
+import TestFW.GCMP
 import OutParser
 
 -- | GCM property run function
