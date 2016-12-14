@@ -81,3 +81,19 @@ stack runghc test/TestModule.hs
 ```
 
 This assumes there is a main function in TestModule.hs.
+
+### Generate project documentation
+
+Run haddock to generate project documentation
+
+```shell
+stack haddock --haddock-arguments --hyperlink-source
+```
+
+To open the documentation directly append `--open`.
+
+Find the path to the documentation by running
+
+```shell
+stack path --local-doc-root
+```
