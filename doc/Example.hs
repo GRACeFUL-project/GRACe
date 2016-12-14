@@ -32,7 +32,8 @@ assert :: CPExp Bool -> CP ()
 value  :: Port a -> CP (CPExp a)
 
 -- Actions
-act :: (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
+act :: (CPExp Int -> CPExp a -> CPExp a) 
+    -> Action a -> ActM ()
 
 -- GCM operations
 createPort   :: GCM (Port a)
