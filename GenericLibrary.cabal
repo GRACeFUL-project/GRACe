@@ -17,6 +17,7 @@ library
   exposed-modules:
     GL,
     GCMP,
+    TestFW.GCMCheck,
     OutParser,
     Compile0
   other-modules:
