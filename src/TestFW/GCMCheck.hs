@@ -13,7 +13,11 @@ import OutParser
 -- Runs the property 100 times and prints the first fail if any.
 check :: GCMP a -> IO ()
 check prop = do
-  results <- replicateM 100 (checkOnce prop)
+  results <- sequence [do
+                        putStr $ "\r      \r"++show (100 - i)
+                        checkOnce prop
+                      | i <- [0..99]]
+  putStr "\r"
   case msum results of
     Just sol -> putStrLn (show sol) >> putStrLn "----- Test failed! -----"
     Nothing -> putStrLn "+++++ Test passed! +++++"
