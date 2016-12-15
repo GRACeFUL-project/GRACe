@@ -31,24 +31,26 @@ pump c =
         return (Pump iflow oflow cap)
 
 -- A storage with a fixed capacity and a pump
-storage :: Int -> GCM (Port Int, Port Int, Port Int)
+storage :: Int -> GCM (Port Int, Port Int, Port Int, Param Int)
 storage c =
     do
         inflow   <- createPort
         outlet   <- createPort
         overflow <- createPort
+        storageC <- createParam c
         currentV <- createPort
         output currentV "current value"
         component $ do
                       inf <- value inflow
                       out <- value outlet
                       ovf <- value overflow
+                      cap <- value storageC
                       val <- value currentV
                       assert $ inf - out - ovf === val
-                      assert $ val `inRange` (0, lit c)
-                      assert $ (ovf .> 0) ==> (val === lit c)
+                      assert $ val `inRange` (0, cap)
+                      assert $ (ovf .> 0) ==> (val === cap)
                       assert $ ovf .>= 0
-        return (inflow, outlet, overflow)
+        return (inflow, outlet, overflow, storageC)
 
 -- | Increases pump capacity by doubling.
 increaseCap :: Param Int -> GCM (Action Int)
@@ -61,13 +63,14 @@ example =
       -- Instantiate components
       r <- rain 10
       pmp <- pump 2
-      (inf, out, ovf) <- storage 4
+      (inf, out, ovf, cap) <- storage 4
 
       -- Create an action
-      a  <- increaseCap (capacity pmp)
-      a' <- taken a
+      pumpAction  <- increaseCap (capacity pmp)
+      pumpAction' <- taken pumpAction
 
-      set a' 4
+      storageAction  <- increaseCap cap 
+      storageAction' <- taken storageAction
 
       -- Link ports
       link inf r
@@ -77,14 +80,12 @@ example =
       g <- createGoal
       fun (\overflow -> 100 * (negate overflow)) ovf g
 
-      --g' <- createGoal
-      --fun negate a' g'
-
       -- Output the solution
-      output (inflow pmp) "pump operation"
-      output a' "pump increased"
-      output ovf "overflow"
-      output inf "inflow"
+      output (inflow pmp)   "pump operation"
+      output pumpAction'    "pump increased"
+      output storageAction' "storage increased"
+      output ovf            "overflow"
+      output inf            "inflow"
 
 prop_pump :: GCMP ()
 prop_pump =
