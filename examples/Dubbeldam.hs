@@ -17,17 +17,11 @@ type Damage   = Int
 
 --  TODO: Docs
 increaseStorage :: Param Volume -> GCM (Action Volume)
-increaseStorage vol = do
-  a <- createAction vol
-  action $ act (\a d -> d + a) a
-  return a
+increaseStorage vol = createAction (+) vol
 
 -- TODO: Docs
 increasePump :: Param Volume -> GCM (Action Volume)
-increasePump vol = do
-  a <- createAction vol
-  action $ act (\a d -> d + a) a
-  return a
+increasePump vol = createAction (+) vol
 
 -- * Components
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

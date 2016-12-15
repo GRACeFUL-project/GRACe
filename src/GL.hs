@@ -132,7 +132,7 @@ infix  4 ===
 a .|| b = nt (nt a .&& nt b)
 
 (==>) :: CPExp Bool -> CPExp Bool -> CPExp Bool
-a ==> b = nt (nt a) .&& b
+a ==> b = (nt a) .|| b
 
 (.>) :: (CPType a, Ord a) => CPExp a -> CPExp a -> CPExp Bool
 a .> b = b .< a
@@ -186,8 +186,11 @@ output :: (CPType a, Show a) => Port a -> String -> GCM ()
 output p = Instr . Output p
 
 -- | Instantiate a action in the `GCM` monad.
-createAction :: CPType a => Param a -> GCM (Action a)
-createAction = Instr . CreateAction 
+createAction :: CPType a => (CPExp Int -> CPExp a -> CPExp a) -> Param a -> GCM (Action a)
+createAction foo p = do
+  a <- Instr (CreateAction p)
+  action $ act foo a
+  return a
 
 -- | Instantiate a port in the `GCM` monad.
 createPort :: CPType a => GCM (Port a)

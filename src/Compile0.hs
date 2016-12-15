@@ -108,7 +108,7 @@ translateGCMCommand = \case
         modify $ \st -> st { nextVarId    = vid + 1
                            , expressions  = exp : exp2 : expressions st
                            , declarations = dec : declarations st
-                           , unconParams  = S.delete vid (unconParams st)
+                           , unconParams  = S.delete j (unconParams st)
                            }
         return $ Action vid p
     Component cp -> do
