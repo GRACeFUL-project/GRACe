@@ -26,7 +26,7 @@ increasePump vol = createAction (+) vol
 -- * Components
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- | @'rainfall' s@ creates a rainfaill event, parametrized on a measure of
+-- | @'rainfall' s@ creates a rainfall event, parametrized on a measure of
 -- rainfall.
 rainfall :: Volume -> GCM (Port Volume)
 rainfall s = do
@@ -66,7 +66,7 @@ storage c = do
   outlet     <- createPort
   overflow   <- createPort
   storageCap <- createParam c
-  
+
   component $ do
     inf <- value inflow
     pmp <- value outlet
@@ -75,8 +75,8 @@ storage c = do
     assert $ ovf === max' 0 (inf - pmp - c)
     let sumFlow = ovf + pmp
     assert $ inf `inRange` (sumFlow, sumFlow + c)
- 
-  return Storage {..} 
+
+  return Storage {..}
 
 -- | 'flooding' corresponds to the flooding node in the pocket case. If there is
 -- overflow (i.e. something on the incoming port), then there is flooding.
@@ -88,8 +88,8 @@ flooding = do
   fun (.>0) flooding runOff
 
   return (flooding, runOff)
-  
--- | This is essentially the beige blob in the Dubbeldam pocket-case. 
+
+-- | This is essentially the beige blob in the Dubbeldam pocket-case.
 --
 -- TODO: Document.
 runOffArea :: Volume -> GCM Storage
@@ -137,7 +137,7 @@ restrict a bs = do
   component $ do
     l <- value level
     assert $ foldl (.||) (lit True) [ l === lit b | b <- bs ]
-  
+
 -- * Composition
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -185,4 +185,3 @@ dubbeldam = do
 
 main :: IO ()
 main = runGCM dubbeldam
-
