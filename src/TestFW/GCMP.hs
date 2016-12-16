@@ -30,3 +30,5 @@ property expr =
 
 makeGenerator :: GCMP a -> QC.Gen (GCM a)
 makeGenerator gcmp = runGenT $ S.evalStateT gcmp 0
+
+-- --------------------------------------------------------------
