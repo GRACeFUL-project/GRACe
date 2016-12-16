@@ -57,12 +57,15 @@ storage c =
 increaseCap :: Param Int -> GCM (Action Int)
 increaseCap p = createAction (+) p
 
+type Flow = Int
+
 floodingOfSquare :: GCM (Port Flow, Port Bool)
 floodingOfSquare = do
   flow <- createPort
   isFlooded <- createPort
   
   fun (.>0) flow isFlooded
+  return (flow, isFlooded)
 
 -- Small example
 example :: GCM ()

@@ -5,6 +5,7 @@ module Compile0 where
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 import Data.Char
+import Data.List
 import System.Process
 import qualified Data.Set as S
 
@@ -70,7 +71,7 @@ translateGCMCommand :: GCMCommand a -> IntermMonad a
 translateGCMCommand = \case
     Output p s -> do
         let i = portID p
-        modify $ \st -> st { outputs = outputs st ++ [s ++ " : \\(v" ++ show i ++ ")\\n"]}
+        modify $ \st -> st { outputs = outputs st ++ ["\\\"" ++ s ++ "\\\"" ++ " : \\(v" ++ show i ++ ")"]}
     CreatePort proxy -> do
         vid <- gets nextVarId
         let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
@@ -125,6 +126,11 @@ compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0 
         makeGoals [] = "\nsolve satisfy;"
         makeGoals gls = "\nsolve maximize ("++ foldl (\s gid -> s++"+v"++ show gid) "0" gls ++ ");"
         stateToString (CompilationState outs exprs declrs goals _ uncon) =
-          unlines [unlines declrs, unlines exprs] ++ (makeUncon (S.toList uncon)) ++ makeGoals goals ++ "\noutput [\""++ concat outs ++"\"];"
+          unlines [unlines declrs, unlines exprs]
+          ++ (makeUncon (S.toList uncon))
+          ++ makeGoals goals
+          ++ "\noutput [\"{"
+          ++(intercalate ",\\n" outs)
+          ++ "}\"];"
         makeUncon [] = ""
         makeUncon (i:uncons) = "constraint (not a"++show i++");\n" ++ (makeUncon uncons)

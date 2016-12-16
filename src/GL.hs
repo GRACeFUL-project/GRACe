@@ -95,9 +95,6 @@ assert = Instr . Assert
 (===) :: (CPType a) => CPExp a -> CPExp a -> CPExp Bool
 (===) = Equal
 
-(/==) :: (CPType a) => CPExp a -> CPExp a -> CPExp Bool
-a /== b = nt (a === b)
-
 (.&&) :: CPExp Bool -> CPExp Bool -> CPExp Bool
 (.&&) = And
 
