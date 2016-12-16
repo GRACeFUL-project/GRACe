@@ -1,5 +1,6 @@
 module SmallExample where
 
+import TestFW.GCMCheck
 import Compile0
 import GL
 import TestFW.GCMP
@@ -94,12 +95,4 @@ prop_pump =
 
         pmp <- liftGCM $ pump k
 
-        {-
-        liftGCM $ do
-                    p <- createPort
-                    set p k
-                    output p "k"
-                    output pmp "pmp"
-        -}
-
-        property $ val (inflow pmp) .<= lit k
+        property $ val (inflow pmp) .< lit k

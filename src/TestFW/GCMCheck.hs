@@ -27,6 +27,7 @@ checkOnce :: GCMP a -> IO (Maybe Solution)
 checkOnce prop = do
   prg <- QC.generate $ makeGenerator prop
   out <- runDef $ compileGCM prg
+  print out
   return $ case out of
     Sat sols -> msum $ map verify sols
     _ -> Nothing
