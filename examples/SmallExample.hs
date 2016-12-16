@@ -57,6 +57,13 @@ storage c =
 increaseCap :: Param Int -> GCM (Action Int)
 increaseCap p = createAction (+) p
 
+floodingOfSquare :: GCM (Port Flow, Port Bool)
+floodingOfSquare = do
+  flow <- createPort
+  isFlooded <- createPort
+  
+  fun (.>0) flow isFlooded
+
 -- Small example
 example :: GCM ()
 example =
@@ -65,6 +72,7 @@ example =
       r <- rain 10
       pmp <- pump 2
       (inf, out, ovf, cap) <- storage 4
+      (floodFlow, isFlooded) <- floodingOfSquare
 
       -- Create an action
       pumpAction  <- increaseCap (capacity pmp)
@@ -76,6 +84,7 @@ example =
       -- Link ports
       link inf r
       link (inflow pmp) out 
+      link ovf floodFlow
 
       -- Minimise overflow
       g <- createGoal
@@ -87,6 +96,7 @@ example =
       output storageAction' "storage increased"
       output ovf            "overflow"
       output inf            "inflow"
+      output isFlooded      "is flooded"
 
 prop_pump :: GCMP ()
 prop_pump =

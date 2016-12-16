@@ -95,6 +95,9 @@ assert = Instr . Assert
 (===) :: (CPType a) => CPExp a -> CPExp a -> CPExp Bool
 (===) = Equal
 
+(/==) :: (CPType a) => CPExp a -> CPExp a -> CPExp Bool
+a /== b = nt (a === b)
+
 (.&&) :: CPExp Bool -> CPExp Bool -> CPExp Bool
 (.&&) = And
 
@@ -259,8 +262,7 @@ set p a = component $ do
 -- | TODO: Nice, but unused.
 foldGCM :: (CPType a, CPType b) 
         => Int 
-        -> (CPExp b 
-        -> CPExp a -> CPExp b) 
+        -> (CPExp b -> CPExp a -> CPExp b) 
         -> CPExp b 
         -> GCM ([Port a], Port b)
 foldGCM i f v = do
