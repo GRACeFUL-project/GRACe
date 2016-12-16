@@ -15,7 +15,7 @@ import GL
 runGCM :: GCM a -> IO ()
 runGCM gcm = do
     writeFile "model.mzn" (compileGCM gcm)
-    callCommand "mzn-gecode -p 4 -n 10 model.mzn"
+    callCommand "mzn-gecode --soln-sep \",\" --search-complete-msg \"\" -p 4 -n 10 model.mzn"
     callCommand "rm model.mzn"
 
 -- Compilation
