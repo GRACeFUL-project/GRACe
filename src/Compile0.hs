@@ -33,11 +33,15 @@ data CompilationState = CompilationState
 
 type IntermMonad = State CompilationState
 
+unsafeHack "False" = "0"
+unsafeHack "True"  = "1"
+unsafeHack s       = s
+
 -- | Pretty-printer for `CPExp` expressions.
 compileCPExp :: CPType a => CPExp a -> String
 compileCPExp = \case
     ValueOf p  -> "v" ++ show (portID p)
-    Lit l      -> map toLower $ show l
+    Lit l      -> unsafeHack (show l)
     Equal a b  -> comp2paren a " == " b
     LeThan a b -> comp2paren a " < "  b
     LtEq a b   -> comp2paren a " <= " b
