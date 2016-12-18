@@ -8,36 +8,36 @@ import qualified Test.QuickCheck as QC
 
 -- A source of rain
 rain :: Int -> GCM (Port Int)
-rain s =
-    do
-      p <- createPort
-      set p s
-      return p
+rain s = do
+  p <- createPort
+  set p s
+  return p
 
 data Pump = Pump {inflow :: Port Int, outflow :: Port Int, capacity :: Param Int}
 
--- A pump with a fixed capacity
+-- A pump with a initial capacity c
 pump :: Int -> GCM Pump
 pump c = do
   iflow <- createPort
   oflow <- createPort
   cap  <- createParam c
   component $ do
-                ifl <- value iflow
-                ofl <- value oflow
-                c <- value cap
-                assert $ ifl `inRange` (0, c)
-                assert $ ofl === ifl
+    ifl <- value iflow
+    ofl <- value oflow
+    c <- value cap
+    assert $ ifl `inRange` (0, c)
+    assert $ ofl === ifl
   return (Pump iflow oflow cap)
 
--- A storage with a fixed capacity and a pump
+-- A storage with a initial capacity c (and a pump?)
+--   returns (inflow, outlet, overflow, storageC)
 storage :: Int -> GCM (Port Int, Port Int, Port Int, Param Int)
 storage c = do
   inflow   <- createPort
   outlet   <- createPort
   overflow <- createPort
   storageC <- createParam c
-  currentV <- createPort
+  currentV <- createPort -- Note: internal (not exported)
   output currentV "storage contents"
   component $ do
     inf <- value inflow
@@ -45,7 +45,7 @@ storage c = do
     ovf <- value overflow
     cap <- value storageC
     val <- value currentV
-    assert $ inf - out - ovf === val
+    assert $ val === inf - out - ovf
     assert $ val `inRange` (0, cap)
     assert $ (ovf .> 0) ==> (val === cap)
     assert $ ovf .>= 0
@@ -53,7 +53,7 @@ storage c = do
 
 type Cost = Int
 
--- | Increases pump capacity by doubling.
+-- | Increases pump capacity by p with |cost = costFunction (act. level)|.
 increaseCap :: Param Int -> (CPExp Int -> CPExp Cost) -> GCM (Action Int, Port Cost)
 increaseCap p costFunction = do
   a        <- createAction (+) p
@@ -70,7 +70,7 @@ floodingOfSquare :: GCM (Port Flow, Port Bool)
 floodingOfSquare = do
   flow <- createPort
   isFlooded <- createPort
-  
+
   fun (.> 0) flow isFlooded
   return (flow, isFlooded)
 
@@ -103,7 +103,7 @@ example = do
 
   -- Link ports
   link inf r
-  link (inflow pmp) out 
+  link (inflow pmp) out
   link ovf floodFlow
 
   -- We don't want flooding
