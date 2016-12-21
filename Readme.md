@@ -4,8 +4,17 @@ A DSL for GRACeFUL components.
 
 ## Installing
 
-`GenericLibrary` requires MiniZinc. We provide installation instructions for
-Linux and macOS.
+In order to use `GenericLibrary`, the following software dependencies must be
+met: 
+
+* [The MiniZinc distribution](http://www.minizinc.org/index.html)
+* [GHC](https://www.haskell.org/downloads)
+
+To ensure that software dependencies are exactly met, we recommend that you use
+`stack`. `stack` handles the entire toolchain (including GHC), library 
+dependencies, building and executing. Instructions for installing `stack` on 
+macOS, Linux and Windows can be found 
+[here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
 
 ### Linux
 
