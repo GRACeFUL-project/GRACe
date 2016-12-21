@@ -4,14 +4,23 @@ A DSL for GRACeFUL components.
 
 ## Installing
 
-`GenericLibrary` requires MiniZinc. We provide installation instructions for
-Linux and macOS.
+In order to use `GenericLibrary`, the following software dependencies must be
+met: 
 
-### Linux
+* [The MiniZinc distribution](http://www.minizinc.org/index.html)
+* [GHC](https://www.haskell.org/downloads)
+
+To ensure that library dependencies are exactly met, we recommend that you use
+`stack`. `stack` handles the entire toolchain (including GHC), library 
+dependencies, building and executing. Instructions for installing `stack` on 
+macOS, Linux and Windows can be found 
+[here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
+
+### Installing MiniZinc: Linux
 
 Patrik has provided an [install script](doc/INSTALL.md) for Linux.
 
-### macOS
+### Installing MiniZinc: macOS
 
 1. Download and install the complete MiniZinc distribution from
   [the MiniZinc page](http://www.minizinc.org/index.html).
@@ -19,8 +28,8 @@ Patrik has provided an [install script](doc/INSTALL.md) for Linux.
   `/Applications/MiniZincIDE.app/Contents/Resources`. Add this directory to your
   path, like so:
 
-      export PATH='$PATH:/Applications/MiniZincIDE.app/Contents/Resources'
-
+      export PATH="$PATH:/Applications/MiniZincIDE.app/Contents/Resources"
+      
 ## Running a constraint program
 
 ### Using sandboxes
