@@ -16,11 +16,11 @@ dependencies, building and executing. Instructions for installing `stack` on
 macOS, Linux and Windows can be found 
 [here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
 
-### Linux
+### Installing MiniZinc: Linux
 
 Patrik has provided an [install script](doc/INSTALL.md) for Linux.
 
-### macOS
+### Installing MiniZinc: macOS
 
 1. Download and install the complete MiniZinc distribution from
   [the MiniZinc page](http://www.minizinc.org/index.html).
