@@ -10,7 +10,7 @@ met:
 * [The MiniZinc distribution](http://www.minizinc.org/index.html)
 * [GHC](https://www.haskell.org/downloads)
 
-To ensure that software dependencies are exactly met, we recommend that you use
+To ensure that library dependencies are exactly met, we recommend that you use
 `stack`. `stack` handles the entire toolchain (including GHC), library 
 dependencies, building and executing. Instructions for installing `stack` on 
 macOS, Linux and Windows can be found 
