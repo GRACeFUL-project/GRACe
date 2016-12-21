@@ -28,8 +28,8 @@ Patrik has provided an [install script](doc/INSTALL.md) for Linux.
   `/Applications/MiniZincIDE.app/Contents/Resources`. Add this directory to your
   path, like so:
 
-      export PATH='$PATH:/Applications/MiniZincIDE.app/Contents/Resources'
-
+      export PATH="$PATH:/Applications/MiniZincIDE.app/Contents/Resources"
+      
 ## Running a constraint program
 
 ### Using sandboxes
