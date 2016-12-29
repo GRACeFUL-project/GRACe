@@ -39,7 +39,7 @@ storage :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)
 storage k = do
                 inf <- createPort
                 ovf <- createPort
-                fun (\inflow -> max' 0 (inflow - lit k)) inf ovf
+                linkBy (\inflow -> max' 0 (inflow - lit k)) inf ovf
                 return (inf, ovf)
 
 -- Fill inputs in order

@@ -60,7 +60,7 @@ increaseCap p costFunction = do
   a'       <- taken a
   costPort <- createPort
 
-  fun costFunction a' costPort
+  linkBy costFunction a' costPort
 
   return (a, costPort)
 
@@ -71,18 +71,18 @@ floodingOfSquare = do
   flow <- createPort
   isFlooded <- createPort
 
-  fun (.> 0) flow isFlooded
+  linkBy (.> 0) flow isFlooded
   return (flow, isFlooded)
 
 minimize :: Port Int -> GCM ()
 minimize p = do
   g <- createGoal
-  fun negate p g
+  linkBy negate p g
 
 maximize :: Port Int -> GCM ()
 maximize p = do
   g <- createGoal
-  fun id p g
+  linkBy id p g
 
 -- Small example
 example :: GCM ()

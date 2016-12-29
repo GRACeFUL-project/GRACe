@@ -196,6 +196,10 @@ createAction foo p = do
 createPort :: CPType a => GCM (Port a)
 createPort = Instr (CreatePort Proxy)
 
+-- | Instantiate a variable in the `GCM` monad.
+createVariable :: CPType a => GCM (Variable a)
+createVariable = Instr (CreatePort Proxy)
+
 -- | Instantiate a goal in the `GCM` monad.
 createGoal :: GCM (Goal Int)
 createGoal = Instr CreateGoal
@@ -240,13 +244,13 @@ mutex a1 a2 = do
         v2 <- value p2
         assert $ nt ((v1 .> 0) .&& (v2 .> 0))
 
--- | @'fun' f a b@ documentation goes here.
-fun :: (CPType a, CPType b, IsPort pa, IsPort pb) 
+-- | @'linkBy' f a b@ documentation goes here.
+linkBy :: (CPType a, CPType b, IsPort pa, IsPort pb) 
     => (CPExp a -> CPExp b) 
     -> pa a 
     -> pb b 
     -> GCM ()
-fun f a b = component $ do
+linkBy f a b = component $ do
     i <- value a
     o <- value b
     assert $ o === f i
@@ -280,6 +284,9 @@ sumGCM i = foldGCM i (+) 0
 
 -- A port is just an address
 data Port a = Port Int
+
+-- A variable is just a port
+type Variable a = Port a
 
 -- | A parameter port is a port with a default value.
 -- TODO: Document.
