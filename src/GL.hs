@@ -56,12 +56,12 @@ data CPExp a where
   I2F     :: CPExp Int -> CPExp Float
   ForAll  :: ForAllMonad (CPExp Bool) -> CPExp Bool
 
-data ForAllInstructions a where
-  Range :: (CPType a, Ord a) => (a, a) -> ForAllInstructions a
+data ForAllCommand a where
+  Range :: (CPType a, Ord a) => (CPExp a, CPExp a) -> ForAllCommand (CPExp a)
 
-type ForAllMonad a = Program ForAllInstructions a
+type ForAllMonad a = Program ForAllCommand a
 
-(...) :: (CPType a, Ord a) => a -> a -> ForAllMonad a
+(...) :: (CPType a, Ord a) => CPExp a -> CPExp a -> ForAllMonad (CPExp a)
 x ... y = Instr $ Range (x, y)
 
 -- Not well defined (CPType much too general).

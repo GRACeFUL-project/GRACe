@@ -66,10 +66,23 @@ compileCPExp = \case
     I2F a      -> do
                     ac <- compileCPExp a
                     return $ "int2float" ++ paren ac
-    ForAll m   -> compileForAll m
+    ForAll m   -> do
+                    (bexpr, s) <- runWriterT (compileForAll m)
+                    bexprc     <- compileCPExp bexpr
+                    return $ foldr (\outer inner -> outer ++ "\n" ++ paren inner) bexprc s
 
-compileForAll :: ForAllMonad (CPExp Bool) -> CPIntermMonad String
-compileForAll m = undefined
+compileForAll :: ForAllMonad (CPExp Bool) -> WriterT [String] CPIntermMonad (CPExp Bool)
+compileForAll = interpret translateForAllCommand 
+
+translateForAllCommand :: ForAllCommand a -> WriterT [String] CPIntermMonad a
+translateForAllCommand (Range (low, high)) =
+  do
+    nvar <- lift get
+    lift $ put (nvar+1)
+    lows  <- lift $ compileCPExp low
+    highs <- lift $ compileCPExp high
+    tell ["forall(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
+    return $ ValueOf (Port nvar)
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> CPIntermMonad String
 comp2paren a op b = do
