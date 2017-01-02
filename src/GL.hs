@@ -18,42 +18,51 @@ data Proxy a = Proxy
 
 -- | Base types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPBaseType a where
-    typeDecBase :: Proxy a -> String -> String
+  typeDecBase :: Proxy a -> String -> String
 
 -- | Types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPType a where
-    typeDec :: Proxy a -> String -> String
+  typeDec :: Proxy a -> String -> String
 
 instance CPBaseType Int where 
-    -- We have to constraint integers to this range, because the solver is kind of dumb
-    typeDecBase = const (++ " -10000000..10000000")
+  -- We have to constraint integers to this range, because the solver is kind of dumb
+  typeDecBase = const (++ " -10000000..10000000")
 
 instance CPBaseType Float where
-    typeDecBase = const (++ " float")
+  typeDecBase = const (++ " float")
 
 instance CPBaseType Bool where
-    typeDecBase = const (++ " bool")
+  typeDecBase = const (++ " bool")
 
 instance (CPBaseType a, Show a, Eq a) => CPType a where
-    typeDec = typeDecBase
+  typeDec = typeDecBase
 
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
-    -- | This will require extra documentation.
-    ValueOf :: (CPType a, IsPort p)     => p a        -> CPExp a
-    Lit     :: CPType a                 => a          -> CPExp a
-    Equal   :: CPType a                 => CPExp a    -> CPExp a    -> CPExp Bool
-    LeThan  :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
-    LtEq    :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
-    Add     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
-    Mul     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
-    Sub     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
-    Max     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
-    Min     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
-    Not     ::                             CPExp Bool -> CPExp Bool
-    And     ::                             CPExp Bool -> CPExp Bool -> CPExp Bool
-    Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
-    I2F     :: CPExp Int -> CPExp Float
+  -- | This will require extra documentation.
+  ValueOf :: (CPType a, IsPort p)     => p a        -> CPExp a
+  Lit     :: CPType a                 => a          -> CPExp a
+  Equal   :: CPType a                 => CPExp a    -> CPExp a    -> CPExp Bool
+  LeThan  :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
+  LtEq    :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
+  Add     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+  Mul     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+  Sub     :: (CPType a, Num a)        => CPExp a    -> CPExp a    -> CPExp a
+  Max     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
+  Min     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
+  Not     ::                             CPExp Bool -> CPExp Bool
+  And     ::                             CPExp Bool -> CPExp Bool -> CPExp Bool
+  Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
+  I2F     :: CPExp Int -> CPExp Float
+  ForAll  :: ForAllMonad (CPExp Bool) -> CPExp Bool
+
+data ForAllInstructions a where
+  Range :: (CPType a, Ord a) => (a, a) -> ForAllInstructions a
+
+type ForAllMonad a = Program ForAllInstructions a
+
+(...) :: (CPType a, Ord a) => a -> a -> ForAllMonad a
+x ... y = Instr $ Range (x, y)
 
 -- Not well defined (CPType much too general).
 instance (Num a, CPType a) => Num (CPExp a) where
@@ -112,6 +121,9 @@ min' = Min
 
 i2f :: CPExp Int -> CPExp Float
 i2f = I2F
+
+forAll :: ForAllMonad (CPExp Bool) -> CPExp Bool
+forAll = ForAll
 
 -- | Unsure about if this is the best programming model for this
 value  :: (CPType a, IsPort p) => p a -> CP (CPExp a)
