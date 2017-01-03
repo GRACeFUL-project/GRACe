@@ -42,7 +42,7 @@ type VarName = Int
 type CPIntermMonad = State VarName
 
 -- | Pretty-printer for `CPExp` expressions.
-compileCPExp :: CPType a => CPExp a -> CPIntermMonad String
+compileCPExp :: CPExp a -> CPIntermMonad String
 compileCPExp = \case
     ValueOf p  -> return $ "v" ++ show (portID p)
     Lit l      -> return $ unsafeHack (show l)
@@ -70,6 +70,15 @@ compileCPExp = \case
                     (bexpr, s) <- runWriterT (compileForAll m)
                     bexprc     <- compileCPExp bexpr
                     return $ foldr (\outer inner -> outer ++ "\n" ++ paren inner) bexprc s
+    IdxA1D arr idx -> do
+      idxc <- compileCPExp idx
+      avar <- compileCPExp arr
+      return $ avar ++ "[" ++ idxc ++ "]"
+    IdxA2D arr idx -> do
+      idxcf <- compileCPExp (fst idx)
+      idxcs <- compileCPExp (snd idx)
+      avar  <- compileCPExp arr
+      return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
 
 compileForAll :: ForAllMonad (CPExp Bool) -> WriterT [String] CPIntermMonad (CPExp Bool)
 compileForAll = interpret translateForAllCommand 
@@ -151,13 +160,27 @@ translateGCMCommand = \case
                        }
     return $ Action vid p
   Component cp -> do
-    vid <- fmap nextVarId get 
+    vid <- gets nextVarId
     let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret translateCPCommands cp
     modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
   EmbedAction actm -> do
-    vid <- fmap nextVarId get 
+    vid <- gets nextVarId
     let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret translateActionCommands actm
     modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
+  CreateArray1D proxy len -> do
+    vid <- gets nextVarId
+    let dec = (typeDec proxy $ "array[0.." ++ show (len - 1) ++"] of var") ++ ": v" ++ show vid ++ ";"
+    modify $ \st -> st { nextVarId = vid + 1
+                       , declarations = dec : declarations st
+                       }
+    return $ Port vid
+  CreateArray2D proxy (i, j) -> do
+    vid <- gets nextVarId
+    let dec = (typeDec proxy $ "array[0.." ++ show (i - 1) ++ ",0.." ++ show (j - 1) ++ "] of var") ++ ": v" ++ show vid ++ ";"
+    modify $ \st -> st { nextVarId = vid + 1
+                       , declarations = dec : declarations st
+                       }
+    return $ Port vid
 
 -- Final compilation (this function is _very_ ugly!)
 compileGCM :: GCM a -> String

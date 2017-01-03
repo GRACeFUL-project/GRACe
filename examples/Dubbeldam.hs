@@ -130,7 +130,7 @@ pumpCapCost :: Action Volume -> GCM (Port Cost)
 pumpCapCost = storageCost
 
 -- | Restrict the space of possible actions.
-restrict :: CPBaseType a => Action a -> [Int] -> GCM ()
+restrict :: CPType a => Action a -> [Int] -> GCM ()
 restrict a bs = do
   level <- taken a
 

@@ -1,7 +1,10 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-} 
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-} 
+{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module GL where
 
@@ -16,31 +19,24 @@ import System.Process
 
 data Proxy a = Proxy
 
--- | Base types supported by the constraint programming runtime.
-class (Show a, Eq a) => CPBaseType a where
-  typeDecBase :: Proxy a -> String -> String
-
 -- | Types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPType a where
   typeDec :: Proxy a -> String -> String
 
-instance CPBaseType Int where 
+instance CPType Int where 
   -- We have to constraint integers to this range, because the solver is kind of dumb
-  typeDecBase = const (++ " -10000000..10000000")
+  typeDec = const (++ " -10000000..10000000")
 
-instance CPBaseType Float where
-  typeDecBase = const (++ " float")
+instance CPType Float where
+  typeDec = const (++ " float")
 
-instance CPBaseType Bool where
-  typeDecBase = const (++ " bool")
-
-instance (CPBaseType a, Show a, Eq a) => CPType a where
-  typeDec = typeDecBase
+instance CPType Bool where
+  typeDec = const (++ " bool")
 
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
   -- | This will require extra documentation.
-  ValueOf :: (CPType a, IsPort p)     => p a        -> CPExp a
+  ValueOf :: IsPort p                 => p a        -> CPExp a
   Lit     :: CPType a                 => a          -> CPExp a
   Equal   :: CPType a                 => CPExp a    -> CPExp a    -> CPExp Bool
   LeThan  :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
@@ -52,13 +48,41 @@ data CPExp a where
   Min     :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp a
   Not     ::                             CPExp Bool -> CPExp Bool
   And     ::                             CPExp Bool -> CPExp Bool -> CPExp Bool
-  Div     :: (Fractional a, CPType a) => CPExp a -> CPExp a -> CPExp a
-  I2F     :: CPExp Int -> CPExp Float
-  ForAll  :: ForAllMonad (CPExp Bool) -> CPExp Bool
+  Div     :: (Fractional a, CPType a) => CPExp a    -> CPExp a -> CPExp a
+  I2F     ::                             CPExp Int  -> CPExp Float
+  ForAll  ::                             ForAllMonad (CPExp Bool) -> CPExp Bool
+  IdxA1D  :: CPType a                 => CPExp (Array1D a) -> CPExp Int -> CPExp a
+  IdxA2D  :: CPType a                 => CPExp (Array2D a) -> (CPExp Int, CPExp Int) -> CPExp a
 
+-- | An array and how it is indexed
+class IsArray a idx | a -> idx where
+  type CPDomain idx :: *
+  indexArray  :: CPType x => CPExp (a x) -> CPDomain idx -> CPExp x
+  createArray :: CPType x => idx -> GCM (Variable (a x))
+
+-- | A 1D array is an Addr and a size
+data Array1D x
+
+-- | A 2D array is an Addr and a size
+data Array2D x
+
+-- | How to construct and access a 1D array
+instance IsArray Array1D Int where
+  type CPDomain Int = CPExp Int 
+  indexArray  = IdxA1D 
+  createArray = Instr . (CreateArray1D Proxy)
+
+-- | How to construct and access a 2D array
+instance IsArray Array2D (Int, Int) where
+  type CPDomain (Int, Int) = (CPExp Int, CPExp Int)
+  indexArray  = IdxA2D
+  createArray = Instr . (CreateArray2D Proxy)
+
+-- | Commands for things from which we can construct "forall ..." expressions
 data ForAllCommand a where
   Range :: (CPType a, Ord a) => (CPExp a, CPExp a) -> ForAllCommand (CPExp a)
 
+-- | A monad representing what goes on in a "forall ..." block
 type ForAllMonad a = Program ForAllCommand a
 
 (...) :: (CPType a, Ord a) => CPExp a -> CPExp a -> ForAllMonad (CPExp a)
@@ -107,6 +131,9 @@ assert = Instr . Assert
 (.&&) :: CPExp Bool -> CPExp Bool -> CPExp Bool
 (.&&) = And
 
+(.!!) :: (CPType x, IsArray a idx) => CPExp (a x) -> CPDomain idx -> CPExp x
+(.!!) = indexArray
+
 nt :: CPExp Bool -> CPExp Bool
 nt  = Not
 
@@ -126,10 +153,10 @@ forAll :: ForAllMonad (CPExp Bool) -> CPExp Bool
 forAll = ForAll
 
 -- | Unsure about if this is the best programming model for this
-value  :: (CPType a, IsPort p) => p a -> CP (CPExp a)
+value  :: IsPort p => p a -> CP (CPExp a)
 value = return . ValueOf
 
-val  :: (CPType a, IsPort p) => p a -> CPExp a
+val  :: IsPort p => p a -> CPExp a
 val = ValueOf
 
 infixr 3 .&&
@@ -169,14 +196,16 @@ infixl 4 .>=
 
 -- | GRACeFUL Concept Map commands.
 data GCMCommand a where
-    Output       :: CPType a => Port a    -> String -> GCMCommand ()
-    CreatePort   :: CPType a => Proxy a   -> GCMCommand (Port a)
+    Output        ::             Port a     -> String -> GCMCommand ()
+    CreatePort    :: CPType a => Proxy a    -> GCMCommand (Port a)
     -- | Unsure that hardcoding this to Int is a good idea
-    CreateGoal   ::             GCMCommand (Goal Int) 
-    CreateParam  :: CPType a => Proxy a   -> a -> GCMCommand (Param a)
-    CreateAction :: CPType a => Param a   -> GCMCommand (Action a)
-    EmbedAction  ::             ActM a    -> GCMCommand ()
-    Component    ::             CP ()     -> GCMCommand ()
+    CreateGoal    ::             GCMCommand (Goal Int) 
+    CreateParam   :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
+    CreateAction  :: CPType a => Param a    -> GCMCommand (Action a)
+    EmbedAction   ::             ActM a     -> GCMCommand ()
+    Component     ::             CP ()      -> GCMCommand ()
+    CreateArray1D :: CPType a => Proxy a    -> Int -> GCMCommand (Port (Array1D a))
+    CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> GCMCommand (Port (Array2D a))
 
 -- | A GRACeFUL Concept Map.
 type GCM = Program GCMCommand
@@ -194,7 +223,7 @@ type ActM = Program ActCommand
 
 -- | @'output' p str@ displays the value at @p@ with label @str@ during solver
 -- output.
-output :: (CPType a, Show a) => Port a -> String -> GCM ()
+output :: Port a -> String -> GCM ()
 output p = Instr . Output p
 
 -- | Instantiate a action in the `GCM` monad.
@@ -294,31 +323,32 @@ sumGCM i = foldGCM i (+) 0
 -- * Ports 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+type Addr = Int
+
 -- A port is just an address
-data Port a = Port Int
+data Port a = Port Addr
 
 -- A variable is just a port
 type Variable a = Port a
 
 -- | A parameter port is a port with a default value.
 -- TODO: Document.
-data Param a = Param a Int
+data Param a = Param a Addr 
 
 -- | A goal.
 -- TODO: Document.
-data Goal a = Goal Int
+data Goal a = Goal Addr
 
 -- | Can I get a port ID
 -- TODO: Document.
 class IsPort p where
-    portID :: p a -> Int
+  portID :: p a -> Addr 
 
 instance IsPort Port where
-    portID (Port id) = id
+  portID (Port id) = id
 
 instance IsPort Param where
-    portID (Param _ id) = id
+  portID (Param _ id) = id
 
 instance IsPort Goal where
-    portID (Goal id) = id
-
+  portID (Goal id) = id
