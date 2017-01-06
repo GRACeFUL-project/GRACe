@@ -99,6 +99,7 @@ comp2paren a op b = do
   bc <- compileCPExp b
   return $ paren ac ++ op ++ paren bc
 
+-- | Prenethesise a string
 paren :: String -> String
 paren s = "(" ++ s ++ ")"
 
@@ -108,12 +109,13 @@ translateCPCommands (Assert bexp) = do
   bexprc <- lift $ compileCPExp bexp
   tell ["constraint " ++ paren bexprc ++ ";"]
 
+-- | Compiles `ActCommand`s to a sequence of `String`s.
 translateActionCommands :: ActCommand a -> WriterT [String] CPIntermMonad a
 translateActionCommands (Act expr (Action i (Param _ j))) = do
   exprc <- lift $ compileCPExp expr
   tell ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren exprc ++ "));"]
 
--- Translation
+-- Translation of GCM commands
 translateGCMCommand :: GCMCommand a -> IntermMonad a
 translateGCMCommand = \case
   Output p s -> do
@@ -182,7 +184,7 @@ translateGCMCommand = \case
                        }
     return $ Port vid
 
--- Final compilation (this function is _very_ ugly!)
+-- | Compiles a `GCM a` to a MiniZinc program
 compileGCM :: GCM a -> String
 compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0 S.empty) $ interpret translateGCMCommand gcm
   where
