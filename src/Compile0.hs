@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Compile0 where
 
-import Control.Monad.Writer
+import Control.Monad.Writer hiding (Sum)
 import Control.Monad.State.Lazy
 import Data.Char
 import Data.List
@@ -69,9 +69,13 @@ compileCPExp = \case
                     ac <- compileCPExp a
                     return $ "int2float" ++ paren ac
     ForAll m   -> do
-                    (bexpr, s) <- runWriterT (compileForAll m)
+                    (bexpr, s) <- runWriterT (compileComprehension m)
                     bexprc     <- compileCPExp bexpr
-                    return $ foldr (\outer inner -> outer ++ "\n" ++ paren inner) bexprc s
+                    return $ foldr (\outer inner -> "forall" ++ outer ++ "\n" ++ paren inner) bexprc s
+    Sum m       -> do
+                    (expr, s) <- runWriterT (compileComprehension m)
+                    exprc      <- compileCPExp expr
+                    return $ foldr (\outer inner -> "sum" ++ outer ++ "\n" ++ paren inner) exprc s
     IdxA1D arr idx -> do
       idxc <- compileCPExp idx
       avar <- compileCPExp arr
@@ -82,20 +86,20 @@ compileCPExp = \case
       avar  <- compileCPExp arr
       return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
 
-compileForAll :: ForAllMonad (CPExp Bool) -> WriterT [String] CPIntermMonad (CPExp Bool)
-compileForAll = interpret
+compileComprehension :: ComprehensionMonad (CPExp a) -> WriterT [String] CPIntermMonad (CPExp a)
+compileComprehension = interpret
 
-instance Interprets (WriterT [String] CPIntermMonad) ForAllCommand where
-  interp = translateForAllCommand
+instance Interprets (WriterT [String] CPIntermMonad) ComprehensionCommand where
+  interp = translateComprehensionCommand
 
-translateForAllCommand :: ForAllCommand a -> WriterT [String] CPIntermMonad a
-translateForAllCommand (Range (low, high)) =
+translateComprehensionCommand :: ComprehensionCommand a -> WriterT [String] CPIntermMonad a
+translateComprehensionCommand (Range (low, high)) =
   do
     nvar <- lift get
     lift $ put (nvar+1)
     lows  <- lift $ compileCPExp low
     highs <- lift $ compileCPExp high
-    tell ["forall(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
+    tell ["(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
     return $ ValueOf (Port nvar)
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> CPIntermMonad String

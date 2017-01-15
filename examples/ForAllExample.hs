@@ -9,6 +9,7 @@ main = do
   putStrLn ""
   runGCM example
 
+-- | A rather meaningless example...
 example :: GCM ()
 example = do
   v <- createVariable :: GCM (Variable Int)
@@ -19,6 +20,7 @@ example = do
     a <- value a
     assert $ v `inRange` (7, 8)
     assert $ forAll [(a .!! i) `inRange` (0, v) | i <- 0 ... 4]
+    assert $ 211 .> summ [i + j | i <- 0 ... 4, j <- 1 ... v]
 
   output v "v"
   output a "a"

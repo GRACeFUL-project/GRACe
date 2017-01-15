@@ -8,7 +8,7 @@
 
 module GL where
 
-import Control.Monad.Writer
+import Control.Monad.Writer hiding (Sum)
 import Control.Monad.State.Lazy
 import Data.Char
 import Program
@@ -50,8 +50,10 @@ data CPExp a where
   And     ::                             CPExp Bool -> CPExp Bool -> CPExp Bool
   Div     :: (Fractional a, CPType a) => CPExp a    -> CPExp a -> CPExp a
   I2F     ::                             CPExp Int  -> CPExp Float
-  ForAll  ::                             ForAllMonad (CPExp Bool) -> CPExp Bool
-  IdxA1D  :: CPType a                 => CPExp (Array1D a) -> CPExp Int -> CPExp a
+  ForAll  ::                             ComprehensionMonad (CPExp Bool) -> CPExp Bool
+  Sum     :: (Num a)                  => ComprehensionMonad (CPExp a)    -> CPExp a 
+  -- This makes me a sad sad boy :(
+  IdxA1D  :: CPType a                 => CPExp (Array1D a) -> CPExp Int   -> CPExp a
   IdxA2D  :: CPType a                 => CPExp (Array2D a) -> (CPExp Int, CPExp Int) -> CPExp a
 
 -- | An array and how it is indexed
@@ -79,13 +81,13 @@ instance IsArray Array2D (Int, Int) where
   createArray = Instr . (CreateArray2D Proxy)
 
 -- | Commands for things from which we can construct "forall ..." expressions
-data ForAllCommand a where
-  Range :: (CPType a, Ord a) => (CPExp a, CPExp a) -> ForAllCommand (CPExp a)
+data ComprehensionCommand a where
+  Range :: (CPType a, Ord a) => (CPExp a, CPExp a) -> ComprehensionCommand (CPExp a)
 
--- | A monad representing what goes on in a "forall ..." block
-type ForAllMonad a = Program ForAllCommand a
+-- | A monad representing what goes on in a "forall/sum/max/min ..." block
+type ComprehensionMonad a = Program ComprehensionCommand a
 
-(...) :: (CPType a, Ord a) => CPExp a -> CPExp a -> ForAllMonad (CPExp a)
+(...) :: (CPType a, Ord a) => CPExp a -> CPExp a -> ComprehensionMonad (CPExp a)
 x ... y = Instr $ Range (x, y)
 
 -- Not well defined (CPType much too general).
@@ -149,8 +151,11 @@ min' = Min
 i2f :: CPExp Int -> CPExp Float
 i2f = I2F
 
-forAll :: ForAllMonad (CPExp Bool) -> CPExp Bool
+forAll :: ComprehensionMonad (CPExp Bool) -> CPExp Bool
 forAll = ForAll
+
+summ :: (Num a) => ComprehensionMonad (CPExp a) -> CPExp a
+summ = Sum
 
 -- | Unsure about if this is the best programming model for this
 value  :: IsPort p => p a -> CP (CPExp a)
