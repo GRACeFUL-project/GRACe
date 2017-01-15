@@ -16,17 +16,14 @@ liftGCM = lift . lift
 
 property :: CPExp Bool -> GCMP ()
 property expr =
-    do
-     s <- get
+  do s <- get
      put (s + 1)
-     liftGCM $
-        do
-            p <- createPort
-            component $
-                do
-                    v <- value p
-                    assert $ v === expr
-            output p $ "prop_" ++ (show s)
+     liftGCM $ do
+       p <- createPort
+       component $ do
+         v <- value p
+         assert $ v === expr
+       output p $ "prop_" ++ (show s)
 
 makeGenerator :: GCMP a -> QC.Gen (GCM a)
 makeGenerator gcmp = runGenT $ S.evalStateT gcmp 0
