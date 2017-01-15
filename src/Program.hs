@@ -1,5 +1,5 @@
-{-# LANGUAGE GADTs, RankNTypes, ScopedTypeVariables #-}
-module Program (Program(..), interpret) where
+{-# LANGUAGE GADTs, RankNTypes, ScopedTypeVariables, MultiParamTypeClasses #-}
+module Program (Program(..), interpret, Interprets(..)) where
 import Control.Monad
 
 -- Generic programs, parameterised over some instruction set
@@ -22,8 +22,11 @@ instance Applicative (Program instr) where
 instance Functor (Program instr) where
     fmap = liftM
 
+class Interprets m instr where
+  interp :: instr b -> m b
+
 -- Interpret
-interpret :: (Monad m) => (forall b. instr b -> m b) -> Program instr a -> m a
-interpret interp (Return a) = return a
-interpret interp (m :>>= f) = interpret interp m >>= (interpret interp . f)
-interpret interp (Instr  i) = interp i
+interpret :: (Monad m, Interprets m instr) => Program instr a -> m a
+interpret (Return a) = return a
+interpret (m :>>= f) = interpret m >>= (interpret . f)
+interpret (Instr  i) = interp i

@@ -1,5 +1,7 @@
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Compile0 where
 
 import Control.Monad.Writer
@@ -81,7 +83,10 @@ compileCPExp = \case
       return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
 
 compileForAll :: ForAllMonad (CPExp Bool) -> WriterT [String] CPIntermMonad (CPExp Bool)
-compileForAll = interpret translateForAllCommand 
+compileForAll = interpret
+
+instance Interprets (WriterT [String] CPIntermMonad) ForAllCommand where
+  interp = translateForAllCommand
 
 translateForAllCommand :: ForAllCommand a -> WriterT [String] CPIntermMonad a
 translateForAllCommand (Range (low, high)) =
@@ -109,11 +114,17 @@ translateCPCommands (Assert bexp) = do
   bexprc <- lift $ compileCPExp bexp
   tell ["constraint " ++ paren bexprc ++ ";"]
 
+instance Interprets (WriterT [String] CPIntermMonad) CPCommands where
+  interp = translateCPCommands
+
 -- | Compiles `ActCommand`s to a sequence of `String`s.
 translateActionCommands :: ActCommand a -> WriterT [String] CPIntermMonad a
 translateActionCommands (Act expr (Action i (Param _ j))) = do
   exprc <- lift $ compileCPExp expr
   tell ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren exprc ++ "));"]
+
+instance Interprets (WriterT [String] CPIntermMonad) ActCommand where
+  interp = translateActionCommands
 
 -- Translation of GCM commands
 translateGCMCommand :: GCMCommand a -> IntermMonad a
@@ -163,11 +174,11 @@ translateGCMCommand = \case
     return $ Action vid p
   Component cp -> do
     vid <- gets nextVarId
-    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret translateCPCommands cp
+    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret cp
     modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
   EmbedAction actm -> do
     vid <- gets nextVarId
-    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret translateActionCommands actm
+    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret actm
     modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
   CreateArray1D proxy len -> do
     vid <- gets nextVarId
@@ -184,9 +195,12 @@ translateGCMCommand = \case
                        }
     return $ Port vid
 
+instance Interprets IntermMonad GCMCommand where
+  interp = translateGCMCommand
+
 -- | Compiles a `GCM a` to a MiniZinc program
 compileGCM :: GCM a -> String
-compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0 S.empty) $ interpret translateGCMCommand gcm
+compileGCM gcm = stateToString $ flip execState (CompilationState [] [] [] [] 0 S.empty) $ interpret gcm
   where
     makeGoals [] = "\nsolve satisfy;"
     makeGoals gls = "\nsolve maximize ("++ foldl (\s gid -> s++"+v"++ show gid) "0" gls ++ ");"
