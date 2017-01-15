@@ -40,11 +40,8 @@ unsafeHack "False" = "0"
 unsafeHack "True"  = "1"
 unsafeHack s       = s
 
-type VarName = Int
-type CPIntermMonad = State VarName
-
 -- | Pretty-printer for `CPExp` expressions.
-compileCPExp :: CPExp a -> CPIntermMonad String
+compileCPExp :: CPExp a -> IntermMonad String
 compileCPExp = \case
     ValueOf p  -> return $ "v" ++ show (portID p)
     Lit l      -> return $ unsafeHack (show l)
@@ -72,10 +69,18 @@ compileCPExp = \case
                     (bexpr, s) <- runWriterT (compileComprehension m)
                     bexprc     <- compileCPExp bexpr
                     return $ foldr (\outer inner -> "forall" ++ outer ++ "\n" ++ paren inner) bexprc s
-    Sum m       -> do
+    Sum m      -> do
                     (expr, s) <- runWriterT (compileComprehension m)
                     exprc      <- compileCPExp expr
                     return $ foldr (\outer inner -> "sum" ++ outer ++ "\n" ++ paren inner) exprc s
+    MaxA m     -> do
+                    (expr, s) <- runWriterT (compileComprehension m)
+                    exprc      <- compileCPExp expr
+                    return $ foldr (\outer inner -> "max" ++ outer ++ "\n" ++ paren inner) exprc s
+    MinA m     -> do
+                    (expr, s) <- runWriterT (compileComprehension m)
+                    exprc      <- compileCPExp expr
+                    return $ foldr (\outer inner -> "min" ++ outer ++ "\n" ++ paren inner) exprc s
     IdxA1D arr idx -> do
       idxc <- compileCPExp idx
       avar <- compileCPExp arr
@@ -86,23 +91,23 @@ compileCPExp = \case
       avar  <- compileCPExp arr
       return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
 
-compileComprehension :: ComprehensionMonad (CPExp a) -> WriterT [String] CPIntermMonad (CPExp a)
+compileComprehension :: ComprehensionMonad (CPExp a) -> WriterT [String] IntermMonad (CPExp a)
 compileComprehension = interpret
 
-instance Interprets (WriterT [String] CPIntermMonad) ComprehensionCommand where
+instance Interprets (WriterT [String] IntermMonad) ComprehensionCommand where
   interp = translateComprehensionCommand
 
-translateComprehensionCommand :: ComprehensionCommand a -> WriterT [String] CPIntermMonad a
+translateComprehensionCommand :: ComprehensionCommand a -> WriterT [String] IntermMonad a
 translateComprehensionCommand (Range (low, high)) =
   do
-    nvar <- lift get
-    lift $ put (nvar+1)
+    nvar <- lift $ gets nextVarId
+    lift $ modify $ \st -> st {nextVarId = nvar + 1}
     lows  <- lift $ compileCPExp low
     highs <- lift $ compileCPExp high
     tell ["(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
     return $ ValueOf (Port nvar)
 
-comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> CPIntermMonad String
+comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> IntermMonad String
 comp2paren a op b = do
   ac <- compileCPExp a
   bc <- compileCPExp b
@@ -113,21 +118,28 @@ paren :: String -> String
 paren s = "(" ++ s ++ ")"
 
 -- | Compiles `CPCommands` to a sequence of `String`s.
-translateCPCommands :: CPCommands a -> WriterT [String] CPIntermMonad a
+translateCPCommands :: CPCommands a -> IntermMonad a
 translateCPCommands (Assert bexp) = do
-  bexprc <- lift $ compileCPExp bexp
-  tell ["constraint " ++ paren bexprc ++ ";"]
+  bexprc <- compileCPExp bexp
+  modify $ \st -> st {expressions = expressions st ++ ["constraint " ++ paren bexprc ++ ";"]}
+translateCPCommands (CreateLVar proxy) = do
+  vid <- gets nextVarId
+  let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
+  modify $ \st -> st { nextVarId = vid + 1
+                       , declarations = dec : declarations st
+                     }
+  return $ Port vid
 
-instance Interprets (WriterT [String] CPIntermMonad) CPCommands where
+instance Interprets IntermMonad CPCommands where
   interp = translateCPCommands
 
 -- | Compiles `ActCommand`s to a sequence of `String`s.
-translateActionCommands :: ActCommand a -> WriterT [String] CPIntermMonad a
+translateActionCommands :: ActCommand a -> IntermMonad a
 translateActionCommands (Act expr (Action i (Param _ j))) = do
-  exprc <- lift $ compileCPExp expr
-  tell ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren exprc ++ "));"]
+  exprc <- compileCPExp expr
+  modify $ \st -> st {expressions = expressions st ++ ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren exprc ++ "));"]}
 
-instance Interprets (WriterT [String] CPIntermMonad) ActCommand where
+instance Interprets IntermMonad ActCommand where
   interp = translateActionCommands
 
 -- Translation of GCM commands
@@ -176,14 +188,8 @@ translateGCMCommand = \case
                        , unconParams  = S.delete j (unconParams st)
                        }
     return $ Action vid p
-  Component cp -> do
-    vid <- gets nextVarId
-    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret cp
-    modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
-  EmbedAction actm -> do
-    vid <- gets nextVarId
-    let ((_, exprs), nvid) = flip runState vid $ runWriterT $ interpret actm
-    modify $ \st -> st {expressions = expressions st ++ exprs, nextVarId = nvid}
+  Component cp     -> void $ interpret cp
+  EmbedAction actm -> void $ interpret actm
   CreateArray1D proxy len -> do
     vid <- gets nextVarId
     let dec = (typeDec proxy $ "array[0.." ++ show (len - 1) ++"] of var") ++ ": v" ++ show vid ++ ";"

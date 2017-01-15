@@ -52,6 +52,8 @@ data CPExp a where
   I2F     ::                             CPExp Int  -> CPExp Float
   ForAll  ::                             ComprehensionMonad (CPExp Bool) -> CPExp Bool
   Sum     :: (Num a)                  => ComprehensionMonad (CPExp a)    -> CPExp a 
+  MaxA    :: (Ord a)                  => ComprehensionMonad (CPExp a)    -> CPExp a
+  MinA    :: (Ord a)                  => ComprehensionMonad (CPExp a)    -> CPExp a
   -- This makes me a sad sad boy :(
   IdxA1D  :: CPType a                 => CPExp (Array1D a) -> CPExp Int   -> CPExp a
   IdxA2D  :: CPType a                 => CPExp (Array2D a) -> (CPExp Int, CPExp Int) -> CPExp a
@@ -109,14 +111,19 @@ instance (Fractional a, CPType a) => Fractional (CPExp a) where
 
 -- | Instructions in the constraint programming monad.
 data CPCommands a where
-    Assert :: CPExp Bool -> CPCommands ()
+    Assert     ::             CPExp Bool -> CPCommands ()
+    CreateLVar :: CPType a => Proxy a    -> CPCommands (Variable a)
 
 -- | Constraint programs.
 type CP a = Program CPCommands a
 
--- | Expressions in the `CP` monad.
+-- | Assert expressions in the `CP` monad.
 assert :: CPExp Bool -> CP ()
 assert = Instr . Assert 
+
+-- | Create a new local variable in the `CP` monad.
+createLVar :: CPType a => CP (Variable a)
+createLVar = Instr $ CreateLVar Proxy 
 
 -- * Base CP operations
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,6 +163,10 @@ forAll = ForAll
 
 summ :: (Num a) => ComprehensionMonad (CPExp a) -> CPExp a
 summ = Sum
+
+maximumm, minimumm :: (Ord a) => ComprehensionMonad (CPExp a) -> CPExp a
+maximumm = MaxA
+minimumm = MinA
 
 -- | Unsure about if this is the best programming model for this
 value  :: IsPort p => p a -> CP (CPExp a)
@@ -208,7 +219,7 @@ data GCMCommand a where
     CreateParam   :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
     CreateAction  :: CPType a => Param a    -> GCMCommand (Action a)
     EmbedAction   ::             ActM a     -> GCMCommand ()
-    Component     ::             CP ()      -> GCMCommand ()
+    Component     ::             CP a       -> GCMCommand ()
     CreateArray1D :: CPType a => Proxy a    -> Int -> GCMCommand (Port (Array1D a))
     CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> GCMCommand (Port (Array2D a))
 
@@ -263,7 +274,7 @@ act :: CPType a => (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
 act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf (Port i)) (lit a)) act)
 
 -- | Document this.
-component :: CP () -> GCM ()
+component :: CP a -> GCM ()
 component = Instr . Component
 
 -- * Derived GCM operations
