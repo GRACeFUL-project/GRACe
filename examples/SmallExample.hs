@@ -20,7 +20,7 @@ pump :: Int -> GCM Pump
 pump c = do
   iflow <- createPort
   oflow <- createPort
-  cap  <- createParam c
+  cap   <- createParam c
   component $ do
     ifl <- value iflow
     ofl <- value oflow
@@ -37,9 +37,8 @@ storage c = do
   outlet   <- createPort
   overflow <- createPort
   storageC <- createParam c
-  currentV <- createPort -- Note: internal (not exported)
-  output currentV "storage contents"
   component $ do
+    currentV <- createVariable
     inf <- value inflow
     out <- value outlet
     ovf <- value overflow
