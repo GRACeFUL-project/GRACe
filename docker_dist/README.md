@@ -17,10 +17,12 @@ Instructions for building Docker-image with examples.
 1. The examples need to be executable on some `x86_64` Ubuntu. A simple way to
    ensure this is to build the examples with Docker support enabled in the 
    `stack.yaml`, i.e.
+   
    ```
    docker:
      enable: true
    ```
+   
 2. Run `build.sh`. This will clone the libminizinc and gecode repositories and
    call `docker build`. You may be prompted to accept some expired certificate
    by subversion.
