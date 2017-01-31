@@ -4,15 +4,13 @@ Instructions for building Docker-image with examples.
 
 ## Overview
 
-------------------------------------------------------------------------------
 | Filename              | Description                                        |
-------------------------------------------------------------------------------
+| --------------------- | -------------------------------------------------- |
 | Dockerfile            | Dockerfile.                                        |
 | README.md             | This document.                                     |
 | build.sh              | Fetches dependencies and builds the Docker image.  |
 | install-mzn-gecode.sh | Builds MiniZinc/Gecode dependencies inside the VM. |
 | run.sh                | Runs the examples inside the VM.                   |
-------------------------------------------------------------------------------
 
 ## Instructions
 
