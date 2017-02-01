@@ -6,3 +6,5 @@
 *~
 .stack-work/
 dist/
+cabal.sandbox.config
+.cabal-sandbox
