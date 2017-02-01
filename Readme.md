@@ -1,19 +1,19 @@
-# GRACeFUL generic library
+# GRACe - a domain specific language for GRACeFUL Concept Maps
 
 A DSL for GRACeFUL components.
 
 ## Installing
 
-In order to use `GenericLibrary`, the following software dependencies must be
-met: 
+In order to use `GRACe`, the following software dependencies must be
+met:
 
 * [The MiniZinc distribution](http://www.minizinc.org/index.html)
 * [GHC](https://www.haskell.org/downloads)
 
 To ensure that library dependencies are exactly met, we recommend that you use
-`stack`. `stack` handles the entire toolchain (including GHC), library 
-dependencies, building and executing. Instructions for installing `stack` on 
-macOS, Linux and Windows can be found 
+`stack`. `stack` handles the entire toolchain (including GHC), library
+dependencies, building and executing. Instructions for installing `stack` on
+macOS, Linux and Windows can be found
 [here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
 
 ### Installing MiniZinc: Linux
@@ -29,7 +29,7 @@ Patrik has provided an [install script](doc/INSTALL.md) for Linux.
   path, like so:
 
       export PATH="$PATH:/Applications/MiniZincIDE.app/Contents/Resources"
-      
+
 ## Running a constraint program
 
 ### Using sandboxes
@@ -80,7 +80,7 @@ stack test
 Load test modules in ghci by
 
 ```shell
-stack ghci GenericLibrary:test:test
+stack ghci GRACe:test:test
 ```
 
 Run test suite for a single module with

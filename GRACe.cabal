@@ -1,4 +1,4 @@
-name:                GenericLibrary
+name:                GRACe
 version:             0.1.1.0
 -- synopsis:
 -- description:
@@ -12,7 +12,7 @@ build-type:          Simple
 extra-source-files:  Readme.md
 cabal-version:       >=1.10
 
--- Generic Library
+-- GRACe DSL
 library
   exposed-modules:
     GL,
@@ -60,7 +60,7 @@ executable examples
     ScopedTypeVariables
   build-depends:
     base           >= 4.9 && <4.10,
-    GenericLibrary >= 0.1 && <0.2,
+    GRACe          >= 0.1 && <0.2,
     QuickCheck     >= 2.8 && <2.9
   hs-source-dirs:
     examples
@@ -78,7 +78,7 @@ executable dubbeldam
     ScopedTypeVariables
   build-depends:
     base           >= 4.9 && <4.10,
-    GenericLibrary >= 0.1 && <0.2
+    GRACe          >= 0.1 && <0.2
   hs-source-dirs:
     examples
   default-language:    Haskell2010
@@ -94,7 +94,7 @@ test-suite test
     TestFW.TestGCMCheck
   build-depends:
     base             >= 4.9  && <4.10,
-    GenericLibrary   >= 0.1  && <0.2,
+    GRACe            >= 0.1  && <0.2,
     tasty            >= 0.11 && <0.12,
     tasty-hunit      >= 0.9  && <0.10,
     tasty-quickcheck >= 0.8  && <0.9,
