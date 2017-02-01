@@ -89,7 +89,7 @@ Run test suite for a single module with
 stack runghc test/TestModule.hs
 ```
 
-This assumes there is a main function in TestModule.hs.
+This assumes there is a `main` function in `TestModule.hs`.
 
 ### Generate project documentation
 

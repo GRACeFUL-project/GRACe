@@ -38,7 +38,7 @@ storage c = do
   overflow <- createPort
   storageC <- createParam c
   component $ do
-    currentV <- createVariable
+    currentV <- createLVar
     inf <- value inflow
     out <- value outlet
     ovf <- value overflow
