@@ -1,12 +1,24 @@
 import Compile0
 import GL
 
+{-%
+   "name"       : "rain",
+ , "parameters" : [ {"name" : "amount",   "type" : "Float"} ]
+ , "interface"  : [ {"name" : "rainfall", "type" : "Flow" } ]
+ %-}
 rain :: Float -> GCM (Port Float)
 rain amount = do
   port <- createPort
   set port amount
   return port
 
+{-%
+   "name"       : "pump"
+ , "parameters" : [ {"name" : "capacity", "type" : "Float"} ]
+ , "interface"  : [ {"name" : "inflow",   "type" : "Flow" }
+                  , {"name" : "outflow",  "type" : "Flow" }
+                  ]
+ %-}
 pump :: Float -> GCM (Port Float, Port Float)
 pump maxCap = do
   inPort  <- createPort
@@ -21,6 +33,14 @@ pump maxCap = do
 
   return (inPort, outPort)
 
+{-%
+   "name"       : "runoff area"
+ , "parameters" : [ {"name" : "storage capacity", "type" : "Float"} ]
+ , "interface"  : [ {"name" : "inflow",           "type" : "Flow" }
+                  , {"name" : "outlet",           "type" : "Flow" }
+                  , {"name" : "overflow",         "type" : "Flow" }
+                  ]
+ %-}
 runoffArea :: Float -> GCM (Port Float, Port Float, Port Float)
 runoffArea cap = do
   inflow <- createPort
