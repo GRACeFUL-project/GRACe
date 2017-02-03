@@ -7,6 +7,12 @@ import Data.Maybe
 import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as FingBS
 
+{-
+ - TODO
+ -  * Hand-craft a nice JSON format
+ -  * Run the generated program
+ -}
+
 data Graph = Graph { nodes :: [FilledOutNode] }
   deriving (Generic, Show, Eq)
 instance ToJSON Graph where
@@ -47,6 +53,7 @@ instance ToJSON PrimType where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON PrimType
 
+-- We need to fix the instance here...
 data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
   deriving (Generic, Show, Eq)
 instance ToJSON PrimTypeValue where
