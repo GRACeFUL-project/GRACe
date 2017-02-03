@@ -83,6 +83,29 @@ executable dubbeldam
     examples
   default-language:    Haskell2010
 
+executable Lib2JSON
+  main-is:
+    Lib2JSON.hs
+  build-depends:
+      base           >= 4.9 && <4.10
+    , directory      >= 1.2
+    , Glob           >= 0.7
+    , parsec         >= 3.1
+  hs-source-dirs:
+    execsrc
+  default-language:    Haskell2010
+
+executable Graph2GRACe 
+  main-is:
+    Graph2GRACe.hs
+  build-depends:
+      base           >= 4.9 && <4.10
+    , directory      >= 1.2
+    , aeson          >= 1.1
+  hs-source-dirs:
+    execsrc
+  default-language:    Haskell2010
+
 -- Unit tests
 test-suite test
   type:
