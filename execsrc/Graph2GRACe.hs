@@ -150,7 +150,7 @@ outputStatements :: Graph -> [String]
 outputStatements g = ["output " ++ pn ++ " \"" ++ pn ++ "\"" | pn <- allPortNames g]
 
 generateFile :: Graph -> String
-generateFile g =  unlines (imports g)
+generateFile g =  unlines (["import GL", "import Compile0", imports g)
                ++ "\ngraph = do\n"
                ++ unlines ["  " ++ l | l <- nodeInitialisations g ++ allPortLinks g ++ outputStatements g] 
                ++ "\nmain = runGCM graph"
