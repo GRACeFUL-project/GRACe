@@ -103,6 +103,8 @@ executable Graph2GRACe
     , directory      >= 1.2
     , aeson          >= 1.1
     , bytestring     >= 0.10
+    , text           >= 1.2
+    , scientific     >= 0.3
   hs-source-dirs:
     execsrc
   default-language:    Haskell2010

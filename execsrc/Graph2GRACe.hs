@@ -1,17 +1,24 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 import System.Environment
 import Data.Aeson
 import Data.Aeson.Types
+import Data.Scientific
 import GHC.Generics
 import Data.List
 import Data.Maybe
 import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as FingBS
+import qualified Data.Text as T
 
 {-
  - TODO
- -  * Hand-craft a nice JSON format
- -  * Run the generated program
+ -  * Hand-craft a nice JSON format.
+ -  * Factor out the graph representation,
+ -    we should use it with as many Maybe etc.
+ -    as possible to make sure we only have _one_
+ -    representation present in both Lib2JSON and
+ -    Graph2GRACe.
+ -  * Run the generated program.
  -}
 
 data Graph = Graph { nodes :: [FilledOutNode] }
@@ -49,8 +56,15 @@ instance FromJSON PrimType
 data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
   deriving (Generic, Show, Eq)
 instance ToJSON PrimTypeValue where
-  toEncoding = genericToEncoding defaultOptions
-instance FromJSON PrimTypeValue
+  toJSON (FloatV f)  = Number $ fromRational (toRational f)
+  toJSON (IntV i)    = Number $ fromInteger (toInteger i)
+  toJSON (StringV s) = String (T.pack s)
+  toJSON (BoolV b)   = Bool b
+instance FromJSON PrimTypeValue where
+  parseJSON (String s) = return $ StringV (T.unpack s)
+  parseJSON (Bool b)   = return $ BoolV b
+  parseJSON (Number s) = return $ either FloatV IntV $ floatingOrInteger s 
+  parseJSON _          = fail "Does not comform to interface"
 
 {- This is finished -}
 data FilledOutInterface = FilledOutInterface { portName :: String
