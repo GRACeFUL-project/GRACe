@@ -19,40 +19,55 @@ import qualified Data.Text as T
  -    representation present in both Lib2JSON and
  -    Graph2GRACe.
  -  * Run the generated program.
- -  * `FilledOutInterface` needs a better json instance
+ -  * `Interface` needs a better json instance
  -}
 
-data Graph = Graph { nodes :: [FilledOutNode] }
+-- | An adjacency list representation of graphs
+data Graph = Graph { nodes :: [Node] }
   deriving (Generic, Show, Eq)
+
+-- | We don't need any fancy instances
 instance ToJSON Graph where
   toEncoding = genericToEncoding defaultOptions
+
+-- | The default instance is fine
 instance FromJSON Graph
 
-data FilledOutNode = FilledOutNode { identity   :: Maybe Int
-                                   , name       :: String
-                                   , parameters :: [FilledOutParameter]
-                                   , interface  :: [FilledOutInterface]
-                                   }
+-- | Nodes in the graph
+data Node = Node { identity   :: Maybe Int   -- * What ID does this node have?
+                 , name       :: String      -- * What is the name of the GL component?
+                 , parameters :: [Parameter] -- * What are the parameters of this node?
+                 , interface  :: [Interface] -- * What is the interface of this node?
+                 }
   deriving (Generic, Show, Eq)
-instance ToJSON FilledOutNode where
+
+-- | Obvious instances
+instance ToJSON Node where
   toEncoding = genericToEncoding $ defaultOptions {omitNothingFields = True}
-instance FromJSON FilledOutNode where
+
+-- | Obvious instances
+instance FromJSON Node where
   parseJSON  = genericParseJSON  $ defaultOptions {omitNothingFields = True}
 
 -- | Fix the prefixes
-data FilledOutParameter = FilledOutParameter { parameterName  :: String
-                                             , parameterType  :: PrimType
-                                             , parameterValue :: PrimTypeValue
-                                             }
+data Parameter = Parameter { parameterName  :: String
+                           , parameterType  :: PrimType
+                           , parameterValue :: PrimTypeValue
+                           }
   deriving (Generic, Show, Eq)
-instance ToJSON FilledOutParameter where
-  toEncoding = genericToEncoding defaultOptions
-instance FromJSON FilledOutParameter
 
+instance ToJSON Parameter where
+  toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON Parameter
+
+-- | The primitive types in `GRACe`
 data PrimType = FloatT | IntT | StringT | BoolT
   deriving (Generic, Show, Eq)
+
 instance ToJSON PrimType where
   toEncoding = genericToEncoding defaultOptions
+
 instance FromJSON PrimType
 
 data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
@@ -65,6 +80,7 @@ instance ToJSON PrimTypeValue where
   toJSON (StringV s) = String (T.pack s)
   toJSON (BoolV b)   = Bool b
 
+-- | Derived from the above instance
 instance FromJSON PrimTypeValue where
   parseJSON (String s) = return $ StringV (T.unpack s)
   parseJSON (Bool b)   = return $ BoolV b
@@ -72,38 +88,38 @@ instance FromJSON PrimTypeValue where
   parseJSON _          = fail "Does not comform to interface"
 
 -- | Fix the prefixes
-data FilledOutInterface = FilledOutInterface { portName :: String
-                                             , portType :: String
-                                             , portConn :: Maybe (Int, String)
-                                             }
+data Interface = Interface { portName :: String
+                           , portType :: String
+                           , portConn :: Maybe (Int, String)
+                           }
   deriving (Generic, Show, Eq)
 
-instance ToJSON FilledOutInterface where
+instance ToJSON Interface where
   toEncoding = genericToEncoding $ defaultOptions {omitNothingFields = True}
 
-instance FromJSON FilledOutInterface where
+instance FromJSON Interface where
   parseJSON  = genericParseJSON $ defaultOptions {omitNothingFields = True}
 
 example = Graph
-  [ FilledOutNode
+  [ Node 
      (Just 1)
      "pump"
-     [ FilledOutParameter "capacity" FloatT (FloatV 5) ]
-     [ FilledOutInterface "inflow" "flow" (Just (3, "outlet"))
-     , FilledOutInterface "outflow" "flow" Nothing
+     [ Parameter "capacity" FloatT (FloatV 5) ]
+     [ Interface "inflow" "flow" (Just (3, "outlet"))
+     , Interface "outflow" "flow" Nothing
      ]
-  , FilledOutNode
+  , Node 
      (Just 2)
      "rain"
-     [ FilledOutParameter "amount" FloatT (FloatV 10) ]
-     [ FilledOutInterface "rainfall" "flow" (Just (3, "inflow")) ]
-  , FilledOutNode
+     [ Parameter "amount" FloatT (FloatV 10) ]
+     [ Interface "rainfall" "flow" (Just (3, "inflow")) ]
+  , Node 
      (Just 3)
      "runoffArea"
-     [ FilledOutParameter "capacity" FloatT (FloatV 10) ]
-     [ FilledOutInterface "inflow"   "flow" Nothing
-     , FilledOutInterface "outlet"   "flow" Nothing
-     , FilledOutInterface "overflow" "flow" Nothing
+     [ Parameter "capacity" FloatT (FloatV 10) ]
+     [ Interface "inflow"   "flow" Nothing
+     , Interface "outlet"   "flow" Nothing
+     , Interface "overflow" "flow" Nothing
      ]
   ]
 
@@ -122,19 +138,19 @@ imports g = nub $ ["import " ++ capf (name n) | n <- nodes g]
 components :: Graph -> [String]
 components g = [name n ++ " " ++ intercalate " " (prettyArgs n) | n <- nodes g]
 
-prettyArgs :: FilledOutNode -> [String]
+prettyArgs :: Node -> [String]
 prettyArgs n = [pPrintPTV (parameterValue p) | p <- parameters n]
 
 allPortNames :: Graph -> [String]
 allPortNames g = concatMap portNames (nodes g)
 
-portNames :: FilledOutNode -> [String]
+portNames :: Node -> [String]
 portNames n = [ "id" ++ show (fromMaybe 0 (identity n)) ++ portName p | p <- interface n]
 
 allPortLinks :: Graph -> [String]
 allPortLinks g = concatMap portLinks (nodes g)
 
-portLinks :: FilledOutNode -> [String]
+portLinks :: Node -> [String]
 portLinks n = [ "link id" ++ (show (fromMaybe 0 (identity n))) ++ portName p ++ " id" ++ (show i) ++ s
               | p <- interface n
               , isJust (portConn p)
@@ -149,8 +165,10 @@ nodeInitialisations g = zipWith (\l r -> l ++ "<-" ++ r) (bindVariables g) (comp
 outputStatements :: Graph -> [String]
 outputStatements g = ["output " ++ pn ++ " \"" ++ pn ++ "\"" | pn <- allPortNames g]
 
+-- | Generate a haskell file in `GRACe` from
+-- a `Graph`
 generateFile :: Graph -> String
-generateFile g =  unlines (["import GL", "import Compile0", imports g)
+generateFile g =  unlines (["import GL", "import Compile0"] ++ imports g)
                ++ "\ngraph = do\n"
                ++ unlines ["  " ++ l | l <- nodeInitialisations g ++ allPortLinks g ++ outputStatements g] 
                ++ "\nmain = runGCM graph"
