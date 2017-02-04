@@ -39,6 +39,7 @@ instance ToJSON FilledOutNode where
 instance FromJSON FilledOutNode where
   parseJSON  = genericParseJSON  $ defaultOptions {omitNothingFields = True}
 
+-- | Fix the prefixes
 data FilledOutParameter = FilledOutParameter { parameterName  :: String
                                              , parameterType  :: PrimType
                                              , parameterValue :: PrimTypeValue
@@ -70,6 +71,7 @@ instance FromJSON PrimTypeValue where
   parseJSON (Number s) = return $ either FloatV IntV $ floatingOrInteger s 
   parseJSON _          = fail "Does not comform to interface"
 
+-- | Fix the prefixes
 data FilledOutInterface = FilledOutInterface { portName :: String
                                              , portType :: String
                                              , portConn :: Maybe (Int, String)
