@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 import System.Environment
 import Data.Aeson
+import Data.Aeson.Types
 import GHC.Generics
 import Data.List
 import Data.Maybe
@@ -38,15 +39,6 @@ instance ToJSON FilledOutParameter where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON FilledOutParameter
 
-data FilledOutInterface = FilledOutInterface { portName :: String
-                                             , portType :: String
-                                             , portConn :: Maybe (Int, String)
-                                             }
-  deriving (Generic, Show, Eq)
-instance ToJSON FilledOutInterface where
-  toEncoding = genericToEncoding defaultOptions
-instance FromJSON FilledOutInterface
-
 data PrimType = FloatT | IntT | StringT | BoolT
   deriving (Generic, Show, Eq)
 instance ToJSON PrimType where
@@ -59,6 +51,19 @@ data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
 instance ToJSON PrimTypeValue where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON PrimTypeValue
+
+{- This is finished -}
+data FilledOutInterface = FilledOutInterface { portName :: String
+                                             , portType :: String
+                                             , portConn :: Maybe (Int, String)
+                                             }
+  deriving (Generic, Show, Eq)
+
+instance ToJSON FilledOutInterface where
+  toEncoding = genericToEncoding $ defaultOptions {omitNothingFields = True}
+
+instance FromJSON FilledOutInterface where
+  parseJSON  = genericParseJSON $ defaultOptions {omitNothingFields = True}
 
 example = Graph
   [ FilledOutNode
@@ -82,7 +87,6 @@ example = Graph
      , FilledOutInterface "overflow" "flow" Nothing
      ]
   ]
-      
 
 pPrintPTV :: PrimTypeValue -> String
 pPrintPTV (FloatV f)  = show f
