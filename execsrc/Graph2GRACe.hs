@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings, TypeApplications #-}
 import System.Environment
+import System.Process
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Scientific
@@ -63,6 +64,9 @@ generateFile g =  unlines (["import GL", "import Compile0"] ++ imports g)
 
 main = do
   args <- getArgs
-  let g = head args
+  let lib = args !! 0
+      g   = args !! 1
   Just gr <- (decode . FingBS.pack) <$> readFile g
   writeFile "model.hs" (generateFile gr)
+  callCommand $ "cabal exec -- runhaskell -i" ++ lib ++ " model.hs"
+  callCommand "rm model.hs"

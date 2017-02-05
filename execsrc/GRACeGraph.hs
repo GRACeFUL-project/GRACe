@@ -118,7 +118,7 @@ example = Graph
   , Node 
      (Just 3)
      "runoffArea"
-     [ Parameter "capacity" FloatT (FloatV 10) ]
+     [ Parameter "capacity" FloatT (FloatV 5) ]
      [ Interface "inflow"   "flow" Nothing
      , Interface "outlet"   "flow" Nothing
      , Interface "overflow" "flow" Nothing

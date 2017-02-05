@@ -12,8 +12,8 @@ import Compile0
  %-}
 runoffArea :: Float -> GCM (Port Float, Port Float, Port Float)
 runoffArea cap = do
-  inflow <- createPort
-  outlet <- createPort
+  inflow   <- createPort
+  outlet   <- createPort
   overflow <- createPort
 
   component $ do
