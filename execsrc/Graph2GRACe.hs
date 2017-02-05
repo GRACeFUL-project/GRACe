@@ -68,9 +68,13 @@ generateFile g =  unlines (["import GL", "import Compile0"] ++ imports g)
 
 main = do
   args <- getArgs
-  let lib = args !! 0
-      g   = args !! 1
-  Just gr <- (decode . FingBS.pack) <$> readFile g
+  let libDir    = args !! 0
+      graphFile = args !! 1
+  
+  -- Get the graph from the file
+  Just gr <- (decode . FingBS.pack) <$> readFile graphFile
+
+  -- Generate and run the haskell file
   writeFile "model.hs" (generateFile gr)
-  callCommand $ "cabal exec -- runhaskell -i" ++ lib ++ " model.hs"
+  callCommand $ "cabal exec -- runhaskell -i" ++ libDir ++ " model.hs"
   callCommand "rm model.hs"
