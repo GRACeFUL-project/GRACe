@@ -1,4 +1,7 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, TypeApplications #-}
+{-# LANGUAGE DeriveGeneric
+  , OverloadedStrings
+  , TypeApplications
+#-}
 module GRACeGraph where
 import System.Environment
 import Data.Aeson

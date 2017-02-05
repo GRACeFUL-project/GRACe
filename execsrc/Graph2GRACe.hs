@@ -1,4 +1,8 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, TypeApplications #-}
+{-# LANGUAGE DeriveGeneric
+  , OverloadedStrings
+  , TypeApplications
+#-}
+module Main where
 import System.Environment
 import System.Process
 import Data.Aeson
