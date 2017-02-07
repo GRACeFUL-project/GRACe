@@ -9,15 +9,15 @@ import System.Environment
 -- | Read the library from a directory
 readRawLibrary :: FilePath -> IO [String]
 readRawLibrary libDir = do
-    -- Get the .hs files in the library directory
-    libDirHsFiles <- filter (match $ compile "*.hs") <$> listDirectory libDir
+  -- Get the .hs files in the library directory
+  libDirHsFiles <- filter (match $ compile "*.hs") <$> listDirectory libDir
 
-    -- Get the contents of the library
-    libFilesContents <- withCurrentDirectory libDir 
-                     $ sequence $ readFile <$> libDirHsFiles
+  -- Get the contents of the library
+  libFilesContents <- withCurrentDirectory libDir 
+                   $ sequence $ readFile <$> libDirHsFiles
 
-    -- Return the contest
-    return ["{" ++ s ++ "}" | Right s <- parse parseJSONComment "" <$> libFilesContents]
+  -- Return the contest
+  return ["{" ++ s ++ "}" | Right s <- parse parseJSONComment "" <$> libFilesContents]
 
 -- | Parse the {-% %-} blocks
 parseJSONComment :: Parsec String () String
