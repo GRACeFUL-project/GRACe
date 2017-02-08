@@ -4,6 +4,7 @@ packages:
 - '.'
 extra-deps:
 - parsec-numbers-0.1.0
+- aeson-1.1.0.0
 resolver: lts-7.11
 
 docker:
