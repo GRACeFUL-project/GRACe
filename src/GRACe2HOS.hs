@@ -1,4 +1,9 @@
 -- TODO Finish this part up. Extend GExp and use in constraints.
+{-# LANGUAGE TypeOperators,
+             MultiParamTypeClasses,
+             FlexibleInstances,
+             FlexibleContexts
+#-}
 
 type Name = Integer
 
@@ -10,8 +15,8 @@ data GExp
   | Eql  GExp GExp
   | Lit  Int
 
-dec :: (GExp -> GExp) -> GExp
-dec f = Dec n body
+declare :: (GExp -> GExp) -> GExp
+declare f = Dec n body
   where
     body = f (Var n)
     n    = prime (maxBV body)
@@ -35,22 +40,34 @@ maxBV (Dec n _)  = n
 
 codegen :: GExp -> String
 codegen (Var x)      = "v" ++ show x
-codegen (Dec x body) = "var v" ++ show x ++ ";\n" ++ codegen body
+codegen (Dec x body) = "var v" ++ show x ++ "\n" ++ codegen body
 codegen (Less l r)   = codegen l ++ "<" ++ codegen r
 codegen (Eql l r)    = codegen l ++ "==" ++ codegen r
-codegen (Seq x y)    = codegen x ++ ";\n" ++ codegen y
+codegen (Seq x y)    = codegen x ++ "\n" ++ codegen y
 codegen (Lit i)      = show i
 
 (<>) = Seq
 
 pump :: Int -> GExp -> GExp -> GExp
-pump c i o = Less i (Lit c) <> Eql i o
+pump c i o = i <: c <> i === o
 
 rain :: Int -> GExp -> GExp
-rain r p = Eql p (Lit r)
+rain r p = p === r
+
+class a `In` b where
+  emb :: a -> b 
+
+instance a `In` a where
+  emb = id
+
+instance Int `In` GExp where
+  emb = Lit
+
+x === y = Eql (emb x) (emb y)
+x <:  y = Less (emb x) (emb y)
 
 example :: GExp -> GExp
 example x =
-  dec $ \port ->
-     pump 7 port x
-  <> rain 5 port
+  declare $ \port ->
+     rain 5 port
+  <> pump 7 port x
