@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric
   , OverloadedStrings
   , TypeApplications
+  , DeriveAnyClass
 #-}
 module GRACeGraph where
 import System.Environment
@@ -16,14 +17,7 @@ import qualified Data.Text as T
 
 -- | An adjacency list representation of graphs
 data Graph = Graph { nodes :: [Node] }
-  deriving (Generic, Show, Eq)
-
--- | We don't need any fancy instances
-instance ToJSON Graph where
-  toEncoding = genericToEncoding defaultOptions
-
--- | The default instance is fine
-instance FromJSON Graph
+  deriving (Generic, Show, Eq, ToJSON, FromJSON)
 
 -- | Nodes in the graph
 data Node = Node { identity   :: Maybe Int   -- * What ID does this node have?
@@ -86,7 +80,7 @@ instance ToJSON PrimTypeValue where
 instance FromJSON PrimTypeValue where
   parseJSON (String s) = return $ StringV (T.unpack s)
   parseJSON (Bool b)   = return $ BoolV b
-  parseJSON (Number s) = return $ either FloatV IntV $ floatingOrInteger s 
+  parseJSON (Number s) = return $ either FloatV IntV $ floatingOrInteger s
   parseJSON _          = fail "Does not comform to interface"
 
 -- | Fix the prefixes
@@ -106,19 +100,19 @@ instance FromJSON Interface where
   parseJSON  = genericParseJSON  interfaceOptions
 
 example = Graph
-  [ Node 
+  [ Node
      (Just 1)
      "pump"
      [ Parameter "capacity" FloatT (FloatV 5) ]
      [ Interface "inflow" "flow" (Just (3, "outlet"))
      , Interface "outflow" "flow" Nothing
      ]
-  , Node 
+  , Node
      (Just 2)
      "rain"
      [ Parameter "amount" FloatT (FloatV 10) ]
      [ Interface "rainfall" "flow" (Just (3, "inflow")) ]
-  , Node 
+  , Node
      (Just 3)
      "runoffArea"
      [ Parameter "capacity" FloatT (FloatV 5) ]
