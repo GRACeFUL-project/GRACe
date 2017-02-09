@@ -9,7 +9,7 @@
 -}
 module GRACe2 where
 
-import GL
+import GL hiding (Lit)
 import Compile0
 
 -- Axelsson + Claessen thing
@@ -20,15 +20,14 @@ import Compile0
 type Name = Integer
 
 data GExp
-  = Var Name 
-  | Lam Name GExp
-  | App GExp GExp
+  = Var  Name 
+  | Dec  Name GExp
+  | Seq  GExp GExp
+  | Less GExp GExp
+  | Lit  Int
 
-app :: GExp -> GExp -> GExp
-app = App
-
-lam :: (GExp -> GExp) -> GExp
-lam f = Lam n body
+dec :: (GExp -> GExp) -> GExp
+dec f = Dec n body
   where
     body = f (Var n)
     n    = prime (maxBV body)
@@ -43,9 +42,17 @@ prime = succ
 (\/) = max
 
 maxBV :: GExp -> Name 
-maxBV (Var _)   = bot
-maxBV (App f a) = maxBV f \/ maxBV a
-maxBV (Lam n _) = n
+maxBV (Var _)    = bot
+maxBV (Lit _)    = bot
+maxBV (Seq f a)  = maxBV f \/ maxBV a
+maxBV (Less f a) = maxBV f \/ maxBV a
+maxBV (Dec n _)  = n
+
+codegen :: GExp -> String
+codegen (Var x)      = "v" ++ show x
+codegen (Dec x body) = "var v" ++ show x ++ ";\n" ++ codegen body
+codegen (Less l r)   = codegen l ++ "<" ++ codegen r
+codegen (Lit i)      = show i
 
 -- GRACe thing
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,10 +69,10 @@ class Declarable a where
 instance (CPType a) => Declarable (Port a) where
   create = createPort
 
-instance (Declrarable a, Declarable b) => Declarable (a, b) where
+instance (Declarable a, Declarable b) => Declarable (a, b) where
   create = do
-    a <- createPort
-    b <- createPort
+    a <- create
+    b <- create
     return (a, b)
 
 -- The easiest way to declare ports. We have the chance to rename these now.
