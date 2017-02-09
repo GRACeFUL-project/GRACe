@@ -55,9 +55,22 @@ maxBV (Lam n _) = n
 -- embedding on top of it.
 type GRACePrg = GCM ()
 
+-- | An idea for how to make nicer `declare` syntax maybe?
+class Declarable a where
+  create :: GCM a
+
+instance (CPType a) => Declarable (Port a) where
+  create = createPort
+
+instance (Declrarable a, Declarable b) => Declarable (a, b) where
+  create = do
+    a <- createPort
+    b <- createPort
+    return (a, b)
+
 -- The easiest way to declare ports. We have the chance to rename these now.
-declare :: (Port a -> GRACePrg) -> GRACePrg
-declare f = undefined
+declare :: (Declarable a) => (a -> GRACePrg) -> GRACePrg
+declare f = create >>= f 
 
 -- Composition
 (<>) :: GRACePrg -> GRACePrg -> GRACePrg
@@ -105,9 +118,8 @@ runoffArea cap inflow outlet overflow =
 -- Declare syntax slightly worse if there were not very few of them
 example :: GRACePrg
 example =
-  declare $ \rainOut ->
-    declare $ \pumpOut ->
-         rain 5 rainOut
-      <> pump 7 rainOut pumpOut
-      <> output pumpOut "pumpOut"
+  declare $ \(rainOut, pumpOut) ->
+       rain 5 rainOut
+    <> pump 7 rainOut pumpOut
+    <> output pumpOut "pumpOut"
 
