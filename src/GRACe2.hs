@@ -106,6 +106,10 @@ pump maxCap inPort outPort =
     , "inPort === outPort"           -- get rid of value
     , "inPort `inRange` (0, maxCap)" -- get rid of lit
     ]
+  {- Should look something like:
+      inPort === outPort
+   <> inPort `inRange` (0, maxCap)
+  -}
 
 runoffArea :: Float
            -> Port Float
@@ -115,7 +119,6 @@ runoffArea :: Float
 runoffArea cap inflow outlet overflow = 
   error "constraints here"
 
--- Declare syntax slightly worse if there were not very few of them
 example :: GRACePrg
 example =
   declare $ \(rainOut, pumpOut) ->
@@ -123,3 +126,42 @@ example =
     <> pump 7 rainOut pumpOut
     <> output pumpOut "pumpOut"
 
+{- Note here the difference in GCM code:
+ old:
+
+    do
+      rout        <- rain 5
+      (pin, pout) <- pump 7
+      link rout pin
+      output pout "pumpOut"
+
+   after inlining:
+    
+    do
+      rout <- createPort
+      set rout 5
+      pin <- createPort
+      pout <- createPort
+      component $ do
+        assert $ pin === pout
+        assert $ pin `inRange` (0, lit 7)
+      link pin rout
+
+    There are a total of 3 ports being created here
+
+  new code will look something like:
+    
+    do
+      rainOut <- createPort
+      pumpOut <- createPort
+      set rainOut 5
+      component $ do
+        assert $ rainOut === pumpOut
+        assert $ rainOut `inRange` (0, lit 7)
+    
+    The intermidiate port has been fused away!
+
+    It's currently unclear what more can be done to automatically
+    fuse things, but we should have a look at it.
+
+-}
