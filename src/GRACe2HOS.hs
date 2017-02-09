@@ -15,11 +15,21 @@ data GExp
   | Eql  GExp GExp
   | Lit  Int
 
-declare :: (GExp -> GExp) -> GExp
-declare f = Dec n body
+dec :: (GExp -> GExp) -> GExp
+dec f = Dec n body
   where
     body = f (Var n)
     n    = prime (maxBV body)
+
+-- Get rid of multiple `dec`s
+class Vindaloo a where
+  declare :: (a -> GExp) -> GExp
+
+instance Vindaloo GExp where
+  declare = dec
+
+instance Vindaloo (GExp, GExp) where
+  declare f = dec $ \v -> dec $ curry f v
 
 bot :: Name
 bot = 0
@@ -63,7 +73,10 @@ instance a `In` a where
 instance Int `In` GExp where
   emb = Lit
 
+(===) :: (a `In` GExp, b `In` GExp) => a -> b -> GExp
 x === y = Eql (emb x) (emb y)
+
+(<:) :: (a `In` GExp, b `In` GExp) => a -> b -> GExp
 x <:  y = Less (emb x) (emb y)
 
 example :: GExp -> GExp
