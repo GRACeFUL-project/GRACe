@@ -4,11 +4,15 @@
 {-# LANGUAGE TypeOperators,
              MultiParamTypeClasses,
              FlexibleInstances,
-             FlexibleContexts #-}
+             FlexibleContexts,
+             DeriveDataTypeable #-}
 
 import Control.Monad.State
 import Data.Maybe
 import Data.List
+import Data.Generics.Uniplate.Data
+import Data.Typeable
+import Data.Data
 
 type Name = Integer
 
@@ -20,6 +24,7 @@ data GExp
   | Eql  GExp GExp
   | Lit  Int
   | Empty          -- Kind of ugly, doesn't need to be here
+  deriving (Data, Typeable, Show)
 
 instance Monoid GExp where
   mempty = Empty
@@ -60,9 +65,6 @@ maxBV (Less a b) = maxBV a \/ maxBV b
 maxBV (Eql a b)  = maxBV a \/ maxBV b
 maxBV (Dec n _)  = n
 
-compile :: GExp -> String
-compile = codegen . alphaRename
-
 codegen :: GExp -> String
 codegen Empty        = ""
 codegen (Var x)      = vname x
@@ -72,44 +74,25 @@ codegen (Eql l r)    = codegen l ++ "==" ++ codegen r
 codegen (Seq x y)    = codegen x ++ "\n" ++ codegen y
 codegen (Lit i)      = show i
 
-alphaRename :: GExp -> GExp
-alphaRename exp = evalState (helper [] exp) 0
-  where
-    helper _   Empty        = return Empty
-    helper sub (Var x)      = return (Var $ substitute sub x)
-    helper sub (Dec x body) = do
-      x' <- get
-      modify succ
-      Dec x' <$>  helper (insertSubstitution (x, x') sub) body
-    helper sub (Less l r)   = Less <$> (helper sub l) <*> (helper sub r)
-    helper sub (Eql l r)    = Eql  <$> (helper sub l) <*> (helper sub r)
-    helper sub (Seq l r)    = Seq  <$> (helper sub l) <*> (helper sub r)
-    helper sub (Lit i)      = return (Lit i)
-
-type Substitution a = [(a, a)]
-
-substitute :: (Eq a) => Substitution a -> a -> a
-substitute sub x = fromMaybe x $ lookup x sub
-
--- TODO: Compute transitive closure
-insertSubstitution :: (Eq a, Ord a) => (a, a) -> Substitution a -> Substitution a
-insertSubstitution (a, b) substs = insrt (max a b, min a b) substs
-  where
-    insrt p [] = [p]
-    insrt (a, b) ((c, d):xs)
-      | a == c    = insrt (a, min b d) xs
-      | b == c    = insrt (a, d)       xs
-      | otherwise = (c, d) : insrt (a, b) xs
-
 vname :: Name -> String
 vname i = "v" ++ show i
 
 -- TODO: Maybe make this a smart constructor which
 -- floats links and (===) as high as possible?
 (<>) :: GExp -> GExp -> GExp
-(<>) = Seq
+(Dec n body) <> x = declare $ \(Var n') -> replace n n' body <> x
+x <> (Dec n body) = declare $ \(Var n') -> x <> replace n n' body
+x <> y = Seq x y
 
 infixr 2 <>
+
+replace :: Name -> Name -> GExp -> GExp
+replace n n' = transform (replace' n n')
+  where
+    replace' n n' (Var x)
+      | x == n    = Var n'
+      | otherwise = Var n
+    replace' n n' x = x
 
 class a `In` b where
   emb :: a -> b 
