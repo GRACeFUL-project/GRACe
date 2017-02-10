@@ -1,4 +1,6 @@
--- TODO Finish this part up. Extend GExp and use in constraints.
+-- TODO:
+--  * Finish this part up. Extend GExp and use in constraints.
+--  * QuickCheck properties...
 {-# LANGUAGE TypeOperators,
              MultiParamTypeClasses,
              FlexibleInstances,
@@ -121,22 +123,3 @@ example x =
   declare $ \port ->
      rain 5 port
   <> pump 7 port x
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
