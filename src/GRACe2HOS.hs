@@ -5,7 +5,8 @@
              MultiParamTypeClasses,
              FlexibleInstances,
              FlexibleContexts,
-             DeriveDataTypeable #-}
+             DeriveDataTypeable,
+             ScopedTypeVariables #-}
 
 import Control.Monad.State
 import Data.Maybe
@@ -20,17 +21,14 @@ data GExp
   = Var  Name 
   | Dec  Name GExp
   | Seq  GExp GExp
-  | Less GExp GExp
-  | Eql  GExp GExp
+  | BinOp Op GExp GExp
   | Lit  Int
-  | Empty          -- Kind of ugly, doesn't need to be here
-  deriving (Data, Typeable, Show)
+  deriving (Data, Typeable)
 
-instance Monoid GExp where
-  mempty = Empty
-  mappend = Seq
+data Op = Eql
+        | Less
+        deriving (Typeable, Data, Show)
 
--- TODO: Float decs and links as far as possible here?
 dec :: (GExp -> GExp) -> GExp
 dec f = Dec n body
   where
@@ -57,32 +55,30 @@ prime = succ
 (\/) = max
 
 maxBV :: GExp -> Name 
-maxBV (Var _)    = bot
-maxBV (Lit _)    = bot
-maxBV Empty      = bot
-maxBV (Seq a b)  = maxBV a \/ maxBV b
-maxBV (Less a b) = maxBV a \/ maxBV b
-maxBV (Eql a b)  = maxBV a \/ maxBV b
-maxBV (Dec n _)  = n
+maxBV (Var _)       = bot
+maxBV (Lit _)       = bot
+maxBV (BinOp _ _ _) = bot
+maxBV (Seq a b)     = maxBV a \/ maxBV b
+maxBV (Dec n _)     = n
 
 codegen :: GExp -> String
-codegen Empty        = ""
-codegen (Var x)      = vname x
-codegen (Dec x body) = "var " ++ vname x ++ "\n" ++ codegen body
-codegen (Less l r)   = codegen l ++ "<"  ++ codegen r
-codegen (Eql l r)    = codegen l ++ "==" ++ codegen r
-codegen (Seq x y)    = codegen x ++ "\n" ++ codegen y
-codegen (Lit i)      = show i
+codegen (Var x)        = vname x
+codegen (Dec x body)   = "var " ++ vname x ++ "\n" ++ codegen body
+codegen (BinOp op l r) = codegen l ++ opStr op ++ codegen r
+codegen (Seq x y)      = codegen x ++ "\n" ++ codegen y
+codegen (Lit i)        = show i
+
+opStr :: Op -> String
+opStr Less = "<"
+opStr Eql  = "=="
 
 vname :: Name -> String
 vname i = "v" ++ show i
 
--- TODO: Maybe make this a smart constructor which
--- floats links and (===) as high as possible?
 (<>) :: GExp -> GExp -> GExp
 (Dec n body) <> x = declare $ \(Var n') -> replace n n' body <> x
 x <> (Dec n body) = declare $ \(Var n') -> x <> replace n n' body
-x <> y = Seq x y
+x <> y            = Seq x y
 
 infixr 2 <>
 
@@ -91,7 +87,7 @@ replace n n' = transform (replace' n n')
   where
     replace' n n' (Var x)
       | x == n    = Var n'
-      | otherwise = Var n
+      | otherwise = Var x
     replace' n n' x = x
 
 class a `In` b where
@@ -104,10 +100,10 @@ instance Int `In` GExp where
   emb = Lit
 
 (===) :: (a `In` GExp, b `In` GExp) => a -> b -> GExp
-x === y = Eql (emb x) (emb y)
+x === y = BinOp Eql (emb x) (emb y)
 
 (<:) :: (a `In` GExp, b `In` GExp) => a -> b -> GExp
-x <:  y = Less (emb x) (emb y)
+x <:  y = BinOp Less (emb x) (emb y)
 
 -- Examples
 
@@ -122,5 +118,5 @@ rain r p = p === r
 example :: GExp -> GExp
 example x =
   declare $ \port ->
-     rain 5 port
-  <> pump 7 port x
+     rain 5  port
+  <> pump 7  port x
