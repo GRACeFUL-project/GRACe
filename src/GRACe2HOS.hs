@@ -25,6 +25,7 @@ instance Monoid GExp where
   mempty = Empty
   mappend = Seq
 
+-- TODO: Float decs and links as far as possible here?
 dec :: (GExp -> GExp) -> GExp
 dec f = Dec n body
   where
@@ -74,24 +75,41 @@ codegen (Lit i)      = show i
 alphaRename :: GExp -> GExp
 alphaRename exp = evalState (helper [] exp) 0
   where
-    substitute sub x = fromMaybe x $ lookup x sub
-
     helper _   Empty        = return Empty
     helper sub (Var x)      = return (Var $ substitute sub x)
     helper sub (Dec x body) = do
       x' <- get
       modify succ
-      Dec x' <$>  helper ((x,x'):sub) body
+      Dec x' <$>  helper (insertSubstitution (x, x') sub) body
     helper sub (Less l r)   = Less <$> (helper sub l) <*> (helper sub r)
     helper sub (Eql l r)    = Eql  <$> (helper sub l) <*> (helper sub r)
     helper sub (Seq l r)    = Seq  <$> (helper sub l) <*> (helper sub r)
     helper sub (Lit i)      = return (Lit i)
 
+type Substitution a = [(a, a)]
+
+substitute :: (Eq a) => Substitution a -> a -> a
+substitute sub x = fromMaybe x $ lookup x sub
+
+-- TODO: Compute transitive closure
+insertSubstitution :: (Eq a, Ord a) => (a, a) -> Substitution a -> Substitution a
+insertSubstitution (a, b) substs = insrt (max a b, min a b) substs
+  where
+    insrt p [] = [p]
+    insrt (a, b) ((c, d):xs)
+      | a == c    = insrt (a, min b d) xs
+      | b == c    = insrt (a, d)       xs
+      | otherwise = (c, d) : insrt (a, b) xs
+
 vname :: Name -> String
 vname i = "v" ++ show i
 
+-- TODO: Maybe make this a smart constructor which
+-- floats links and (===) as high as possible?
 (<>) :: GExp -> GExp -> GExp
 (<>) = Seq
+
+infixr 2 <>
 
 class a `In` b where
   emb :: a -> b 
