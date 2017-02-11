@@ -80,7 +80,7 @@ vname i = "v" ++ show i
 x <> (Dec n body) = declare $ \(Var n') -> x <> replace n n' body
 x <> y            = Seq x y
 
-infixr 2 <>
+infixr 0 <>
 
 replace :: Name -> Name -> GExp -> GExp
 replace n n' = transform (replace' n n')
