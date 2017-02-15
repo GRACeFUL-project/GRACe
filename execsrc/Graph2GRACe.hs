@@ -17,11 +17,6 @@ import qualified Data.Text as T
 
 import GRACeGraph
 
-{-
- - TODO
- -  * Run the generated program.
- -}
-
 imports :: Graph -> [String]
 imports g = nub $ ["import " ++ capf (name n) | n <- nodes g]
   where
@@ -32,7 +27,7 @@ components :: Graph -> [String]
 components g = [name n ++ " " ++ intercalate " " (prettyArgs n) | n <- nodes g]
 
 prettyArgs :: Node -> [String]
-prettyArgs n = [pPrintPTV (parameterValue p) | p <- parameters n]
+prettyArgs n = [pPrintPTV v | Just v <- parameterValue <$> parameters n]
 
 allPortNames :: Graph -> [String]
 allPortNames g = concatMap interfaceNames (nodes g)

@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:
     GL,
+    GRACe2,
     TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
