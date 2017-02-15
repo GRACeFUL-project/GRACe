@@ -46,12 +46,12 @@ instance FromJSON Node where
 
 data Parameter = Parameter { parameterName  :: String
                            , parameterType  :: PrimType
-                           , parameterValue :: PrimTypeValue
+                           , parameterValue :: Maybe PrimTypeValue
                            }
   deriving (Generic, Show, Eq)
 
 parameterOptions :: Options
-parameterOptions = defaultOptions { fieldLabelModifier = (map toLower) . (drop $ length ("parameter" :: String)) }
+parameterOptions = defaultOptions { fieldLabelModifier = (map toLower) . (drop $ length ("parameter" :: String)), omitNothingFields = True }
 
 instance ToJSON Parameter where
   toEncoding = genericToEncoding parameterOptions
@@ -109,19 +109,19 @@ example = Graph
   [ Node 
      (Just 1)
      "pump"
-     [ Parameter "capacity" FloatT (FloatV 5) ]
+     [ Parameter "capacity" FloatT (Just (FloatV 5)) ]
      [ Interface "inflow" "flow" (Just (3, "outlet"))
      , Interface "outflow" "flow" Nothing
      ]
   , Node 
      (Just 2)
      "rain"
-     [ Parameter "amount" FloatT (FloatV 10) ]
+     [ Parameter "amount" FloatT (Just (FloatV 10)) ]
      [ Interface "rainfall" "flow" (Just (3, "inflow")) ]
   , Node 
      (Just 3)
      "runoffArea"
-     [ Parameter "capacity" FloatT (FloatV 5) ]
+     [ Parameter "capacity" FloatT (Just (FloatV 5)) ]
      [ Interface "inflow"   "flow" Nothing
      , Interface "outlet"   "flow" Nothing
      , Interface "overflow" "flow" Nothing

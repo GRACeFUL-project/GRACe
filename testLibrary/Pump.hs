@@ -22,4 +22,3 @@ pump maxCap = do
     assert $ inflow `inRange` (0, lit maxCap)
 
   return (inPort, outPort)
-
