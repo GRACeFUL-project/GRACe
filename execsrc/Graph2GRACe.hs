@@ -63,6 +63,8 @@ generateFile g =  unlines (["import GL", "import Compile0"] ++ imports g)
                ++ "\nmain = runGCM graph"
 
 main = do
+  FingBS.writeFile "example.json" (encodePretty example)
+
   args <- getArgs
   let libDir    = args !! 0
       graphFile = args !! 1

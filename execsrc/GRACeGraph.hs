@@ -32,7 +32,7 @@ nodeOptions = defaultOptions {omitNothingFields = True}
 
 -- | Obvious instances
 instance ToJSON Node where
-  toEncoding = genericToEncoding nodeOptions
+  toJSON = genericToJSON nodeOptions
 
 -- | Obvious instances
 instance FromJSON Node where
@@ -48,7 +48,7 @@ parameterOptions :: Options
 parameterOptions = defaultOptions { fieldLabelModifier = (map toLower) . (drop $ length ("parameter" :: String)), omitNothingFields = True }
 
 instance ToJSON Parameter where
-  toEncoding = genericToEncoding parameterOptions
+  toJSON = genericToJSON parameterOptions
 
 instance FromJSON Parameter where
   parseJSON  = genericParseJSON  parameterOptions
@@ -61,7 +61,7 @@ primTypeOptions :: Options
 primTypeOptions = defaultOptions { constructorTagModifier = init }
 
 instance ToJSON PrimType where
-  toEncoding = genericToEncoding primTypeOptions
+  toJSON = genericToJSON primTypeOptions
 
 instance FromJSON PrimType where
   parseJSON  = genericParseJSON  primTypeOptions
@@ -94,7 +94,7 @@ interfaceOptions :: Options
 interfaceOptions = defaultOptions { fieldLabelModifier = (map toLower) . (drop (length ("interface" :: String))), omitNothingFields = True }
 
 instance ToJSON Interface where
-  toEncoding = genericToEncoding interfaceOptions
+  toJSON = genericToJSON interfaceOptions
 
 instance FromJSON Interface where
   parseJSON  = genericParseJSON  interfaceOptions

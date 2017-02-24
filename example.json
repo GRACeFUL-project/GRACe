@@ -4,23 +4,23 @@
             "name": "pump",
             "parameters": [
                 {
-                    "parameterValue": 5,
-                    "parameterType": "FloatT",
-                    "parameterName": "capacity"
+                    "value": 5,
+                    "name": "capacity",
+                    "type": "Float"
                 }
             ],
             "interface": [
                 {
-                    "interfaceName": "inflow",
-                    "interfaceType": "flow",
-                    "interfaceConnection": [
+                    "connection": [
                         3,
                         "outlet"
-                    ]
+                    ],
+                    "name": "inflow",
+                    "type": "flow"
                 },
                 {
-                    "interfaceName": "outflow",
-                    "interfaceType": "flow"
+                    "name": "outflow",
+                    "type": "flow"
                 }
             ],
             "identity": 1
@@ -29,19 +29,19 @@
             "name": "rain",
             "parameters": [
                 {
-                    "parameterValue": 10,
-                    "parameterType": "FloatT",
-                    "parameterName": "amount"
+                    "value": 10,
+                    "name": "amount",
+                    "type": "Float"
                 }
             ],
             "interface": [
                 {
-                    "interfaceName": "rainfall",
-                    "interfaceType": "flow",
-                    "interfaceConnection": [
+                    "connection": [
                         3,
                         "inflow"
-                    ]
+                    ],
+                    "name": "rainfall",
+                    "type": "flow"
                 }
             ],
             "identity": 2
@@ -50,23 +50,23 @@
             "name": "runoffArea",
             "parameters": [
                 {
-                    "parameterValue": 5,
-                    "parameterType": "FloatT",
-                    "parameterName": "capacity"
+                    "value": 5,
+                    "name": "capacity",
+                    "type": "Float"
                 }
             ],
             "interface": [
                 {
-                    "interfaceName": "inflow",
-                    "interfaceType": "flow"
+                    "name": "inflow",
+                    "type": "flow"
                 },
                 {
-                    "interfaceName": "outlet",
-                    "interfaceType": "flow"
+                    "name": "outlet",
+                    "type": "flow"
                 },
                 {
-                    "interfaceName": "overflow",
-                    "interfaceType": "flow"
+                    "name": "overflow",
+                    "type": "flow"
                 }
             ],
             "identity": 3
