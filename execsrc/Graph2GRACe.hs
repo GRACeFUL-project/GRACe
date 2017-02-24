@@ -12,6 +12,7 @@ import GHC.Generics
 import Data.List
 import Data.Maybe
 import Data.Char
+import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Lazy.Char8 as FingBS
 import qualified Data.Text as T
 

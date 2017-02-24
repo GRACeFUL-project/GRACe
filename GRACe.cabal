@@ -103,6 +103,7 @@ executable Graph2GRACe
       base           >= 4.9 && <4.10
     , directory      >= 1.2
     , aeson          >= 1.1
+    , aeson-pretty
     , bytestring     >= 0.10
     , text           >= 1.2
     , scientific     >= 0.3

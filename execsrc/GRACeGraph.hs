@@ -103,19 +103,23 @@ example = Graph
   [ Node
      (Just 1)
      "pump"
-     [ Parameter "capacity" FloatT (Just (FloatV 5)) ]
-     [ Interface "inflow" "flow" (Just (3, "outlet"))
-     , Interface "outflow" "flow" Nothing
+     [ Parameter "capacity" FloatT (Just (FloatV 5))
+     ]
+     [ Interface "inflow"  "flow"  (Just (3, "outlet"))
+     , Interface "outflow" "flow"  Nothing
      ]
   , Node
      (Just 2)
      "rain"
-     [ Parameter "amount" FloatT (Just (FloatV 10)) ]
-     [ Interface "rainfall" "flow" (Just (3, "inflow")) ]
+     [ Parameter "amount"   FloatT (Just (FloatV 10))
+     ]
+     [ Interface "rainfall" "flow" (Just (3, "inflow"))
+     ]
   , Node
      (Just 3)
      "runoffArea"
-     [ Parameter "capacity" FloatT (Just (FloatV 5)) ]
+     [ Parameter "capacity" FloatT (Just (FloatV 5))
+     ]
      [ Interface "inflow"   "flow" Nothing
      , Interface "outlet"   "flow" Nothing
      , Interface "overflow" "flow" Nothing

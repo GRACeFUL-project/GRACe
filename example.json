@@ -1,0 +1,75 @@
+{
+    "nodes": [
+        {
+            "name": "pump",
+            "parameters": [
+                {
+                    "parameterValue": 5,
+                    "parameterType": "FloatT",
+                    "parameterName": "capacity"
+                }
+            ],
+            "interface": [
+                {
+                    "interfaceName": "inflow",
+                    "interfaceType": "flow",
+                    "interfaceConnection": [
+                        3,
+                        "outlet"
+                    ]
+                },
+                {
+                    "interfaceName": "outflow",
+                    "interfaceType": "flow"
+                }
+            ],
+            "identity": 1
+        },
+        {
+            "name": "rain",
+            "parameters": [
+                {
+                    "parameterValue": 10,
+                    "parameterType": "FloatT",
+                    "parameterName": "amount"
+                }
+            ],
+            "interface": [
+                {
+                    "interfaceName": "rainfall",
+                    "interfaceType": "flow",
+                    "interfaceConnection": [
+                        3,
+                        "inflow"
+                    ]
+                }
+            ],
+            "identity": 2
+        },
+        {
+            "name": "runoffArea",
+            "parameters": [
+                {
+                    "parameterValue": 5,
+                    "parameterType": "FloatT",
+                    "parameterName": "capacity"
+                }
+            ],
+            "interface": [
+                {
+                    "interfaceName": "inflow",
+                    "interfaceType": "flow"
+                },
+                {
+                    "interfaceName": "outlet",
+                    "interfaceType": "flow"
+                },
+                {
+                    "interfaceName": "overflow",
+                    "interfaceType": "flow"
+                }
+            ],
+            "identity": 3
+        }
+    ]
+}
