@@ -61,20 +61,6 @@ maxBV (BinOp _ _ _) = bot
 maxBV (Seq a b)     = maxBV a \/ maxBV b
 maxBV (Dec n _)     = n
 
-codegen :: GExp -> String
-codegen (Var x)        = vname x
-codegen (Dec x body)   = "var " ++ vname x ++ "\n" ++ codegen body
-codegen (BinOp op l r) = codegen l ++ opStr op ++ codegen r
-codegen (Seq x y)      = codegen x ++ "\n" ++ codegen y
-codegen (Lit i)        = show i
-
-opStr :: Op -> String
-opStr Less = "<"
-opStr Eql  = "=="
-
-vname :: Name -> String
-vname i = "v" ++ show i
-
 (<>) :: GExp -> GExp -> GExp
 (Dec n body) <> x = declare $ \(Var n') -> replace n n' body <> x
 x <> (Dec n body) = declare $ \(Var n') -> x <> replace n n' body
@@ -89,6 +75,20 @@ replace n n' = transform (replace' n n')
       | x == n    = Var n'
       | otherwise = Var x
     replace' n n' x = x
+
+codegen :: GExp -> String
+codegen (Var x)        = vname x
+codegen (Dec x body)   = "var " ++ vname x ++ "\n" ++ codegen body
+codegen (BinOp op l r) = codegen l ++ opStr op ++ codegen r
+codegen (Seq x y)      = codegen x ++ "\n" ++ codegen y
+codegen (Lit i)        = show i
+
+opStr :: Op -> String
+opStr Less = "<"
+opStr Eql  = "=="
+
+vname :: Name -> String
+vname i = "v" ++ show i
 
 class a `In` b where
   emb :: a -> b 
