@@ -15,7 +15,7 @@ library = Library "crud"
                                                                    (tPort "overflow" tFloat))
     ]
 
-rain :: Float -> GCM (Port Float)
+rain :: Int -> GCM (Port Int)
 rain amount = do
   port <- createPort
   set port amount
