@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveFunctor          #-}
 
 module GL where
 
@@ -342,7 +343,7 @@ sumGCM i = foldGCM i (+) 0
 type Addr = Int
 
 -- A port is just an address
-data Port a = Port Addr
+data Port a = Port Addr deriving (Show, Functor)
 
 -- A variable is just a port
 type Variable a = Port a
