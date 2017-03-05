@@ -22,7 +22,7 @@ module Types
      -- * Constructing types
     , tInt, tBool, tString, tFloat
     , tUnit, tPair, tTuple3, tTuple4, tTuple5, tMaybe, tList
-    , tError, (.->), tIO, tPort, tGCM
+    , tError, (.->), tIO, tPort, tGCM, (#)
      -- * Searching a typed value
     , findValuesOfType
     ) where
@@ -141,8 +141,8 @@ tIO = IO
 tGCM :: Type t -> Type (GCM t)
 tGCM = GCM
 
-tPort :: String -> (String -> Type t) -> Type (Port t)
-tPort s t = Port' (t s)
+tPort :: Type t -> Type (Port t)
+tPort t = Port' t 
 
 (#) :: String -> Type t -> Type t
 (#) = Tag
@@ -178,8 +178,8 @@ tBool = Const Bool
 tInt :: Type Int
 tInt = Const Int
 
-tFloat :: String -> Type Float
-tFloat s = Tag s $ Const Float
+tFloat :: Type Float
+tFloat = Const Float
 
 tTuple3 :: Type t1 -> Type t2 -> Type t3 -> Type (t1, t2, t3)
 tTuple3 t1 t2 t3 = Iso (f <-> g) (Pair t1 (Pair t2 t3))
@@ -247,3 +247,65 @@ findValuesOfType thisType = rec
          Pair t1 t2 -> rec (fst a ::: t1) ++ rec (snd a ::: t2)
          t1 :|: t2  -> either (\b -> rec (b ::: t1)) (\b -> rec (b ::: t2)) a
          _          -> []
+
+-- Evaluation of typed values
+eval :: (IsTyped t, IsTyped a) => a -> TypedValue -> GCM t
+eval x = rec 
+  where
+    rec tv@(val ::: t) = case t of
+        a :-> b :-> c -> rec (uncurry val ::: Pair a b :-> c)
+        a :-> b       -> castT a x >>= \x' -> rec (val x' ::: b)
+        GCM t         -> val >>= \a -> rec (a ::: t)
+        _             -> fromTyped tv
+
+-- Check type
+castT :: (IsTyped a, Monad m) => Type t -> a -> m t
+castT t x = equalM (typeOf x) t >>= \f -> return (f x)
+
+cast :: (IsTyped a, IsTyped b, Monad m) => a -> m b
+cast = castT (typeOf (undefined :: b))
+
+-- Conversion to and from typed values
+class IsTyped a where
+    typeOf    :: a -> Type a
+    toTyped   :: a -> TypedValue
+    toTyped x  = x ::: typeOf x
+    fromTyped :: Monad m => TypedValue -> m a
+
+instance IsTyped Int where
+    typeOf _ = tInt
+    fromTyped (x ::: Const Int) = return x
+    fromTyped _                 = fail errMsg
+
+instance IsTyped Float where
+    typeOf _ = tFloat
+    fromTyped (x ::: Const Float) = return x
+    fromTyped _                   = fail errMsg
+
+instance IsTyped String where
+    typeOf _ = tString
+    fromTyped (x ::: Const String) = return x
+    fromTyped _                    = fail errMsg
+
+instance IsTyped Bool where
+    typeOf _ = tBool
+    fromTyped (x ::: Const Bool) = return x
+    fromTyped _                  = fail errMsg
+
+instance (IsTyped a, IsTyped b) => IsTyped (a, b) where
+    typeOf (x, y) = tPair (typeOf x) (typeOf y)
+    fromTyped (p ::: t@(Pair a b)) = do
+        f <- equalM t $ tPair (typeOf (undefined :: a)) 
+                              (typeOf (undefined :: b))
+        return (f p)
+    fromTyped _ = fail errMsg
+
+instance IsTyped a => IsTyped [a] where
+    typeOf _ = tList (typeOf (undefined :: a))
+    fromTyped (xs ::: t@(List a)) = do
+        f <- equalM t $ tList (typeOf (undefined :: a))
+        return (f xs)
+    fromTyped _ = fail errMsg
+
+errMsg :: String
+errMsg = "fromTyped failed"

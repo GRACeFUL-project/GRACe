@@ -6,13 +6,14 @@ import Library
 library :: Library
 library = Library "crud" 
     [ Item "rain" $ 
-         rain ::: tFloat "amount" .-> tGCM (tPort "rainfall" tFloat)
+         rain ::: "amount" # tFloat .-> tGCM (tPort $ "rainfall" # tFloat)
     , Item "pump" $
-        pump ::: tFloat "capacity" .-> tGCM (tPair (tPort "inflow" tFloat) (tPort "outflow" tFloat)) 
+        pump ::: "capacity" # tFloat.-> tGCM (tPair (tPort $ "inflow" # tFloat)
+                                                    (tPort $ "outflow" # tFloat)) 
     , Item "runoff area" $ 
-        runoffArea ::: tFloat "storage capacity" .-> tGCM (tTuple3 (tPort "inflow" tFloat) 
-                                                                   (tPort "outlet" tFloat) 
-                                                                   (tPort "overflow" tFloat))
+        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat) 
+                                                                     (tPort $ "outlet"   # tFloat) 
+                                                                     (tPort $ "overflow" # tFloat))
     ]
 
 rain :: Float -> GCM (Port Float)
