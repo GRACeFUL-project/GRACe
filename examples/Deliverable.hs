@@ -6,7 +6,7 @@ import Library
 library :: Library
 library = Library "crud" 
     [ Item "rain" $ 
-         rain ::: tFloat "amount" .-> tGCM (tPort "rainfail" tFloat)
+         rain ::: tFloat "amount" .-> tGCM (tPort "rainfall" tFloat)
     , Item "pump" $
         pump ::: tFloat "capacity" .-> tGCM (tPair (tPort "inflow" tFloat) (tPort "outflow" tFloat)) 
     , Item "runoff area" $ 
@@ -15,7 +15,7 @@ library = Library "crud"
                                                                    (tPort "overflow" tFloat))
     ]
 
-rain :: Int -> GCM (Port Int)
+rain :: Float -> GCM (Port Float)
 rain amount = do
   port <- createPort
   set port amount
