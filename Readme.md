@@ -57,6 +57,9 @@ stack build
 stack exec examples
 ```
 
+(Note: you might have to execute `stack docker pull` before executing `stack build` if you receive an error message such as `
+Error: No such object: fpco/stack-build:lts-7.11`)
+
 Copy executables to `~/.local/bin` (put them on PATH) with
 
 ```shell
