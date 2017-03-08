@@ -23,8 +23,10 @@ module Types
     , tInt, tBool, tString, tFloat
     , tUnit, tPair, tTuple3, tTuple4, tTuple5, tMaybe, tList
     , tError, (.->), tIO, tPort, tGCM, (#)
-     -- * Searching a typed value
-    , findValuesOfType
+     -- * Evaluating and searching a typed value
+    , eval, findValuesOfType
+     -- * From and to typed values
+    , IsTyped(..), cast, castT
     ) where
 
 import Utils
@@ -97,7 +99,7 @@ instance Show TypedValue where
         _ :-> _    -> "<<function>>"
         IO _       -> "<<io>>"
         GCM _      -> "<<gcm>>"
-        Port' _    -> "<<port>>"
+        Port' n    -> "port_" ++ show n
         Tag _ t    -> show (val ::: t)
         List t     -> showAsList (map (show . (::: t)) val)
         Pair t1 t2 -> "(" ++ show (fst val ::: t1) ++
@@ -218,7 +220,8 @@ instance Equal Type where
     equal (Pair a b) (Pair c d) = liftM2 (***) (equal a c) (equal b d)
     equal (a :|: b)  (c :|: d)  = liftM2 biMap (equal a c) (equal b d)
     equal (List a)   (List b)   = fmap map (equal a b)
-    equal (Tag s1 a) (Tag s2 b) | s1 == s2 = equal a b
+    equal (Tag s1 a) t2         = equal a t2
+    equal t1         (Tag s2 b) = equal t1 b
     equal Unit       Unit       = Just id
     equal (Const a)  (Const b)  = equal a b
     equal (Port' a)  (Port' b)  = fmap (\f -> fmap f) $ equal a b 
@@ -249,10 +252,11 @@ findValuesOfType thisType = rec
          _          -> []
 
 -- Evaluation of typed values
-eval :: (IsTyped t, IsTyped a) => a -> TypedValue -> GCM t
-eval x = rec 
+eval :: (IsTyped t, IsTyped a) => TypedValue -> a -> GCM t
+eval tv x = rec tv 
   where
     rec tv@(val ::: t) = case t of
+        Tag _ t'      -> rec (val ::: t')
         a :-> b :-> c -> rec (uncurry val ::: Pair a b :-> c)
         a :-> b       -> castT a x >>= \x' -> rec (val x' ::: b)
         GCM t         -> val >>= \a -> rec (a ::: t)
@@ -282,10 +286,17 @@ instance IsTyped Float where
     fromTyped (x ::: Const Float) = return x
     fromTyped _                   = fail errMsg
 
-instance IsTyped String where
+instance {-# OVERLAPPING #-} IsTyped String where
     typeOf _ = tString
     fromTyped (x ::: Const String) = return x
     fromTyped _                    = fail errMsg
+
+instance IsTyped a => IsTyped (Port a) where
+    typeOf (Port _) = tPort (typeOf (undefined :: a))
+    fromTyped (x ::: t@(Port' _)) = do 
+        f <- equalM t $ tPort (typeOf (undefined :: a))
+        return (f x)
+    fromTyped _ = fail errMsg
 
 instance IsTyped Bool where
     typeOf _ = tBool
