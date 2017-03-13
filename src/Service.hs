@@ -17,69 +17,55 @@
 
 module Service where
 
+import GL
+import Compile0
 import Types
 
-type Id = String
-
-data Service = S
-   { serviceId         :: Id
-   , description       :: String
-   , serviceDeprecated :: Bool
-   , serviceFunction   :: TypedValue
-   }
-
-instance Show Service where
-   show = serviceId
-
-makeService :: String -> String -> TypedValue -> Service
-makeService s descr f =  S s descr False f
-
-deprecate :: Service -> Service
-deprecate s = s { serviceDeprecated = True }
+import Data.Aeson hiding (String)
 
 -- Evaluator
 ------------------------
 
-type Dec a = forall t . Type t -> a -> IO t
+type Dec m a = forall t . Type t -> a -> m t
 
-type Enc a = TypedValue -> IO a
+type Enc m a = TypedValue -> m a
 
-data EvalResult c = EvalResult
-   { inputValues :: [TypedValue]
-   , outputValue :: TypedValue 
-   , evalResult  :: c
-   }
-
-evalService :: Dec b -> Enc a -> Service -> b -> IO a
-evalService dec enc srv b = do
-   res <- eval dec enc b (serviceFunction srv)
-   return (evalResult res)
-
-eval :: Dec b -> Enc c -> b -> TypedValue -> IO (EvalResult c)
-eval dec enc b = rec
+evil :: Dec GCM b -> Enc GCM c -> b -> TypedValue -> GCM c
+evil dec enc b = rec
  where
    rec tv@(val ::: tp) = case tp of
-       -- handle exceptions
-       Const String :|: t ->
-           either fail (\a -> rec (a ::: t)) val
          -- uncurry function if possible
        t1 :-> t2 :-> t3 ->
            rec (uncurry val ::: Pair t1 t2 :-> t3)
        t1 :-> t2 -> do
-           a   <- dec t1 b
-           res <- rec (val a ::: t2)
-           return res { inputValues = (a ::: t1) : inputValues res }
+           a <- dec t1 b
+           rec (val a ::: t2)
          -- perform IO
-       IO t -> do
+       GCM t -> do
            a <- val
            rec (a ::: t)
-       _ -> do
-           c <- enc tv
-           return $ EvalResult [] tv c
+       _ -> enc tv
 
 
+jsonDec :: Monad m => Dec m Value
+jsonDec t v = case t of
+    Const Float  -> unsafeFromJSON v
+    Const Int    -> unsafeFromJSON v
+    Const String -> unsafeFromJSON v
+    Tag _ t'     -> jsonDec t' v
+  where
+    unsafeFromJSON x = case fromJSON x of
+        Success y -> return y
+        _         -> fail "decoding failed"
 
-libraryS :: Service
-libraryS = makeService "library"
-   "List all the available components" $
-   (\n -> ["pump", "rain"]) ::: tString .-> tList (tString)
+jsonEnc :: Monad m => Enc m Value
+jsonEnc (val ::: t) = return $ case t of
+    Const Float -> toJSON val
+
+raar :: (IsTyped a, IsTyped t) => a -> TypedValue -> GCM t
+raar = evil castT fromTyped  
+
+instance ToJSON TypedValue where
+    toJSON (val ::: t) = case t of
+        Const Float -> toJSON val
+
