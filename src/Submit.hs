@@ -1,5 +1,28 @@
-{-# LANGUAGE GADTs #-}
--- Working towards creating GRACe programs from JSON
+{-# LANGUAGE GADTs, RecordWildCards, Strict #-}
+{- | Working towards creating GRACe programs from JSON
+
+  TODOs: 
+
+  * Change the structure of the lookup functions:
+
+    Go from 
+      Id -> Id -> GCM TypedValue 
+      item_name -> parameter_name -> TV parameter representation 
+    to  
+      Id -> Id -> Id -> GCM TypedValue
+      node_id -> item_name -> parameter_name -> TV parameter representation
+      
+    At this point, we cannot use library components twice, and we cannot name 
+    ports in two different components as "inflow", for instance, or one would
+    overwrite the other.
+
+  * Review whether or not there should be so many GCMs in 
+    the type signatures (lookups, for instance)
+
+  * A general cleanup before merging this into wherever its supposed to go
+    would be the decent thing to do.
+
+-}
 module Submit where
  
 import           GL
@@ -9,10 +32,15 @@ import           GRACeGraph
 import           Types
 import           Service
 import           Control.Monad
+import           Data.Aeson hiding (String)
+import qualified Data.ByteString.Lazy.Char8 as BS 
 import           Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import           Data.List
 import           Data.Maybe
+import           Utils
+
+import           Debug.Trace
 
 -- may end up changing types of these, don't know if storing ports as TVs is a good idea
 makeNodes :: Library -> [Node] -> GCM([Map.Map String TypedValue])
@@ -76,20 +104,28 @@ witness _ = Nothing --- TODO cases
 library :: Library
 library = Library "crud"
     [ Item "rain" $
-         rain ::: "amount" # tFloat .-> tGCM (tPort $ "rainfall" # tFloat)
+         rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
+
     , Item "pump" $
-        pump ::: "capacity" # tFloat.-> tGCM (tPair (tPort $ "inflow" # tFloat)
-                                                    (tPort $ "outflow" # tFloat))
+        pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflowP" # tPort tFloat)
+                                                    ("outflowP" # tPort tFloat))
     , Item "runoff area" $
-        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat)
-                                                                     (tPort $ "outlet"   # tFloat)
-                                                                     (tPort $ "overflow" # tFloat))
+        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
+                                                                     ("outlet" # tPort tFloat)
+                                                                     ("overflow" # tPort tFloat))
     ]
 
 -- * Operations on `TypedValue`s
 -- ----------------------------------------------------------------------------
 
 type Id = String
+
+lookupG :: (Show k, Show v, Ord k) => k -> Map k v -> GCM v
+lookupG k m = 
+  case Map.lookup k m of
+    Nothing -> fail $ "- failed to look up the id " ++ show k ++ " in " ++ 
+                      Map.showTree m
+    Just v  -> return v
 
 -- | Extract the identifier of all function arguments/component parameters of a
 -- `TypedValue`, if any.
@@ -100,75 +136,139 @@ idents (_ ::: t) = go t
     go (Tag n _ :-> ts) = n : go ts 
     go _                = []
 
--- | Perform a function under `TypedValue` representation.
-apply1 :: TypedValue -> TypedValue -> Maybe TypedValue
-apply1 (f ::: (t1 :-> t2)) (x ::: t3) = (\g -> f (g x) ::: t2) <$> equal t3 t1
-apply1 _                   _          = Nothing
+
+untag :: Type a -> Type a
+untag (Tag _ t) = t
+untag t         = t
+
+-- | Perform a function application under `TypedValue` representation, for a
+-- single argument.
+apply1 :: TypedValue -> TypedValue -> GCM TypedValue
+apply1 (f ::: (t1 :-> t2)) (x ::: t3) = 
+  case equal t3 t1 of
+    Nothing -> fail "- equal failed in apply1"
+    Just g -> return $ f (g x) ::: t2
 
 -- | Perform function application under `TypedValue` representation, if 
 -- possible.
-apply :: TypedValue -> [TypedValue] -> Maybe TypedValue
+apply :: TypedValue -> [TypedValue] -> GCM TypedValue
 apply = foldM apply1
 
--- | Self-explanatory code.
-applyItem :: (Id -> Maybe TypedValue) -> Item -> Maybe Item
+-- | Perform a function application inside an `Item`.
+applyItem :: (Id -> GCM TypedValue) -> Item -> GCM Item
 applyItem f (Item n tv) = do
-  maybe_tvs <- mapM f (idents tv)
-  maybe_tv <- apply tv maybe_tvs 
-  return (Item n maybe_tv)
+  tvs <- apply tv =<< mapM f (idents tv)
+  return (Item n tvs)
 
 -- | Perform application on the entire `Library`.
-applyLibrary :: Library -> (Id -> Id -> Maybe TypedValue) -> Maybe Library
-applyLibrary (Library n is) f = Library n <$> go f is
-  where
-    go f []     = return []
-    go f (x:xs) = do
-      y  <- applyItem (f (itemId x)) x
-      ys <- go f xs
-      return (y:ys)
+applyLibrary :: Library -> (Id -> Id -> GCM TypedValue) -> GCM Library
+applyLibrary (Library n is) f = 
+  Library n <$> mapM (\x -> applyItem (f (itemId x)) x) is
 
--- | Insert a bunch of concrete values represented as `TypedValue`s into
--- some map.
-put :: TypedValue -> Map Id TypedValue -> Maybe (Map Id TypedValue)
-put tv@(x ::: t) m = 
+-- | Document.
+-- TODO Instance for n-tuples with Iso
+put :: Id                      -- ^ Document
+    -> TypedValue              -- ^ Document
+    -> Map Id TypedValue       -- ^ Document
+    -> GCM (Map Id TypedValue) 
+put cid tv@(x ::: t) m = 
   case t of 
-    Tag n Unit      -> return $ Map.insert n (x ::: Unit) m
-    Tag n (Const c) -> return $ Map.insert n (x ::: Const c) m
-    Pair a b        -> Map.union <$> put (fst x ::: a) m <*> put (snd x ::: b) m
-    _               -> Nothing
+    Tag n (Port' p) -> return $ Map.insert (n ++ cid) (x ::: Port' p) m
+    Pair a b        -> Map.union <$> put cid (fst x ::: a) m
+                                 <*> put cid (snd x ::: b) m
+    Iso iso (Pair a b) -> Map.union <$> put cid (fst (to iso x) ::: a) m
+                                    <*> put cid (snd (to iso x) ::: b) m
+    _ -> fail $ "- unable to split the Type of value " ++ show tv
 
--- | The typechecker is trying really hard to prevent this.
-link2 :: Id -> Id -> Map Id TypedValue -> Maybe (GCM ())
-link2 i j m = error "not really working out"
-  -- do
-  --   (x ::: Port' _) <- Map.lookup i m
-  --   (y ::: _) <- Map.lookup j m
-  --   return $ link x y
+-- | Document
+putItem :: Map Id TypedValue       -- ^ Document
+        -> Item                    -- ^ Document
+        -> GCM (Map Id TypedValue)
+putItem m (Item _ (x ::: GCM t)) = do
+  x1 <- x
+  put "" (x1 ::: t) m
+putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y 
 
-{-
--- Faux parameter maps for items
-rainF   = Map.fromList [ ("amount", 5.0 ::: "amount" # tFloat) ]
-pumpF   = Map.fromList [ ("capacity", 6.0 ::: "capacity" # tFloat) ]
-runoffF = Map.fromList [ ("storage capacity", 7.0 ::: "storage capacity" # tFloat) ]
+linkTV :: TypedValue  -- ^ Document
+       -> TypedValue  -- ^ Document
+       -> GCM ()
+linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
+  case equal t1 t of
+    Nothing -> fail "- unable to link"
+    Just f  -> link (f x) y
 
--- Faux library map
-faux :: Map Id (Map Id TypedValue)
-faux = Map.fromList 
-  [ ("rain", rainF)
-  , ("pump", pumpF)
-  , ("runoff area", runoffF)
-  ]
--}
+-- | Document
+link2 :: Map Id TypedValue -- ^ Document
+      -> Id                -- ^ Document
+      -> Id                -- ^ Document
+      -> GCM ()
+link2 m i j = join $ linkTV <$> lookupG i m <*> lookupG j m
 
--- | Function for lookups.
-lookat :: Ord k => Map k (Map k v) -> k -> k -> Maybe v
-lookat m k1 k2 = Map.lookup k2 =<< Map.lookup k1 m
+-- Convenience function.
+lookat :: (Show k, Show v, Ord k) => Map k (Map k v) -> k -> k -> GCM v
+lookat m k1 k2 = 
+  lookupG k2 =<< lookupG k1 m
 
--- | Running.
-runLibrary :: Library -> Map Id (Map Id TypedValue) -> Maybe (GCM ())
-runLibrary l m = do
-  lib <- applyLibrary l (lookat m) 
-  fail "TODO: Parse connections -> run series of link:s" 
+-- | Generate a `TypedValue` from an identifier tag and a `PrimTypeValue`.
+fromPrimType :: String -> PrimTypeValue -> TypedValue
+fromPrimType name ptv =
+  case ptv of 
+    FloatV f  -> f ::: name # tFloat
+    IntV i    -> i ::: name # tInt
+    StringV s -> s ::: name # tString
+    BoolV b   -> b ::: name # tBool
+
+-- | Extract all `Node` parameters.
+-- TODO This is not a very nice way to leave it.
+paramTVs :: [Node] -> GCM (Map Id (Map Id TypedValue))
+paramTVs ns = Map.fromList <$> mapM fromNode ns
+  where
+    fromNode :: Node -> GCM (Id, Map Id TypedValue)
+    fromNode Node {..} = 
+      case identity of
+        Nothing    -> fail "failure in paramTVs.fromNode"
+        Just ident ->
+          (\x -> (name, Map.fromList x)) <$> 
+            mapM (fromParam . fixParameter) parameters
+   
+    fromParam :: Parameter -> GCM (Id, TypedValue)
+    fromParam Parameter {..} =
+      case parameterValue of 
+        Nothing  -> fail "failure in paramTVs.fromParam"
+        Just ptv -> return (parameterName, fromPrimType parameterName ptv)
+
+-- | Extract all `Node` links.
+getLinks :: [Node] -> [(Id, Id)]
+getLinks = concatMap fromNode 
+  where
+    fromNode :: Node -> [(Id, Id)]
+    fromNode Node {..} = 
+      case identity of 
+        Nothing    -> fail "failure in getLinks.fromNode"
+        Just ident -> mapMaybe (fromInterface (show ident)) interface
+
+    fromInterface :: Id -> Interface -> Maybe (Id, Id)
+    fromInterface from Interface {..} =
+      case interfaceConnection of
+        Nothing          -> Nothing
+        Just (node, tag) -> Just (interfaceName, tag)
+        {-Just (node, tag) -> Just (interfaceName ++ from, tag ++ show node)-}
+        
+-- | Construct a `GCM` program from a list of `Node`s and a `Library`.
+mkGCM :: [Node] -> Library -> GCM [()]
+mkGCM ns l = do
+  m   <- paramTVs ns
+  lib <- applyLibrary l (lookat m)
+  gs  <- foldM putItem Map.empty (items lib)
+  mapM (uncurry (link2 gs)) (getLinks ns)
+
+-- | Run a `Library` using a list of `Node`s.
+{-runLibrary :: [Node] -> Library -> IO ()-}
+runLibrary ns = compileGCM . mkGCM ns
+
+testLibrary = do
+  Just gr <- (decode . BS.pack) <$> readFile "../example.json"
+  putStrLn $ runLibrary (nodes gr) library
 
 -- ----------------------------------------------------------------------------
 
