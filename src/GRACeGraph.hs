@@ -44,6 +44,13 @@ data Parameter = Parameter { parameterName  :: String
                            }
   deriving (Generic, Show, Eq)
 
+fixParameter :: Parameter -> Parameter
+fixParameter p@(Parameter n t1 (Just t2)) =
+  case (t1, t2) of 
+    (FloatT, IntV x) -> Parameter n t1 (Just (FloatV (fromIntegral x)))
+    _ -> p
+fixParameter param = param
+
 parameterOptions :: Options
 parameterOptions = defaultOptions { fieldLabelModifier = (map toLower) . (drop $ length ("parameter" :: String)), omitNothingFields = True }
 
