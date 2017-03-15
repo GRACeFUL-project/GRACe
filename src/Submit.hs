@@ -1,15 +1,18 @@
 {-# LANGUAGE GADTs #-}
 -- Working towards creating GRACe programs from JSON
+module Submit where
  
-import GL
-import Compile0
-import Library
-import GRACeGraph
-import Types
-import Service
+import           GL
+import           Compile0
+import           Library
+import           GRACeGraph
+import           Types
+import           Service
+import           Control.Monad
+import           Data.Map (Map)
 import qualified Data.Map as Map
-import Data.List
-import Data.Maybe
+import           Data.List
+import           Data.Maybe
 
 -- may end up changing types of these, don't know if storing ports as TVs is a good idea
 makeNodes :: Library -> [Node] -> GCM([Map.Map String TypedValue])
@@ -64,9 +67,10 @@ skipToNext (_ :-> tnext) = tnext
 -- skipToEnd (_ :-> tnext) = skipToEnd tnext
 -- skipToEnd tlast = tlast
 
+-- | Generate a type witness from a `Type`. 
 witness :: Type a -> Maybe a
 witness (Pair x y) = (,) <$> (witness x) <*> (witness y)
-witness _ = Nothing
+witness _ = Nothing --- TODO cases
 
 -- example stuff
 library :: Library
@@ -81,6 +85,92 @@ library = Library "crud"
                                                                      (tPort $ "outlet"   # tFloat)
                                                                      (tPort $ "overflow" # tFloat))
     ]
+
+-- * Operations on `TypedValue`s
+-- ----------------------------------------------------------------------------
+
+type Id = String
+
+-- | Extract the identifier of all function arguments/component parameters of a
+-- `TypedValue`, if any.
+idents :: TypedValue -> [Id]
+idents (_ ::: t) = go t
+  where
+    go :: Type a -> [Id]
+    go (Tag n _ :-> ts) = n : go ts 
+    go _                = []
+
+-- | Perform a function under `TypedValue` representation.
+apply1 :: TypedValue -> TypedValue -> Maybe TypedValue
+apply1 (f ::: (t1 :-> t2)) (x ::: t3) = (\g -> f (g x) ::: t2) <$> equal t3 t1
+apply1 _                   _          = Nothing
+
+-- | Perform function application under `TypedValue` representation, if 
+-- possible.
+apply :: TypedValue -> [TypedValue] -> Maybe TypedValue
+apply = foldM apply1
+
+-- | Self-explanatory code.
+applyItem :: (Id -> Maybe TypedValue) -> Item -> Maybe Item
+applyItem f (Item n tv) = do
+  maybe_tvs <- mapM f (idents tv)
+  maybe_tv <- apply tv maybe_tvs 
+  return (Item n maybe_tv)
+
+-- | Perform application on the entire `Library`.
+applyLibrary :: Library -> (Id -> Id -> Maybe TypedValue) -> Maybe Library
+applyLibrary (Library n is) f = Library n <$> go f is
+  where
+    go f []     = return []
+    go f (x:xs) = do
+      y  <- applyItem (f (itemId x)) x
+      ys <- go f xs
+      return (y:ys)
+
+-- | Insert a bunch of concrete values represented as `TypedValue`s into
+-- some map.
+put :: TypedValue -> Map Id TypedValue -> Maybe (Map Id TypedValue)
+put tv@(x ::: t) m = 
+  case t of 
+    Tag n Unit      -> return $ Map.insert n (x ::: Unit) m
+    Tag n (Const c) -> return $ Map.insert n (x ::: Const c) m
+    Pair a b        -> Map.union <$> put (fst x ::: a) m <*> put (snd x ::: b) m
+    _               -> Nothing
+
+-- | The typechecker is trying really hard to prevent this.
+link2 :: Id -> Id -> Map Id TypedValue -> Maybe (GCM ())
+link2 i j m = error "not really working out"
+  -- do
+  --   (x ::: Port' _) <- Map.lookup i m
+  --   (y ::: _) <- Map.lookup j m
+  --   return $ link x y
+
+{-
+-- Faux parameter maps for items
+rainF   = Map.fromList [ ("amount", 5.0 ::: "amount" # tFloat) ]
+pumpF   = Map.fromList [ ("capacity", 6.0 ::: "capacity" # tFloat) ]
+runoffF = Map.fromList [ ("storage capacity", 7.0 ::: "storage capacity" # tFloat) ]
+
+-- Faux library map
+faux :: Map Id (Map Id TypedValue)
+faux = Map.fromList 
+  [ ("rain", rainF)
+  , ("pump", pumpF)
+  , ("runoff area", runoffF)
+  ]
+-}
+
+-- | Function for lookups.
+lookat :: Ord k => Map k (Map k v) -> k -> k -> Maybe v
+lookat m k1 k2 = Map.lookup k2 =<< Map.lookup k1 m
+
+-- | Running.
+runLibrary :: Library -> Map Id (Map Id TypedValue) -> Maybe (GCM ())
+runLibrary l m = do
+  lib <- applyLibrary l (lookat m) 
+  fail "TODO: Parse connections -> run series of link:s" 
+
+-- ----------------------------------------------------------------------------
 
 rain :: Float -> GCM (Port Float)
 rain amount = do
