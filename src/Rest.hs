@@ -13,6 +13,7 @@ import Library
 import Submit
 
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson hiding (Bool, String)
 import Data.Aeson.Encode.Pretty
 import Data.Aeson.Types hiding (Bool, String)
@@ -23,22 +24,27 @@ import Network.Wai.Handler.Warp (run)
 import Servant.HTML.Lucid
 import Lucid
 
-data Res = Res Int deriving (Show, Eq)
+data Res = Res String deriving (Show, Eq)
 
 instance ToJSON Res where
-    toJSON (Res n) = object ["result" .= n]
+    toJSON (Res x) = object ["result" .= x]
 
-type API   =   "library" :> Capture "name" String :> Get '[JSON, HTML] Library
-         :<|>  "submit"  :> Get '[JSON] Res
+type API   =   "library" :> Capture "name" String :> Get  '[JSON, HTML] Library
+         :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON] Res
 
 server :: Server API
 server   =   library
-       :<|>  return (Res 42)
+       :<|>  submit
 
 library :: String -> Handler Library
 library n = case M.lookup n libraries of
     Just lib -> return lib
     Nothing  -> throwError $ err404 { errBody =  "No such lib" }
+
+submit :: Graph -> Handler Res
+submit graph = do 
+    liftIO $ runGCM $ mkGCM (nodes graph) crud
+    return $ Res "" 
 
 api :: Proxy API
 api = Proxy
@@ -58,13 +64,9 @@ instance ToHtml Library where
 
 -- Test data
 
--- | Run a `Library` using a list of `Node`s.
-{-runLibrary :: [Node] -> Library -> IO ()-}
-runLibrary ns = compileGCM . mkGCM ns
-
-testLibrary = do
-  Just gr <- (decode . BS.pack) <$> readFile "../example.json"
-  putStrLn $ runLibrary (nodes gr) crud
+testLibrary file = do
+  Just gr <- (decode . BS.pack) <$> readFile file
+  return $ mkGCM (nodes gr) crud
 
 libraries :: M.Map String Library
 libraries = M.fromList [(n, lib) | lib@(Library n _) <- [crud]]
