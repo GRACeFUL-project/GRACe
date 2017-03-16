@@ -21,6 +21,7 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
 import Servant
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.RequestLogger
 import Servant.HTML.Lucid
 import Lucid
 
@@ -43,8 +44,11 @@ library n = case M.lookup n libraries of
 
 submit :: Graph -> Handler Res
 submit graph = do 
-    liftIO $ runGCM $ mkGCM (nodes graph) crud
-    return $ Res "" 
+    out <- liftIO $ runGCM $ mkGCM (nodes graph) crud
+    return $ Res $ process out
+  where
+    brackets s = "[" ++ s ++ "]"
+    process = brackets . unlines . init . lines
 
 api :: Proxy API
 api = Proxy
@@ -53,8 +57,7 @@ app :: Application
 app = serve api server
 
 main :: IO ()
-main = run 8081 app
-
+main = run 8081 $ logStdoutDev app
 
 -- HTML rep
 instance ToHtml Library where
