@@ -8,7 +8,9 @@ module Rest where
 
 import Compile0
 import GL hiding (Proxy)
+import GRACeGraph
 import Library
+import Submit
 
 import Control.Monad
 import Data.Aeson hiding (Bool, String)
@@ -56,13 +58,30 @@ instance ToHtml Library where
 
 -- Test data
 
+-- | Run a `Library` using a list of `Node`s.
+{-runLibrary :: [Node] -> Library -> IO ()-}
+runLibrary ns = compileGCM . mkGCM ns
+
+testLibrary = do
+  Just gr <- (decode . BS.pack) <$> readFile "../example.json"
+  putStrLn $ runLibrary (nodes gr) crud
+
 libraries :: M.Map String Library
 libraries = M.fromList [(n, lib) | lib@(Library n _) <- [crud]]
 
+-- example stuff
 crud :: Library
-crud = Library "crud" 
-    [ Item "rain" $ 
-         rain ::: "amount" # tFloat .-> tGCM (tPort $ "rainfall" # tFloat)
+crud = Library "crud"
+    [ Item "rain" $
+         rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
+
+    , Item "pump" $
+        pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflowP" # tPort tFloat)
+                                                    ("outflowP" # tPort tFloat))
+    , Item "runoff area" $
+        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
+                                                                     ("outlet" # tPort tFloat)
+                                                                     ("overflow" # tPort tFloat))
     ]
 
 rain :: Float -> GCM (Port Float)
@@ -70,6 +89,41 @@ rain amount = do
   port <- createPort
   set port amount
   return port
+
+pump :: Float -> GCM (Port Float, Port Float)
+pump maxCap = do
+  inPort  <- createPort
+  outPort <- createPort
+
+  component $ do
+    inflow <- value inPort
+    outflow <- value outPort
+
+    assert $ inflow === outflow
+    assert $ inflow `inRange` (0, lit maxCap)
+
+  return (inPort, outPort)
+
+runoffArea :: Float -> GCM (Port Float, Port Float, Port Float)
+runoffArea cap = do
+  inflow <- createPort
+  outlet <- createPort
+  overflow <- createPort
+
+  component $ do
+    currentStored <- createLVar
+
+    inf <- value inflow
+    out <- value outlet
+    ovf <- value overflow
+    sto <- value currentStored
+
+    assert $ sto === inf - out - ovf
+    assert $ sto `inRange` (0, lit cap)
+    assert $ (ovf .> 0) ==> (sto === lit cap)
+    assert $ ovf .>= 0
+
+  return (inflow, outlet, overflow)
 
 pp :: ToJSON a => a -> IO ()
 pp = BS.putStrLn . encodePretty
