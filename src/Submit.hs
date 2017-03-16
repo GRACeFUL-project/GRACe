@@ -116,13 +116,6 @@ putItem m (Item _ (x ::: GCM t)) = do
   put "" (x1 ::: t) m
 putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y 
 
-linkTV :: TypedValue  -- ^ Document
-       -> TypedValue  -- ^ Document
-       -> GCM ()
-linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
-  case equal t1 t of
-    Nothing -> fail "- unable to link"
-    Just f  -> link (f x) y
 
 -- | Document
 link2 :: Map Id TypedValue -- ^ Document
@@ -130,6 +123,15 @@ link2 :: Map Id TypedValue -- ^ Document
       -> Id                -- ^ Document
       -> GCM ()
 link2 m i j = join $ linkTV <$> lookupG i m <*> lookupG j m
+  where
+    linkTV :: TypedValue -> TypedValue -> GCM ()
+    linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
+      case equal t1 t of
+        Nothing -> fail "- unable to link"
+        Just f  -> do
+            output x i 
+            output y j
+            link (f x) y
 
 -- Convenience function.
 lookat :: (Show k, Show v, Ord k) => Map k (Map k v) -> k -> k -> GCM v
@@ -147,10 +149,10 @@ fromPrimType name ptv =
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
-paramTVs :: [Node] -> GCM (Map Id (Map Id TypedValue))
+paramTVs :: Monad m => [Node] -> m (Map Id (Map Id TypedValue))
 paramTVs ns = Map.fromList <$> mapM fromNode ns
   where
-    fromNode :: Node -> GCM (Id, Map Id TypedValue)
+    fromNode :: Monad m => Node -> m (Id, Map Id TypedValue)
     fromNode Node {..} = 
       case identity of
         Nothing    -> fail "failure in paramTVs.fromNode"
@@ -158,7 +160,7 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
           (\x -> (name, Map.fromList x)) <$> 
             mapM (fromParam . fixParameter) parameters
    
-    fromParam :: Parameter -> GCM (Id, TypedValue)
+    fromParam :: Monad m => Parameter -> m (Id, TypedValue)
     fromParam Parameter {..} =
       case parameterValue of 
         Nothing  -> fail "failure in paramTVs.fromParam"
@@ -182,10 +184,10 @@ getLinks = concatMap fromNode
         {-Just (node, tag) -> Just (interfaceName ++ from, tag ++ show node)-}
         
 -- | Construct a `GCM` program from a list of `Node`s and a `Library`.
-mkGCM :: [Node] -> Library -> GCM [()]
+mkGCM :: [Node] -> Library -> GCM ()
 mkGCM ns l = do
   m   <- paramTVs ns
   lib <- applyLibrary l (lookat m)
   gs  <- foldM putItem Map.empty (items lib)
-  mapM (uncurry (link2 gs)) (getLinks ns)
+  mapM_ (uncurry (link2 gs)) (getLinks ns)
 
