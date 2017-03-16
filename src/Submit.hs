@@ -1,22 +1,9 @@
 {-# LANGUAGE GADTs, RecordWildCards, Strict #-}
-{- | Working towards creating GRACe programs from JSON
+{- | Creating GRACe programs from JSON
 
-  TODOs: 
+  TODOs:
 
-  * Change the structure of the lookup functions:
-
-    Go from 
-      Id -> Id -> GCM TypedValue 
-      item_name -> parameter_name -> TV parameter representation 
-    to  
-      Id -> Id -> Id -> GCM TypedValue
-      node_id -> item_name -> parameter_name -> TV parameter representation
-      
-    At this point, we cannot use library components twice, and we cannot name 
-    ports in two different components as "inflow", for instance, or one would
-    overwrite the other.
-
-  * Review whether or not there should be so many GCMs in 
+  * Review whether or not there should be so many GCMs in
     the type signatures (lookups, for instance)
 
   * A general cleanup before merging this into wherever its supposed to go
@@ -24,7 +11,7 @@
 
 -}
 module Submit where
- 
+
 import           GL
 import           Compile0
 import           Library
@@ -33,7 +20,7 @@ import           Types
 import           Service
 import           Control.Monad
 import           Data.Aeson hiding (String)
-import qualified Data.ByteString.Lazy.Char8 as BS 
+import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Map (Map)
 import qualified Data.Map.Strict as Map
 import           Data.List
@@ -48,9 +35,9 @@ import           Debug.Trace
 type Id = String
 
 lookupG :: (Show k, Show v, Ord k) => k -> Map k v -> GCM v
-lookupG k m = 
+lookupG k m =
   case Map.lookup k m of
-    Nothing -> fail $ "- failed to look up the id " ++ show k ++ " in " ++ 
+    Nothing -> fail $ "- failed to look up the id " ++ show k ++ " in " ++
                       Map.showTree m
     Just v  -> return v
 
@@ -60,23 +47,19 @@ idents :: TypedValue -> [Id]
 idents (_ ::: t) = go t
   where
     go :: Type a -> [Id]
-    go (Tag n _ :-> ts) = n : go ts 
+    go (Tag n _ :-> ts) = n : go ts
     go _                = []
 
-
-untag :: Type a -> Type a
-untag (Tag _ t) = t
-untag t         = t
 
 -- | Perform a function application under `TypedValue` representation, for a
 -- single argument.
 apply1 :: TypedValue -> TypedValue -> GCM TypedValue
-apply1 (f ::: (t1 :-> t2)) (x ::: t3) = 
+apply1 (f ::: (t1 :-> t2)) (x ::: t3) =
   case equal t3 t1 of
     Nothing -> fail "- equal failed in apply1"
     Just g -> return $ f (g x) ::: t2
 
--- | Perform function application under `TypedValue` representation, if 
+-- | Perform function application under `TypedValue` representation, if
 -- possible.
 apply :: TypedValue -> [TypedValue] -> GCM TypedValue
 apply = foldM apply1
@@ -89,7 +72,7 @@ applyItem f (Item n tv) = do
 
 -- | Perform application on the entire `Library`.
 applyLibrary :: Library -> (Id -> Id -> GCM TypedValue) -> GCM Library
-applyLibrary (Library n is) f = 
+applyLibrary (Library n is) f =
   Library n <$> mapM (\x -> applyItem (f (itemId x)) x) is
 
 -- | Document.
@@ -97,9 +80,9 @@ applyLibrary (Library n is) f =
 put :: Id                      -- ^ Document
     -> TypedValue              -- ^ Document
     -> Map Id TypedValue       -- ^ Document
-    -> GCM (Map Id TypedValue) 
-put cid tv@(x ::: t) m = 
-  case t of 
+    -> GCM (Map Id TypedValue)
+put cid tv@(x ::: t) m =
+  case t of
     Tag n (Port' p) -> return $ Map.insert (n ++ cid) (x ::: Port' p) m
     Pair a b        -> Map.union <$> put cid (fst x ::: a) m
                                  <*> put cid (snd x ::: b) m
@@ -111,10 +94,10 @@ put cid tv@(x ::: t) m =
 putItem :: Map Id TypedValue       -- ^ Document
         -> Item                    -- ^ Document
         -> GCM (Map Id TypedValue)
-putItem m (Item _ (x ::: GCM t)) = do
+putItem m (Item n (x ::: GCM t)) = do
   x1 <- x
-  put "" (x1 ::: t) m
-putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y 
+  put n (x1 ::: t) m
+putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
 
 
 -- | Document
@@ -129,19 +112,19 @@ link2 m i j = join $ linkTV <$> lookupG i m <*> lookupG j m
       case equal t1 t of
         Nothing -> fail "- unable to link"
         Just f  -> do
-            output x i 
+            output x i
             output y j
             link (f x) y
 
 -- Convenience function.
 lookat :: (Show k, Show v, Ord k) => Map k (Map k v) -> k -> k -> GCM v
-lookat m k1 k2 = 
+lookat m k1 k2 =
   lookupG k2 =<< lookupG k1 m
 
 -- | Generate a `TypedValue` from an identifier tag and a `PrimTypeValue`.
 fromPrimType :: String -> PrimTypeValue -> TypedValue
 fromPrimType name ptv =
-  case ptv of 
+  case ptv of
     FloatV f  -> f ::: name # tFloat
     IntV i    -> i ::: name # tInt
     StringV s -> s ::: name # tString
@@ -153,26 +136,26 @@ paramTVs :: Monad m => [Node] -> m (Map Id (Map Id TypedValue))
 paramTVs ns = Map.fromList <$> mapM fromNode ns
   where
     fromNode :: Monad m => Node -> m (Id, Map Id TypedValue)
-    fromNode Node {..} = 
+    fromNode Node {..} =
       case identity of
         Nothing    -> fail "failure in paramTVs.fromNode"
         Just ident ->
-          (\x -> (name, Map.fromList x)) <$> 
+          (\x -> (show ident, Map.fromList x)) <$>
             mapM (fromParam . fixParameter) parameters
-   
+
     fromParam :: Monad m => Parameter -> m (Id, TypedValue)
     fromParam Parameter {..} =
-      case parameterValue of 
+      case parameterValue of
         Nothing  -> fail "failure in paramTVs.fromParam"
         Just ptv -> return (parameterName, fromPrimType parameterName ptv)
 
 -- | Extract all `Node` links.
 getLinks :: [Node] -> [(Id, Id)]
-getLinks = concatMap fromNode 
+getLinks = concatMap fromNode
   where
     fromNode :: Node -> [(Id, Id)]
-    fromNode Node {..} = 
-      case identity of 
+    fromNode Node {..} =
+      case identity of
         Nothing    -> fail "failure in getLinks.fromNode"
         Just ident -> mapMaybe (fromInterface (show ident)) interface
 
@@ -180,14 +163,22 @@ getLinks = concatMap fromNode
     fromInterface from Interface {..} =
       case interfaceConnection of
         Nothing          -> Nothing
-        Just (node, tag) -> Just (interfaceName, tag)
-        {-Just (node, tag) -> Just (interfaceName ++ from, tag ++ show node)-}
-        
+        Just (node, tag) -> Just (interfaceName ++ from, tag ++ show node)
+
+-- | Construct a `Library` containing an `Item` instance from the given `Library`
+--   for each `Node` in the given list.
+nodeLibrary :: [Node] -> Library -> Library
+nodeLibrary ns Library {..} = Library "" $ catMaybes $ map (nodeItem items) ns where
+  nodeItem :: [Item] -> Node -> Maybe Item
+  nodeItem is Node {..} = case (identity, find (\i -> itemId i == name) is) of
+    (Just ident, Just it) -> Just (Item (show ident) (f it))
+    _                     -> Nothing
+
 -- | Construct a `GCM` program from a list of `Node`s and a `Library`.
 mkGCM :: [Node] -> Library -> GCM ()
 mkGCM ns l = do
   m   <- paramTVs ns
-  lib <- applyLibrary l (lookat m)
+  lib <- applyLibrary (nodeLibrary ns l) (lookat m)
   gs  <- foldM putItem Map.empty (items lib)
   mapM_ (uncurry (link2 gs)) (getLinks ns)
 
