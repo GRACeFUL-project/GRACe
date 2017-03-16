@@ -14,12 +14,18 @@ import qualified Data.Set as S
 import Program
 import GL
 
-runGCM :: GCM a -> IO ()
+runGCM :: GCM a -> IO String
 runGCM gcm = do
   writeFile   "model.mzn" (compileGCM gcm)
   callCommand "mzn2fzn model.mzn"
-  callCommand "fzn-gecode -p 4 -n 10 model.fzn | solns2out --soln-sep \"\" --search-complete-msg \"\" model.ozn"
+  out <- readProcess "fzn-gecode" [ "-p", "4"
+                                  , "-n", "10"
+                                  , "model.fzn"] ""
+  res <- readProcess "solns2out"  [ "--soln-sep", ","
+                                  , "--search-complete-msg", ""
+                                  , "model.ozn"] out
   callCommand "rm model.mzn model.ozn model.fzn"
+  return res
 
 -- Compilation
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
