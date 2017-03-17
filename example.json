@@ -15,12 +15,12 @@
                         3,
                         "outlet"
                     ],
-                    "name": "inflow",
-                    "type": "flow"
+                    "name": "inflowP",
+                    "type": "Float"
                 },
                 {
-                    "name": "outflow",
-                    "type": "flow"
+                    "name": "outflowP",
+                    "type": "Float"
                 }
             ],
             "identity": 1
@@ -41,32 +41,32 @@
                         "inflow"
                     ],
                     "name": "rainfall",
-                    "type": "flow"
+                    "type": "Float"
                 }
             ],
             "identity": 2
         },
         {
-            "name": "runoffArea",
+            "name": "runoff area",
             "parameters": [
                 {
-                    "value": 5,
-                    "name": "capacity",
+                    "value": 7,
+                    "name": "storage capacity",
                     "type": "Float"
                 }
             ],
             "interface": [
                 {
                     "name": "inflow",
-                    "type": "flow"
+                    "type": "Float"
                 },
                 {
                     "name": "outlet",
-                    "type": "flow"
+                    "type": "Float"
                 },
                 {
                     "name": "overflow",
-                    "type": "flow"
+                    "type": "Float"
                 }
             ],
             "identity": 3

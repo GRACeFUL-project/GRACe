@@ -11,6 +11,7 @@ module GRACe2 where
 
 import GL hiding (Lit)
 import Compile0
+import Control.Monad (void)
 
 -- Axelsson + Claessen thing
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,7 +94,7 @@ declare f = create >>= f
 -}
 
 runGrace2 :: GRACePrg -> IO ()
-runGrace2 = runGCM
+runGrace2 = void . runGCM
 
 -- Deliverable example redone
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -57,7 +57,7 @@ data Type t where
     -- Input/output
     IO    :: Type t -> Type (IO t)
     GCM   :: Type t -> Type (GCM t)
-    Port' :: Type t -> Type (Port t)
+    Port' :: CPType t => Type t -> Type (Port t)
     -- Special annotations
     Tag   :: String -> Type t -> Type t
     -- Type constructors
@@ -143,7 +143,7 @@ tIO = IO
 tGCM :: Type t -> Type (GCM t)
 tGCM = GCM
 
-tPort :: Type t -> Type (Port t)
+tPort :: CPType t => Type t -> Type (Port t)
 tPort t = Port' t 
 
 (#) :: String -> Type t -> Type t
@@ -291,7 +291,7 @@ instance {-# OVERLAPPING #-} IsTyped String where
     fromTyped (x ::: Const String) = return x
     fromTyped _                    = fail errMsg
 
-instance IsTyped a => IsTyped (Port a) where
+instance (CPType a, IsTyped a) => IsTyped (Port a) where
     typeOf (Port _) = tPort (typeOf (undefined :: a))
     fromTyped (x ::: t@(Port' _)) = do 
         f <- equalM t $ tPort (typeOf (undefined :: a))
