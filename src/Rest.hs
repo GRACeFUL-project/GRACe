@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rest where
+module Main where
 
 import Compile0
 import GL hiding (Proxy)
@@ -81,8 +81,8 @@ crud = Library "crud"
          rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
 
     , Item "pump" $
-        pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflowP" # tPort tFloat)
-                                                    ("outflowP" # tPort tFloat))
+        pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflow" # tPort tFloat)
+                                                    ("outflow" # tPort tFloat))
     , Item "runoff area" $
         runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
                                                                      ("outlet" # tPort tFloat)

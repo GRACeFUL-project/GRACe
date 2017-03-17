@@ -15,11 +15,11 @@
                         3,
                         "outlet"
                     ],
-                    "name": "inflowP",
+                    "name": "inflow",
                     "type": "Float"
                 },
                 {
-                    "name": "outflowP",
+                    "name": "outflow",
                     "type": "Float"
                 }
             ],

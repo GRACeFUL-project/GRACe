@@ -3,9 +3,10 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
-- parsec-numbers-0.1.0
 - aeson-1.1.0.0
-resolver: lts-7.11
-
-#docker:
-  #enable: true
+- http-api-data-0.3.5
+- natural-transformation-0.4
+- parsec-numbers-0.1.0
+- servant-0.10
+- servant-server-0.10
+resolver: lts-7.20
