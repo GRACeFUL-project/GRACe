@@ -10,10 +10,11 @@ met:
 * [The MiniZinc distribution](http://www.minizinc.org/index.html)
 * [GHC](https://www.haskell.org/downloads)
 
-To ensure that library dependencies are exactly met, we recommend that you use
-`stack`. `stack` handles the entire toolchain (including GHC), library
-dependencies, building and executing. Instructions for installing `stack` on
-macOS, Linux and Windows can be found
+To ensure that library dependencies are exactly met, we recommend that
+you use `stack`. `stack` handles the entire Haskell toolchain
+(including the compiler GHC), library dependencies, building and
+executing. Instructions for installing `stack` on macOS, Linux and
+Windows can be found
 [here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
 
 ### Installing MiniZinc: Linux
@@ -38,6 +39,7 @@ Create a new sandbox and install the required dependencies.
 
 ```shell
 cabal sandbox init
+cabal update
 cabal install --dependencies-only
 ```
 
@@ -96,7 +98,7 @@ This assumes there is a `main` function in `TestModule.hs`.
 Run haddock to generate project documentation
 
 ```shell
-stack haddock --haddock-arguments --hyperlink-source
+stack haddock --haddock-arguments --hyperlinked-source
 ```
 
 To open the documentation directly append `--open`.

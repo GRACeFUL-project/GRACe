@@ -4,7 +4,7 @@ mkdir bins
 
 # Pick up executables, copy to bins
 find "../$(stack path --dist-dir)/build" -type f -perm -u=x,g=x,o=x | \
-	xargs -J % cp % bins
+	xargs -I % cp % bins
 
 # Get dependencies
 git clone https://github.com/MiniZinc/libminizinc.git
@@ -16,4 +16,3 @@ docker build -t eugraceful/grace-examples .
 # Clean up
 echo Removing
 rm -rf bins libminizinc release-5.0.0
-

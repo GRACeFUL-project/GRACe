@@ -1,0 +1,7 @@
+2017-03-20: Testing the instructions in ../Readme.md
+
+Modified a few words and commands along the way.
+
+TODO: Adjust the Readme.md to fewer executable targets in the GRACe.cabal file
+
+TODO: Add instructions about the new executable RestAPI
