@@ -184,4 +184,5 @@ dubbeldam = do
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 main :: IO ()
-main = runGCM dubbeldam
+main = do msg <- runGCM dubbeldam
+          putStrLn msg
