@@ -11,7 +11,7 @@ git clone https://github.com/MiniZinc/libminizinc.git
 svn --username anonymous checkout https://svn.gecode.org/svn/gecode/tags/release-5.0.0
 
 # Build image
-docker build -t eugraceful/grace-examples .
+docker build -t eugraceful/grace-server .
 
 # Clean up
 echo Removing
