@@ -19,7 +19,7 @@ runGCM gcm = do
   writeFile   "model.mzn" (compileGCM gcm)
   callCommand "mzn2fzn model.mzn"
   out <- readProcess "fzn-gecode" [ "-p", "4"
-                                  , "-n", "1"
+                                  , "-n", "-1"
                                   , "model.fzn"] ""
   res <- readProcess "solns2out"  [ "--soln-sep", ","
                                   , "--search-complete-msg", ""
