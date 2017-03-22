@@ -32,27 +32,28 @@ instance ToJSON Res where
 
 -- Cross-Origin Resource Sharing (CORS) prevents browser warnings
 -- about cross-site scripting
-
-type LibraryResponse = Headers '[Header "Access-Control-Allow-Origin" String] Library
-type SubmitResponse  = Headers '[Header "Access-Control-Allow-Origin" String] Res
+type Resp a = Headers '[Header "Access-Control-Allow-Origin" String] a
 
 type API = 
-        "library" :> Capture "name" String :> Get  '[JSON, HTML] LibraryResponse
-  :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       SubmitResponse
+        "library" :> Capture "name" String :> Get  '[JSON, HTML] (Resp Library)
+  :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       (Resp Res)
 
 server :: Server API
-server   =   library
-       :<|>  submit
+server   =  library 
+       :<|> submit
 
-library :: String -> Handler LibraryResponse
-library n = case M.lookup n libraries of
-    Just lib -> return $ addHeader "*" lib
+hdr :: Handler a -> Handler (Resp a)
+hdr h = h >>= return . addHeader "*" 
+
+library :: String -> Handler (Resp Library)
+library n = hdr $ case M.lookup n libraries of
+    Just lib -> return lib
     Nothing  -> throwError $ err404 { errBody =  "No such lib" }
 
-submit :: Graph -> Handler SubmitResponse
-submit graph = do 
+submit :: Graph -> Handler (Resp Res)
+submit graph = hdr $ do 
     out <- liftIO $ runGCM $ mkGCM (nodes graph) crud
-    return $ addHeader "*" $ Res $ process out
+    return $ Res $ process out
   where
     brackets s = "[" ++ s ++ "]"
     process = brackets . unlines . init . lines
