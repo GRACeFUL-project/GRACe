@@ -85,13 +85,13 @@ libraries = M.fromList [(n, lib) | lib@(Library n _) <- [crud]]
 -- example stuff
 crud :: Library
 crud = Library "crud"
-    [ Item "rain" "Rain" "http://example.com/rain.png" $
+    [ Item "rain" "Rain" "./data/img/rain.png" $
          rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
 
-    , Item "pump" "Pump" "http://example.com/pump.png"  $
+    , Item "pump" "Pump" "./data/img/pump.png"  $
         pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflow" # tPort tFloat)
                                                     ("outflow" # tPort tFloat))
-    , Item "runoff area" "Runoff" "http://example.com/runoff.png" $
+    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" $
         runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
                                                                      ("outlet" # tPort tFloat)
                                                                      ("overflow" # tPort tFloat))

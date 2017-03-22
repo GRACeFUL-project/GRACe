@@ -24,6 +24,7 @@ import Types
 import Utils
 
 import Data.Aeson
+import qualified Data.Text as T
 
 type Id  = String
 type URL = String
@@ -62,7 +63,9 @@ parameters = toJSONList . rec
         _                   -> []
 
 tag :: Type a -> Value
-tag (Tag n t) = object ["name" .= n, "type" .= show t]
+tag (Tag n t) = object [ "name"   .= n
+                       , "type"   .= show t
+                       , "imgURL" .= T.concat ["./data/interfaces/", T.pack n, ".png"] ]
 tag _         = Null
 
 ports :: Type a -> [Value]
