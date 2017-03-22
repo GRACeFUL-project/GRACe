@@ -30,22 +30,29 @@ data Res = Res String deriving (Show, Eq)
 instance ToJSON Res where
     toJSON (Res x) = object ["result" .= x]
 
-type API   =   "library" :> Capture "name" String :> Get  '[JSON, HTML] Library
-         :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON] Res
+-- Cross-Origin Resource Sharing (CORS) prevents browser warnings
+-- about cross-site scripting
+
+type LibraryResponse = Headers '[Header "Access-Control-Allow-Origin" String] Library
+type SubmitResponse  = Headers '[Header "Access-Control-Allow-Origin" String] Res
+
+type API = 
+        "library" :> Capture "name" String :> Get  '[JSON, HTML] LibraryResponse
+  :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       SubmitResponse
 
 server :: Server API
 server   =   library
        :<|>  submit
 
-library :: String -> Handler Library
+library :: String -> Handler LibraryResponse
 library n = case M.lookup n libraries of
-    Just lib -> return lib
+    Just lib -> return $ addHeader "*" lib
     Nothing  -> throwError $ err404 { errBody =  "No such lib" }
 
-submit :: Graph -> Handler Res
+submit :: Graph -> Handler SubmitResponse
 submit graph = do 
     out <- liftIO $ runGCM $ mkGCM (nodes graph) crud
-    return $ Res $ process out
+    return $ addHeader "*" $ Res $ process out
   where
     brackets s = "[" ++ s ++ "]"
     process = brackets . unlines . init . lines
