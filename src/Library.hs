@@ -68,11 +68,12 @@ tag _         = Null
 ports :: Type a -> [Value]
 ports tp = case tp of
     -- base
-    Port' t@(Tag _ _) -> [tag t]
+    Tag n (Port' t) -> [tag tp]
     -- recurse
     Tag _ t    -> ports t
     GCM t      -> ports t
     List t     -> ports t 
     Pair t1 t2 -> ports t1 ++ ports t2
     _ :-> t2   -> ports t2
+    Iso _ t    -> ports t   
     _          -> []
