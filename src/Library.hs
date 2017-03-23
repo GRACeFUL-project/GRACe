@@ -63,10 +63,12 @@ parameters = toJSONList . rec
         _                   -> []
 
 tag :: Type a -> Value
-tag (Tag n t) = object [ "name"   .= n
-                       , "type"   .= show t
-                       , "imgURL" .= T.concat ["./data/interfaces/", T.pack n, ".png"] ]
-tag _         = Null
+tag (Tag n t) = object 
+    [ "name"      .= n
+    , "type"      .= show t
+    , "imgURL"    .= T.concat ["./data/interfaces/", T.pack n, ".png"]
+    , "hoverText" .= n ]
+tag _ = Null
 
 ports :: Type a -> [Value]
 ports tp = case tp of
