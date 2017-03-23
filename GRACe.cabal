@@ -47,8 +47,8 @@ library
     Haskell2010
 
 executable RestAPI
-  main-is: 
-    Rest.hs
+  main-is:
+    Main.hs
   other-modules:
       Compile0
     , GL

@@ -23,6 +23,7 @@ import Servant
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger
 import Servant.HTML.Lucid
+import System.Environment (getArgs)
 import Lucid
 
 data Res = Res String deriving (Show, Eq)
@@ -65,7 +66,11 @@ app :: Application
 app = serve api server
 
 main :: IO ()
-main = run 8081 $ logStdoutDev app
+main = do
+    args <- getArgs
+    run 8081 $ case args of
+        ["--log"] -> logStdoutDev app
+        _         -> app
 
 -- HTML rep
 instance ToHtml Library where
