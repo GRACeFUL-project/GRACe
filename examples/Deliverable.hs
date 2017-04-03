@@ -4,16 +4,19 @@ import Library
 
 
 library :: Library
-library = Library "crud" 
-    [ Item "rain" $ 
-         rain ::: "amount" # tFloat .-> tGCM (tPort $ "rainfall" # tFloat)
+library = Library "crud"
+    [ Item "rain" $
+        rain ::: "amount" #
+          tFloat .-> tGCM          (tPort $ "rainfall" # tFloat)
     , Item "pump" $
-        pump ::: "capacity" # tFloat.-> tGCM (tPair (tPort $ "inflow" # tFloat)
-                                                    (tPort $ "outflow" # tFloat)) 
-    , Item "runoff area" $ 
-        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat) 
-                                                                     (tPort $ "outlet"   # tFloat) 
-                                                                     (tPort $ "overflow" # tFloat))
+        pump ::: "capacity" #
+          tFloat .-> tGCM (tPair   (tPort $ "inflow"   # tFloat)
+                                   (tPort $ "outflow"  # tFloat))
+    , Item "runoff area" $
+        runoffArea ::: "storage capacity" #
+          tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat)
+                                   (tPort $ "outlet"   # tFloat)
+                                   (tPort $ "overflow" # tFloat))
     ]
 
 rain :: Float -> GCM (Port Float)
@@ -67,3 +70,5 @@ example = do
   link inflowS rainflow
 
   output overflowS "Overflow"
+
+main = runGCM example >>= putStr
