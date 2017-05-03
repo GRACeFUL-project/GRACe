@@ -286,7 +286,7 @@ taken :: CPType a => Action a -> GCM (Port Int)
 taken (Action i _) = return (Port i)
 
 -- | @'link' p1 p2@ creates a connection from port @p1@ to port @p2@.
-link :: CPType a => Port a -> Port a -> GCM ()
+link :: (CPType a, IsPort p1, IsPort p2) => p1 a -> p2 a -> GCM ()
 link p1 p2 = component $ do
     v1 <- value p1
     v2 <- value p2
@@ -303,15 +303,16 @@ mutex a1 a2 = do
         assert $ nt ((v1 .> 0) .&& (v2 .> 0))
 
 -- | @'linkBy' f a b@ documentation goes here.
-linkBy :: (CPType a, CPType b, IsPort pa, IsPort pb) 
-    => (CPExp a -> CPExp b) 
+linkBy :: (CPType a, CPType b, IsPort pa, IsPort pb, IsPort pi, IsPort po) 
+    => GCM (pi a, po b)
     -> pa a 
     -> pb b 
     -> GCM ()
-linkBy f a b = component $ do
-    i <- value a
-    o <- value b
-    assert $ o === f i
+linkBy f a b = do
+  (i, o) <- f
+  component $ do
+    assert $ val a === val i
+    assert $ val b === val o
 
 set :: (CPType a) => Port a -> a -> GCM ()
 set p a = component $ do
@@ -336,6 +337,14 @@ foldGCM i f v = do
 -- | TODO: Nice, but unused.
 sumGCM :: (CPType a, Num a) => Int -> GCM ([Port a], Port a)
 sumGCM i = foldGCM i (+) 0
+
+fun :: (CPType a, CPType b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
+fun f = do
+  a <- createPort
+  b <- createPort
+  component $
+    assert  $ f (val a) === val b
+  return (a, b)
 
 -- * Ports 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

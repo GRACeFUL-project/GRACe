@@ -13,7 +13,10 @@ rain s = do
   set p s
   return p
 
-data Pump = Pump {inflow :: Port Int, outflow :: Port Int, capacity :: Param Int}
+data Pump = Pump { inflow   :: Port Int
+                 , outflow  :: Port Int
+                 , capacity :: Param Int
+                 }
 
 -- A pump with a initial capacity c
 pump :: Int -> GCM Pump
@@ -59,7 +62,7 @@ increaseCap p costFunction = do
   a'       <- taken a
   costPort <- createPort
 
-  linkBy costFunction a' costPort
+  linkBy (fun costFunction) a' costPort
 
   return (a, costPort)
 
@@ -70,18 +73,18 @@ floodingOfSquare = do
   flow <- createPort
   isFlooded <- createPort
 
-  linkBy (.> 0) flow isFlooded
+  linkBy (fun (.> 0)) flow isFlooded
   return (flow, isFlooded)
 
 minimize :: Port Int -> GCM ()
 minimize p = do
   g <- createGoal
-  linkBy negate p g
+  linkBy (fun negate) p g
 
 maximize :: Port Int -> GCM ()
 maximize p = do
   g <- createGoal
-  linkBy id p g
+  link p g
 
 -- Small example
 example :: GCM ()
@@ -108,7 +111,7 @@ example = do
   -- We don't want flooding
   set isFlooded False
 
-  totalCost <- createPort
+  totalCost <- createVariable
   component $ do
     pc <- value pumpCost
     sc <- value storageCost
@@ -130,7 +133,5 @@ example = do
 prop_pump :: GCMP ()
 prop_pump = do
   k <- forall (fmap abs QC.arbitrary)
-
   pmp <- liftGCM $ pump k
-
   property $ val (inflow pmp) .< lit k

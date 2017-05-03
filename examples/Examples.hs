@@ -12,13 +12,12 @@ source a =
 
 -- A sink of capacity a
 sink :: (CPType a, Ord a, Num a) => a -> GCM (Port a)
-sink a =
-    do
-        p <- createPort
-        component $ do
-                      inflow <- value p 
-                      assert $ inflow `inRange` (0, lit a)
-        return p
+sink a = do
+  p <- createPort
+  component $ do
+    inflow <- value p 
+    assert $ inflow `inRange` (0, lit a)
+  return p
 
 -- Rain is a source of Floats
 rain :: (Num a, CPType a) => a -> GCM (Port a)
@@ -27,20 +26,20 @@ rain = source
 -- A pipe with a fixed capacity
 pipe :: (Num a, Ord a, CPType a) => a -> GCM (Port a)
 pipe k =
-    do
-        flow <- createPort
-        component $ do
-                      f <- value flow
-                      assert  $ f `inRange` (0, lit k)
-        return flow
+  do
+    flow <- createPort
+    component $ do
+      f <- value flow
+      assert  $ f `inRange` (0, lit k)
+    return flow
 
 -- Storage as a GCM component
 storage :: (Num a, Ord a, CPType a) => a -> GCM (Port a, Port a)
 storage k = do
-                inf <- createPort
-                ovf <- createPort
-                linkBy (\inflow -> max' 0 (inflow - lit k)) inf ovf
-                return (inf, ovf)
+  inf <- createPort
+  ovf <- createPort
+  linkBy (fun (\inflow -> max' 0 (inflow - lit k))) inf ovf
+  return (inf, ovf)
 
 -- Fill inputs in order
 fill :: (Num a, Ord a, CPType a) => Port a -> [(Maybe (Port a), Port a)] -> GCM ()

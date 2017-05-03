@@ -85,7 +85,7 @@ flooding = do
   runOff   <- createPort
   flooding <- createPort
 
-  linkBy (.>0) flooding runOff
+  linkBy (fun (.>0)) flooding runOff
 
   return (flooding, runOff)
 
@@ -122,7 +122,7 @@ storageCost :: Action Volume -> GCM (Port Cost)
 storageCost a = do
   cost  <- createPort
   level <- taken a
-  linkBy (\l -> 100 * l) level cost
+  linkBy (fun (\l -> 100 * l)) level cost
   return cost
 
 -- | A cost associated with increasing pump capacity.

@@ -118,5 +118,5 @@ rain r p = p === r
 example :: GExp -> GExp
 example x =
   declare $ \port ->
-     rain 5  port
-  <> pump 7  port x
+     rain 5 port
+  <> pump 7 port x
