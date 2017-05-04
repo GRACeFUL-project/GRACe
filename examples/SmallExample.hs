@@ -27,7 +27,7 @@ pump c = do
   component $ do
     ifl <- value iflow
     ofl <- value oflow
-    c <- value cap
+    c   <- value cap
     assert $ ifl `inRange` (0, c)
     assert $ ofl === ifl
   return (Pump iflow oflow cap)
@@ -36,17 +36,17 @@ pump c = do
 --   returns (inflow, outlet, overflow, storageC)
 storage :: Int -> GCM (Port Int, Port Int, Port Int, Param Int)
 storage c = do
-  inflow   <- createPort
-  outlet   <- createPort
-  overflow <- createPort
-  storageC <- createParam c
+  inflow    <- createPort
+  outlet    <- createPort
+  overflow  <- createPort
+  storageC  <- createParam c
   component $ do
     currentV <- createLVar
-    inf <- value inflow
-    out <- value outlet
-    ovf <- value overflow
-    cap <- value storageC
-    val <- value currentV
+    inf      <- value inflow
+    out      <- value outlet
+    ovf      <- value overflow
+    cap      <- value storageC
+    val      <- value currentV
     assert $ val === inf - out - ovf
     assert $ val `inRange` (0, cap)
     assert $ (ovf .> 0) ==> (val === cap)
@@ -70,7 +70,7 @@ type Flow = Int
 
 floodingOfSquare :: GCM (Port Flow, Port Bool)
 floodingOfSquare = do
-  flow <- createPort
+  flow      <- createPort
   isFlooded <- createPort
 
   linkBy (fun (.> 0)) flow isFlooded
@@ -91,17 +91,17 @@ example :: GCM ()
 example = do
   let budget = 10000
   -- Instantiate components
-  r <- rain 20
-  pmp <- pump 2
-  (inf, out, ovf, cap) <- storage 4
-  (floodFlow, isFlooded) <- floodingOfSquare
+  r                            <- rain 20
+  pmp                          <- pump 2
+  (inf, out, ovf, cap)         <- storage 4
+  (floodFlow, isFlooded)       <- floodingOfSquare
 
   -- Create an action
-  (pumpAction, pumpCost) <- increaseCap (capacity pmp) (^2)
-  pumpAction' <- taken pumpAction
+  (pumpAction, pumpCost)       <- increaseCap (capacity pmp) (^2)
+  pumpAction'                  <- taken pumpAction
 
   (storageAction, storageCost) <- increaseCap cap (*2)
-  storageAction' <- taken storageAction
+  storageAction'               <- taken storageAction
 
   -- Link ports
   link inf r
@@ -132,6 +132,6 @@ example = do
 
 prop_pump :: GCMP ()
 prop_pump = do
-  k <- forall (fmap abs QC.arbitrary)
+  k   <- forall (fmap abs QC.arbitrary)
   pmp <- liftGCM $ pump k
   property $ val (inflow pmp) .< lit k
