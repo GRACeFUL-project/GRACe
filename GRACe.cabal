@@ -20,7 +20,8 @@ library
     TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
-    Compile0
+    Compile0,
+    Library
   other-modules:
     TestFW.GenT,
     Program
@@ -41,6 +42,8 @@ library
     , random
     , transformers
     , containers
+    , text
+    , aeson
   hs-source-dirs:
     src
   default-language:
@@ -79,7 +82,6 @@ executable RestAPI
     src
   default-language:
     Haskell2010
-
 
 test-suite test
   type:

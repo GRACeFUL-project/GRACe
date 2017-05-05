@@ -1,13 +1,15 @@
+module Deliverable where
+
 import Compile0
 import GL
-import Library
-
+--import Library
 
 library :: Library
 library = Library "crud"
     [ Item "rain" $
         rain ::: "amount" #
           tFloat .-> tGCM          (tPort $ "rainfall" # tFloat)
+
     , Item "pump" $
         pump ::: "capacity" #
           tFloat .-> tGCM (tPair   (tPort $ "inflow"   # tFloat)
@@ -31,7 +33,7 @@ pump maxCap = do
   outPort <- createPort
 
   component $ do
-    inflow <- value inPort
+    inflow  <- value inPort
     outflow <- value outPort
 
     assert $ inflow === outflow
@@ -71,4 +73,6 @@ example = do
 
   output overflowS "Overflow"
 
-main = runGCM example >>= putStr
+main = do
+  result <- runGCM example
+  putStr result

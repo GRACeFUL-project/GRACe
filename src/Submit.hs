@@ -182,4 +182,3 @@ mkGCM ns l = do
   lib <- applyLibrary (nodeLibrary ns l) (lookat m)
   gs  <- foldM putItem Map.empty (items lib)
   mapM_ (uncurry (link2 gs)) (getLinks ns)
-
