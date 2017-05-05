@@ -16,7 +16,7 @@
 module Library 
     ( module Types
     , Library(..)
-    , Item(..)
+    , Item(..), item
     ) where
 
 import GL hiding (Item)
@@ -44,6 +44,9 @@ data Item = Item
     , icon    :: URL
     , f       :: TypedValue 
     } deriving Show 
+
+item :: Id -> TypedValue -> Item
+item n = Item n "no comment" "" 
 
 instance ToJSON Item where
     toJSON (Item n c i (f ::: t)) = object 

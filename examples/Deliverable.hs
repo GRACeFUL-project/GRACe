@@ -9,12 +9,10 @@ library = Library "crud"
     [ item "rain" $
         rain ::: "amount" #
           tFloat .-> tGCM          (tPort $ "rainfall" # tFloat)
-
     , item "pump" $
         pump ::: "capacity" #
           tFloat .-> tGCM (tPair   (tPort $ "inflow"   # tFloat)
                                    (tPort $ "outflow"  # tFloat))
-
     , item "runoff area" $
         runoffArea ::: "storage capacity" #
           tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat)
