@@ -44,6 +44,7 @@ library
     , containers
     , text
     , aeson
+    , bytestring
   hs-source-dirs:
     src
   default-language:
