@@ -2,19 +2,20 @@ module Deliverable where
 
 import Compile0
 import GL
---import Library
+import Library
 
 library :: Library
 library = Library "crud"
-    [ Item "rain" $
+    [ item "rain" $
         rain ::: "amount" #
           tFloat .-> tGCM          (tPort $ "rainfall" # tFloat)
 
-    , Item "pump" $
+    , item "pump" $
         pump ::: "capacity" #
           tFloat .-> tGCM (tPair   (tPort $ "inflow"   # tFloat)
                                    (tPort $ "outflow"  # tFloat))
-    , Item "runoff area" $
+
+    , item "runoff area" $
         runoffArea ::: "storage capacity" #
           tFloat .-> tGCM (tTuple3 (tPort $ "inflow"   # tFloat)
                                    (tPort $ "outlet"   # tFloat)
