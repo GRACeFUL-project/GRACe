@@ -9,6 +9,8 @@ import Data.Char
 import Program
 import System.Process
 
+import Interfaces.MZASTBase(Type(..),Expr(..))
+
 -- * Constraint Programming
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,19 +24,27 @@ instance Show (Variable a) where
 -- | Types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPType a where
   typeDec :: Proxy a -> String -> String
+  hzType :: Proxy a -> Type
+  hzConst :: a -> Expr
 
--- We have to constraint integers to this range, because the solver is kind of dumb
+-- We have to constrain integers to this range, because the solver is kind of dumb
 defaultIntRange :: String
 defaultIntRange = " -10000000..10000000"
 
 instance CPType Int where
   typeDec = const (++ defaultIntRange)
+  hzType = const Int
+  hzConst = IConst
 
 instance CPType Float where
   typeDec = const (++ " float")
+  hzType = const Float
+  hzConst = FConst
 
 instance CPType Bool where
   typeDec = const (++ " bool")
+  hzType = const Bool
+  hzConst = BConst
 
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
