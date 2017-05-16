@@ -9,4 +9,6 @@ extra-deps:
 - parsec-numbers-0.1.0
 - servant-0.10
 - servant-server-0.10
+- haskelzinc-0.3.0.9
+- parsec3-1.0.1.8
 resolver: lts-7.20
