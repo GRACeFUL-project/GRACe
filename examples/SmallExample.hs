@@ -1,4 +1,22 @@
+{-# LANGUAGE TypeApplications #-}
 module SmallExample where
+
+import qualified Data.Text as T
+import qualified Data.ByteString.Lazy.Char8 as BS
+import Control.Monad
+import qualified Data.HashMap.Lazy as HM
+import System.Process
+import TestFW.GCMCheck
+import Compile0
+import GL
+import TestFW.GCMP
+import qualified Test.QuickCheck as QC
+import Data.List.Split
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as BS
+import Data.Maybe
+import qualified Data.Text as T
+import Data.List
 
 import TestFW.GCMCheck
 import Compile0
@@ -152,3 +170,38 @@ prop_example = do
     link sin rain
 
   property $ (val ovfl .> 0) ==> (val (outflow pmp) === lit cap)
+
+-- | Runs a prog expected to contain "prop_..." output
+-- and tests if that output contained any "prop_... = false"
+run :: GCM a -> IO Bool
+run prog = do
+  writeFile "model.mzn" (compileGCM prog)
+  callCommand "mzn2fzn model.mzn"
+  out <- readCreateProcess (shell "fzn-gecode -p 4 -n 10 model.fzn | solns2out --soln-sep \"\" --search-complete-msg \"\" model.ozn") ""
+  callCommand "rm model.mzn model.ozn model.fzn"
+  return (wasSucess out)
+
+-- | Tests that all label starting with "prop_" in MiniZinc output are True
+wasSucess :: String -> Bool
+wasSucess s =
+  let keyValue = [HM.toList hm
+                 | Object hm <-
+                    map fromJust $
+                    filter isJust $
+                    map ((decode @Value) . BS.pack) $
+                    filter (not . null) $
+                    splitOn "\n\n" s
+                ]
+      bools = [b | (label, Bool b) <- (concat keyValue), "prop_" `isPrefixOf` (T.unpack label)]
+  in  and bools
+
+test :: GCMP a -> IO ()
+test prop = do
+  let generator = makeGenerator prop 
+  results <- replicateM 10 $ QC.generate generator >>= run
+  if and results then
+    putStrLn "Success"
+  else
+    putStrLn "Failure"
+
+main = test prop_pump
