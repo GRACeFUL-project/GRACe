@@ -170,11 +170,14 @@ defArgs = "-p 4 -n 10"
 -- if it exists it will be overwritten.
 run :: Args -> String -> IO Output
 run args s = do
-  let tmp = "tmp.mzn"
-  writeFile tmp s
-  out <- readProcess "mzn-gecode" (tmp:words args) ""
-  callProcess "rm" [tmp]
-  return (par out)
+  writeFile   "model.mzn" s
+  callCommand "mzn2fzn model.mzn"
+  out <- readProcess "fzn-gecode" (words args ++ ["model.fzn"]) ""
+  res <- readProcess "solns2out"  [ "--soln-sep", ","
+                                  , "--search-complete-msg", ""
+                                  , "model.ozn"] out
+  callCommand "rm model.mzn model.ozn model.fzn"
+  return (par res)
 
 -- | Run @mzn-gecode@ on the given input string, default arguments
 -- and parse the result.

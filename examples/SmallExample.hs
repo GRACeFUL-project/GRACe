@@ -152,4 +152,4 @@ prop_example = do
     link (inflow pmp) outl
     link sin rain
 
-  property $ (val ovfl .> 0) ==> (val (outflow pmp) === lit cap)
+  property $ (val ovfl .> -1) ==> (val (outflow pmp) === lit cap)
