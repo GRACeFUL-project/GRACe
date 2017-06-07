@@ -62,7 +62,7 @@ increaseCap p costFunction = do
   a'       <- taken a
   costPort <- createPort
 
-  linkBy (fun costFunction) a' costPort
+  linkBy costFunction a' costPort
 
   return (a, costPort)
 
@@ -73,18 +73,18 @@ floodingOfSquare = do
   flow      <- createPort
   isFlooded <- createPort
 
-  linkBy (fun (.> 0)) flow isFlooded
+  linkBy (.> 0) flow isFlooded
   return (flow, isFlooded)
 
 minimize :: Port Int -> GCM ()
 minimize p = do
   g <- createGoal
-  linkBy (fun negate) p g
+  linkBy negate p g
 
 maximize :: Port Int -> GCM ()
 maximize p = do
   g <- createGoal
-  link p g
+  linkBy id p g
 
 -- Small example
 example :: GCM ()
@@ -135,3 +135,20 @@ prop_pump = do
   k   <- forall (fmap abs QC.arbitrary)
   pmp <- liftGCM $ pump k
   property $ val (inflow pmp) .< lit k
+
+prop_example :: GCMP ()
+prop_example = do
+  cap  <- abs <$> forall QC.arbitrary
+  pmp  <- liftGCM $ pump cap
+
+  rin  <- abs <$> forall QC.arbitrary
+  rain <- liftGCM $ rain rin
+
+  scap <- abs <$> forall QC.arbitrary
+  (sin, outl, ovfl, _) <- liftGCM $ storage scap
+
+  liftGCM $ do
+    link (inflow pmp) outl
+    link sin rain
+
+  property $ (val ovfl .> 0) ==> (val (outflow pmp) === lit cap)
