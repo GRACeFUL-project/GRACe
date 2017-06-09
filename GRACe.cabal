@@ -24,7 +24,9 @@ library
     Library
   other-modules:
     TestFW.GenT,
-    Program
+    Program,
+    Types,
+    Utils
   other-extensions:
     GADTs,
     FlexibleInstances,
