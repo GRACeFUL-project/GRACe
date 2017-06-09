@@ -37,7 +37,7 @@ instance CPType Bool where
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
   -- | This will require extra documentation.
-  ValueOf :: IsPort p                 => p a        -> CPExp a
+  ValueOf ::                             Name       -> CPExp a
   Lit     :: CPType a                 => a          -> CPExp a
   Equal   :: CPType a                 => CPExp a    -> CPExp a    -> CPExp Bool
   LeThan  :: (CPType a, Ord a)        => CPExp a    -> CPExp a    -> CPExp Bool
@@ -65,10 +65,10 @@ class IsArray a idx | a -> idx where
   indexArray  :: CPType x => CPExp (a x) -> CPDomain idx -> CPExp x
   createArray :: CPType x => idx -> GCM (Variable (a x))
 
--- | A 1D array is an Addr and a size
+-- | A 1D array is an Name and a size
 data Array1D x
 
--- | A 2D array is an Addr and a size
+-- | A 2D array is an Name and a size
 data Array2D x
 
 -- | How to construct and access a 1D array
@@ -95,25 +95,25 @@ x ... y = Instr $ Range (x, y)
 
 -- Not well defined (CPType much too general).
 instance (Num a, CPType a) => Num (CPExp a) where
-    (+)         = Add
-    (*)         = Mul
-    (-)         = Sub
-    abs         = undefined
-    signum      = undefined
-    fromInteger = lit . fromInteger
+  (+)         = Add
+  (*)         = Mul
+  (-)         = Sub
+  abs         = undefined
+  signum      = undefined
+  fromInteger = lit . fromInteger
 
 -- Not well defined (CPType much too general).
 instance (Fractional a, CPType a) => Fractional (CPExp a) where
-    (/)          = Div
-    fromRational = lit . fromRational
+  (/)          = Div
+  fromRational = lit . fromRational
 
 -- * The CP monad
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- | Instructions in the constraint programming monad.
 data CPCommands a where
-    Assert     ::             CPExp Bool -> CPCommands ()
-    CreateLVar :: CPType a => Proxy a    -> CPCommands (Variable a)
+  Assert     ::             CPExp Bool -> CPCommands ()
+  CreateLVar :: CPType a => Proxy a    -> CPCommands (Variable a)
 
 -- | Constraint programs.
 type CP a = Program CPCommands a
@@ -171,10 +171,10 @@ minimumm = MinA
 
 -- | Unsure about if this is the best programming model for this
 value  :: IsPort p => p a -> CP (CPExp a)
-value = return . ValueOf
+value = return . ValueOf . portID
 
 val  :: IsPort p => p a -> CPExp a
-val = ValueOf
+val = ValueOf . portID
 
 infixr 3 .&&
 infixl 4 .<
@@ -213,16 +213,16 @@ infixl 4 .>=
 
 -- | GRACeFUL Concept Map commands.
 data GCMCommand a where
-    Output        ::             Port a     -> String -> GCMCommand ()
-    CreatePort    :: CPType a => Proxy a    -> GCMCommand (Port a)
-    -- | Unsure that hardcoding this to Int is a good idea
-    CreateGoal    ::             GCMCommand (Goal Int) 
-    CreateParam   :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
-    CreateAction  :: CPType a => Param a    -> GCMCommand (Action a)
-    EmbedAction   ::             ActM a     -> GCMCommand ()
-    Component     ::             CP a       -> GCMCommand ()
-    CreateArray1D :: CPType a => Proxy a    -> Int -> GCMCommand (Port (Array1D a))
-    CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> GCMCommand (Port (Array2D a))
+  Output        ::             Port a     -> String -> GCMCommand ()
+  CreatePort    :: CPType a => Proxy a    -> GCMCommand (Port a)
+  -- | Unsure that hardcoding this to Int is a good idea
+  CreateGoal    ::             GCMCommand (Goal Int) 
+  CreateParam   :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
+  CreateAction  :: CPType a => Param a    -> GCMCommand (Action a)
+  EmbedAction   ::             ActM a     -> GCMCommand ()
+  Component     ::             CP a       -> GCMCommand ()
+  CreateArray1D :: CPType a => Proxy a    -> Int -> GCMCommand (Port (Array1D a))
+  CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> GCMCommand (Port (Array2D a))
 
 -- | A GRACeFUL Concept Map.
 type GCM = Program GCMCommand
@@ -272,7 +272,7 @@ action = Instr . EmbedAction
 
 -- | @'act' f a@ applies the function @f@ to the action @a@.
 act :: CPType a => (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
-act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf (Port i)) (lit a)) act)
+act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf i) (lit a)) act)
 
 -- | Document this.
 component :: CP a -> GCM ()
@@ -349,26 +349,26 @@ fun f = do
 -- * Ports 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type Addr = Int
+type Name = Int
 
 -- A port is just an address
-data Port a = Port Addr deriving (Show, Functor)
+data Port a = Port Name deriving (Show, Functor)
 
 -- A variable is just a port
 type Variable a = Port a
 
 -- | A parameter port is a port with a default value.
 -- TODO: Document.
-data Param a = Param a Addr 
+data Param a = Param a Name 
 
 -- | A goal.
 -- TODO: Document.
-data Goal a = Goal Addr
+data Goal a = Goal Name
 
 -- | Can I get a port ID
 -- TODO: Document.
 class IsPort p where
-  portID :: p a -> Addr 
+  portID :: p a -> Name 
 
 instance IsPort Port where
   portID (Port id) = id

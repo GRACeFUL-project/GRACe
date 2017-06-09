@@ -49,53 +49,53 @@ unsafeHack s       = s
 -- | Pretty-printer for `CPExp` expressions.
 compileCPExp :: CPExp a -> IntermMonad String
 compileCPExp = \case
-    ValueOf p  -> return $ "v" ++ show (portID p)
-    Lit l      -> return $ unsafeHack (show l)
-    Equal a b  -> comp2paren a " == " b
-    LeThan a b -> comp2paren a " < "  b
-    LtEq a b   -> comp2paren a " <= " b
-    Add a  b   -> comp2paren a " + "  b
-    Mul a  b   -> comp2paren a " * "  b
-    Sub a  b   -> comp2paren a " - "  b
-    Div a  b   -> comp2paren a " / "  b
-    Max a  b   -> do
-                    cab <- comp2paren a "," b
-                    return $ "max" ++ paren cab
-    Min a  b   -> do
-                    cab <- comp2paren a "," b
-                    return $ "min" ++ paren cab
-    And a  b   -> comp2paren a " /\\ "b
-    Not a      -> do
-                    ac <- compileCPExp a
-                    return $ paren $ "not " ++ paren ac
-    I2F a      -> do
-                    ac <- compileCPExp a
-                    return $ "int2float" ++ paren ac
-    ForAll m   -> do
-                    (bexpr, s) <- runWriterT (compileComprehension m)
-                    bexprc     <- compileCPExp bexpr
-                    return $ foldr (\outer inner -> "forall" ++ outer ++ "\n" ++ paren inner) bexprc s
-    Sum m      -> do
-                    (expr, s) <- runWriterT (compileComprehension m)
-                    exprc      <- compileCPExp expr
-                    return $ foldr (\outer inner -> "sum" ++ outer ++ "\n" ++ paren inner) exprc s
-    MaxA m     -> do
-                    (expr, s) <- runWriterT (compileComprehension m)
-                    exprc      <- compileCPExp expr
-                    return $ foldr (\outer inner -> "max" ++ outer ++ "\n" ++ paren inner) exprc s
-    MinA m     -> do
-                    (expr, s) <- runWriterT (compileComprehension m)
-                    exprc      <- compileCPExp expr
-                    return $ foldr (\outer inner -> "min" ++ outer ++ "\n" ++ paren inner) exprc s
-    IdxA1D arr idx -> do
-      idxc <- compileCPExp idx
-      avar <- compileCPExp arr
-      return $ avar ++ "[" ++ idxc ++ "]"
-    IdxA2D arr idx -> do
-      idxcf <- compileCPExp (fst idx)
-      idxcs <- compileCPExp (snd idx)
-      avar  <- compileCPExp arr
-      return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
+  ValueOf v  -> return $ "v" ++ show v
+  Lit l      -> return $ unsafeHack (show l)
+  Equal a b  -> comp2paren a " == " b
+  LeThan a b -> comp2paren a " < "  b
+  LtEq a b   -> comp2paren a " <= " b
+  Add a  b   -> comp2paren a " + "  b
+  Mul a  b   -> comp2paren a " * "  b
+  Sub a  b   -> comp2paren a " - "  b
+  Div a  b   -> comp2paren a " / "  b
+  Max a  b   -> do
+                  cab <- comp2paren a "," b
+                  return $ "max" ++ paren cab
+  Min a  b   -> do
+                  cab <- comp2paren a "," b
+                  return $ "min" ++ paren cab
+  And a  b   -> comp2paren a " /\\ "b
+  Not a      -> do
+                  ac <- compileCPExp a
+                  return $ paren $ "not " ++ paren ac
+  I2F a      -> do
+                  ac <- compileCPExp a
+                  return $ "int2float" ++ paren ac
+  ForAll m   -> do
+                  (bexpr, s) <- runWriterT (compileComprehension m)
+                  bexprc     <- compileCPExp bexpr
+                  return $ foldr (\outer inner -> "forall" ++ outer ++ "\n" ++ paren inner) bexprc s
+  Sum m      -> do
+                  (expr, s) <- runWriterT (compileComprehension m)
+                  exprc      <- compileCPExp expr
+                  return $ foldr (\outer inner -> "sum" ++ outer ++ "\n" ++ paren inner) exprc s
+  MaxA m     -> do
+                  (expr, s) <- runWriterT (compileComprehension m)
+                  exprc      <- compileCPExp expr
+                  return $ foldr (\outer inner -> "max" ++ outer ++ "\n" ++ paren inner) exprc s
+  MinA m     -> do
+                  (expr, s) <- runWriterT (compileComprehension m)
+                  exprc      <- compileCPExp expr
+                  return $ foldr (\outer inner -> "min" ++ outer ++ "\n" ++ paren inner) exprc s
+  IdxA1D arr idx -> do
+    idxc <- compileCPExp idx
+    avar <- compileCPExp arr
+    return $ avar ++ "[" ++ idxc ++ "]"
+  IdxA2D arr idx -> do
+    idxcf <- compileCPExp (fst idx)
+    idxcs <- compileCPExp (snd idx)
+    avar  <- compileCPExp arr
+    return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
 
 compileComprehension :: ComprehensionMonad (CPExp a) -> WriterT [String] IntermMonad (CPExp a)
 compileComprehension = interpret
@@ -104,14 +104,13 @@ instance Interprets (WriterT [String] IntermMonad) ComprehensionCommand where
   interp = translateComprehensionCommand
 
 translateComprehensionCommand :: ComprehensionCommand a -> WriterT [String] IntermMonad a
-translateComprehensionCommand (Range (low, high)) =
-  do
-    nvar <- lift $ gets nextVarId
-    lift $ modify $ \st -> st {nextVarId = nvar + 1}
-    lows  <- lift $ compileCPExp low
-    highs <- lift $ compileCPExp high
-    tell ["(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
-    return $ ValueOf (Port nvar)
+translateComprehensionCommand (Range (low, high)) = do
+  nvar <- lift $ gets nextVarId
+  lift $ modify $ \st -> st {nextVarId = nvar + 1}
+  lows  <- lift $ compileCPExp low
+  highs <- lift $ compileCPExp high
+  tell ["(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
+  return $ ValueOf nvar
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> IntermMonad String
 comp2paren a op b = do
@@ -132,7 +131,7 @@ translateCPCommands (CreateLVar proxy) = do
   vid <- gets nextVarId
   let dec = typeDec proxy "var" ++ ": v" ++ show vid ++ ";"
   modify $ \st -> st { nextVarId = vid + 1
-                       , declarations = dec : declarations st
+                     , declarations = dec : declarations st
                      }
   return $ Port vid
 
