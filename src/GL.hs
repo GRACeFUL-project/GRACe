@@ -63,7 +63,7 @@ data CPExp a where
 class IsArray a idx | a -> idx where
   type CPDomain idx :: *
   indexArray  :: CPType x => CPExp (a x) -> CPDomain idx -> CPExp x
-  createArray :: CPType x => idx -> CP (Variable (a x))
+  createArray :: CPType x => idx -> GCM (Variable (a x))
 
 -- | A 1D array is an Name and a size
 data Array1D x
@@ -114,8 +114,7 @@ instance (Fractional a, CPType a) => Fractional (CPExp a) where
 data CPCommands a where
   Assert        ::             CPExp Bool -> CPCommands ()
   CreateLVar    :: CPType a => Proxy a    -> CPCommands (Variable a)
-  CreateArray1D :: CPType a => Proxy a    -> Int -> CPCommand (Port (Array1D a))
-  CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> CPCommand (Port (Array2D a))
+  
 
 -- | Constraint programs.
 type CP a = Program CPCommands a
@@ -223,6 +222,8 @@ data GCMCommand a where
   CreateAction  :: CPType a => Param a    -> GCMCommand (Action a)
   EmbedAction   ::             ActM a     -> GCMCommand ()
   Component     ::             CP a       -> GCMCommand ()
+  CreateArray1D :: CPType a => Proxy a    -> Int -> GCMCommand (Port (Array1D a))
+  CreateArray2D :: CPType a => Proxy a    -> (Int, Int) -> GCMCommand (Port (Array2D a))
   
 
 -- | A GRACeFUL Concept Map.
