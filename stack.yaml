@@ -9,4 +9,4 @@ extra-deps:
 - parsec-numbers-0.1.0
 - servant-0.10
 - servant-server-0.10
-resolver: lts-7.20
+resolver: lts-8.17

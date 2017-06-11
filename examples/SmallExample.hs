@@ -139,13 +139,13 @@ prop_pump = do
 
 prop_example :: GCMP ()
 prop_example = do
-  cap  <- abs <$> forall QC.arbitrary
+  QC.NonNegative cap  <- forall QC.arbitrary
   pmp  <- liftGCM $ pump cap
 
-  rin  <- abs <$> forall QC.arbitrary
+  QC.NonNegative rin  <- forall QC.arbitrary
   rain <- liftGCM $ rain rin
 
-  scap <- abs <$> forall QC.arbitrary
+  QC.NonNegative scap <- forall QC.arbitrary
   (sin, outl, ovfl, _) <- liftGCM $ storage scap
 
   liftGCM $ do
