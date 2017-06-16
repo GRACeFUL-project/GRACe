@@ -15,6 +15,8 @@ import Data.Char
 import Program
 import System.Process
 
+import Interfaces.MZASTBase(Type(..),Expr(..))
+
 -- * Constraint Programming
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -23,16 +25,24 @@ data Proxy a = Proxy
 -- | Types supported by the constraint programming runtime.
 class (Show a, Eq a) => CPType a where
   typeDec :: Proxy a -> String -> String
+  hzType :: Proxy a -> Type
+  hzConst :: a -> Expr
 
 instance CPType Int where 
   -- We have to constraint integers to this range, because the solver is kind of dumb
   typeDec = const (++ " -10000000..10000000")
+  hzType = const Int
+  hzConst = IConst
 
 instance CPType Float where
   typeDec = const (++ " float")
+  hzType = const Float
+  hzConst = FConst
 
 instance CPType Bool where
   typeDec = const (++ " bool")
+  hzType = const Bool
+  hzConst = BConst
 
 -- | Expressions in the Constraint Programming monad.
 data CPExp a where
