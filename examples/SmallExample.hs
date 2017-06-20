@@ -3,7 +3,8 @@ module SmallExample where
 
 import TestFW.GCMCheck
 import Compile0
-import GL
+import CP
+import GCM
 import TestFW.GCMP
 import qualified Test.QuickCheck as QC
 
@@ -112,7 +113,7 @@ example = do
   -- We don't want flooding
   set isFlooded False
 
-  totalCost <- createVariable
+  totalCost <- createPort
   component $ do
     pc <- value pumpCost
     sc <- value storageCost
@@ -135,7 +136,7 @@ prop_pump :: GCMP ()
 prop_pump = do
   k   <- forall (fmap abs QC.arbitrary)
   pmp <- liftGCM $ pump k
-  property $ val (inflow pmp) .< lit k
+  property $ portVal (inflow pmp) .< lit k
 
 prop_example :: GCMP ()
 prop_example = do
@@ -152,4 +153,6 @@ prop_example = do
     link (inflow pmp) outl
     link sin rain
 
-  property $ (val ovfl .> 0) ==> (val (outflow pmp) === lit cap)
+  property $ (portVal ovfl .> 0) ==> (portVal (outflow pmp) === lit cap)
+
+portVal (Port v) = val v

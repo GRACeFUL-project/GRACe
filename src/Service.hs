@@ -17,7 +17,7 @@
 
 module Service where
 
-import GL
+import GCM
 import Compile0
 import Types
 

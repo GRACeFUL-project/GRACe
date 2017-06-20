@@ -1,7 +1,8 @@
 module Deliverable where
 
 import Compile0
-import GL
+import GCM
+import CP
 import Library
 
 library :: Library

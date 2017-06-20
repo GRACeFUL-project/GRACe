@@ -12,7 +12,8 @@ import System.Process
 import qualified Data.Set as S
 
 import Program
-import GL
+import CP
+import GCM
 
 runGCM :: GCM a -> IO String
 runGCM gcm = do
@@ -87,15 +88,15 @@ compileCPExp = \case
                   (expr, s) <- runWriterT (compileComprehension m)
                   exprc      <- compileCPExp expr
                   return $ foldr (\outer inner -> "min" ++ outer ++ "\n" ++ paren inner) exprc s
-  IdxA1D arr idx -> do
-    idxc <- compileCPExp idx
-    avar <- compileCPExp arr
-    return $ avar ++ "[" ++ idxc ++ "]"
-  IdxA2D arr idx -> do
-    idxcf <- compileCPExp (fst idx)
-    idxcs <- compileCPExp (snd idx)
-    avar  <- compileCPExp arr
-    return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"
+  {-IdxA1D arr idx -> do-}
+    {-idxc <- compileCPExp idx-}
+    {-avar <- compileCPExp arr-}
+    {-return $ avar ++ "[" ++ idxc ++ "]"-}
+  {-IdxA2D arr idx -> do-}
+    {-idxcf <- compileCPExp (fst idx)-}
+    {-idxcs <- compileCPExp (snd idx)-}
+    {-avar  <- compileCPExp arr-}
+    {-return $ avar ++ "[" ++ idxcf ++ "," ++ idxcs ++ "]"-}
 
 compileComprehension :: ComprehensionMonad (CPExp a) -> WriterT [String] IntermMonad (CPExp a)
 compileComprehension = interpret
@@ -110,7 +111,7 @@ translateComprehensionCommand (Range (low, high)) = do
   lows  <- lift $ compileCPExp low
   highs <- lift $ compileCPExp high
   tell ["(" ++ "v" ++ show nvar ++ " in " ++ lows ++ ".." ++ highs ++ ")"]
-  return $ ValueOf nvar
+  return $ ValueOf (Var nvar)
 
 comp2paren :: (CPType a, CPType b) => CPExp a -> String -> CPExp b -> IntermMonad String
 comp2paren a op b = do
@@ -133,14 +134,14 @@ translateCPCommands (CreateLVar proxy) = do
   modify $ \st -> st { nextVarId = vid + 1
                      , declarations = dec : declarations st
                      }
-  return $ Port vid
+  return $ Var vid
 
 instance Interprets IntermMonad CPCommands where
   interp = translateCPCommands
 
 -- | Compiles `ActCommand`s to a sequence of `String`s.
 translateActionCommands :: ActCommand a -> IntermMonad a
-translateActionCommands (Act expr (Action i (Param _ j))) = do
+translateActionCommands (Act expr (Action i (Param _ (Port j)))) = do
   exprc <- compileCPExp expr
   modify $ \st -> st {expressions = expressions st ++ ["constraint (a"++ show j++" -> (v" ++ show j ++ " == " ++ paren exprc ++ "));"]}
 
@@ -150,8 +151,8 @@ instance Interprets IntermMonad ActCommand where
 -- Translation of GCM commands
 translateGCMCommand :: GCMCommand a -> IntermMonad a
 translateGCMCommand = \case
-  Output p s -> do
-    let i = portID p
+  Output (Port v) s -> do
+    let i = varID v
     modify $ \st -> st { outputs = outputs st ++ ["\\\"" ++ s ++ "\\\"" ++ " : \\(v" ++ show i ++ ")"]}
   CreatePort proxy -> do
     vid <- gets nextVarId
@@ -159,7 +160,7 @@ translateGCMCommand = \case
     modify $ \st -> st { nextVarId = vid + 1
                        , declarations = dec : declarations st
                        }
-    return $ Port vid
+    return $ Port (Var vid)
   CreateGoal -> do
     vid <- gets nextVarId
     let goal = "var int: v" ++ show vid ++ ";"
@@ -167,7 +168,7 @@ translateGCMCommand = \case
                        , goals = vid : goals st
                        , declarations = goal : declarations st
                        }
-    return (Goal vid)
+    return (Goal $ Var vid)
   CreateParam proxy def -> do
     vid <- gets nextVarId
         -- the value
@@ -181,8 +182,8 @@ translateGCMCommand = \case
                        , declarations = dec : dec2 : declarations st
                        , unconParams  = S.insert vid (unconParams st)
                        }
-    return $ Param def vid
-  CreateAction p@(Param a j) -> do
+    return $ Param def (Port $ Var vid)
+  CreateAction p@(Param a (Port j)) -> do
     vid <- gets nextVarId
     let dec = "var int: v" ++ show vid ++ ";"
         exp = "constraint (v" ++ show vid ++ ">= 0);"
@@ -190,25 +191,25 @@ translateGCMCommand = \case
     modify $ \st -> st { nextVarId    = vid + 1
                        , expressions  = exp : exp2 : expressions st
                        , declarations = dec : declarations st
-                       , unconParams  = S.delete j (unconParams st)
+                       , unconParams  = S.delete (varID j) (unconParams st)
                        }
     return $ Action vid p
   Component cp     -> void $ interpret cp
   EmbedAction actm -> void $ interpret actm
-  CreateArray1D proxy len -> do
-    vid <- gets nextVarId
-    let dec = (typeDec proxy $ "array[0.." ++ show (len - 1) ++"] of var") ++ ": v" ++ show vid ++ ";"
-    modify $ \st -> st { nextVarId = vid + 1
-                       , declarations = dec : declarations st
-                       }
-    return $ Port vid
-  CreateArray2D proxy (i, j) -> do
-    vid <- gets nextVarId
-    let dec = (typeDec proxy $ "array[0.." ++ show (i - 1) ++ ",0.." ++ show (j - 1) ++ "] of var") ++ ": v" ++ show vid ++ ";"
-    modify $ \st -> st { nextVarId = vid + 1
-                       , declarations = dec : declarations st
-                       }
-    return $ Port vid
+  {-CreateArray1D proxy len -> do-}
+    {-vid <- gets nextVarId-}
+    {-let dec = (typeDec proxy $ "array[0.." ++ show (len - 1) ++"] of var") ++ ": v" ++ show vid ++ ";"-}
+    {-modify $ \st -> st { nextVarId = vid + 1-}
+                       {-, declarations = dec : declarations st-}
+                       {-}-}
+    {-return $ Port vid-}
+  {-CreateArray2D proxy (i, j) -> do-}
+    {-vid <- gets nextVarId-}
+    {-let dec = (typeDec proxy $ "array[0.." ++ show (i - 1) ++ ",0.." ++ show (j - 1) ++ "] of var") ++ ": v" ++ show vid ++ ";"-}
+    {-modify $ \st -> st { nextVarId = vid + 1-}
+                       {-, declarations = dec : declarations st-}
+                       {-}-}
+    {-return $ Port vid-}
 
 instance Interprets IntermMonad GCMCommand where
   interp = translateGCMCommand

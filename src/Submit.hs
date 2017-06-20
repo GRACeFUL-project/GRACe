@@ -12,7 +12,7 @@
 -}
 module Submit where
 
-import           GL
+import           GCM
 import           Compile0
 import           Library
 import           GRACeGraph

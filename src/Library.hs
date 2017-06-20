@@ -19,7 +19,7 @@ module Library
     , Item(..), item
     ) where
 
-import GL hiding (Item)
+import GCM hiding (Item)
 import Types
 import Utils
 

@@ -7,7 +7,8 @@
 module Main where
 
 import Compile0
-import GL hiding (Proxy)
+import GCM
+import CP hiding (Proxy)
 import GRACeGraph
 import Library
 import Submit

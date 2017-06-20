@@ -1,7 +1,9 @@
 module TestFW.GCMP where
 
-import GL
+import GCM
+import CP
 import TestFW.GenT
+
 import qualified Test.QuickCheck as QC
 import Control.Monad.Trans
 import Control.Monad.Trans.State as S

@@ -30,7 +30,8 @@ module Types
     ) where
 
 import Utils
-import GL 
+import GCM 
+import CP 
 
 import Control.Arrow ((***))
 import qualified Control.Category as C

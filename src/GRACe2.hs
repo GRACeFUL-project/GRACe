@@ -9,7 +9,7 @@
 -}
 module GRACe2 where
 
-import GL hiding (Lit, Name)
+{-import GL hiding (Lit, Name)-}
 import Compile0
 import Control.Monad (void)
 

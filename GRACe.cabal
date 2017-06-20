@@ -15,8 +15,8 @@ cabal-version:       >=1.10
 -- GRACe DSL
 library
   exposed-modules:
-    GL,
-    GRACe2,
+    CP,
+    GCM,
     TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
@@ -57,7 +57,8 @@ executable RestAPI
     Main.hs
   other-modules:
       Compile0
-    , GL
+    , CP
+    , GCM
     , GRACeGraph
     , Library
     , Program
