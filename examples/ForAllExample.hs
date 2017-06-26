@@ -2,7 +2,10 @@
 module ForAllExample where
 
 import Compile0
-import GL
+import GCM
+import CP
+
+-- TODO: note that arrays are currently not supported
 
 main = do
   putStr $ compileGCM example

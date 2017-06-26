@@ -1,5 +1,5 @@
 name:                GRACe
-version:             0.1.2.0
+version:             0.1.2.1
 -- synopsis:
 -- description:
 license:             BSD3
@@ -65,7 +65,7 @@ executable RestAPI
     , Service
     , Submit
     , Types
-    , Utils 
+    , Utils
   build-depends:
       base
     , aeson >= 1.1
@@ -108,5 +108,35 @@ test-suite test
     process          >= 1.4  && <1.5
   hs-source-dirs:
     test
+  default-language:
+    Haskell2010
+
+executable examples
+  main-is:
+    Main.hs
+  build-depends:
+    base,
+    QuickCheck,
+    GRACe
+  hs-source-dirs:
+    examples
+  default-language:
+    Haskell2010
+
+executable TestingUserCode
+  main-is:
+    TestingUserCode.hs
+  build-depends:
+    base,
+    QuickCheck,
+    unordered-containers,
+    split,
+    process,
+    aeson,
+    bytestring,
+    text,
+    GRACe
+  hs-source-dirs:
+    examples
   default-language:
     Haskell2010

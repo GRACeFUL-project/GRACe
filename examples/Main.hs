@@ -2,7 +2,7 @@ module Main where
 
 import SmallExample as Small
 import Examples as E
-import GL
+import GCM
 import Compile0
 
 main = do

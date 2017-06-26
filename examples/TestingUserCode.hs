@@ -1,18 +1,23 @@
 {-# LANGUAGE TypeApplications #-}
 import Control.Monad
 import qualified Data.HashMap.Lazy as HM
+import Data.List.Split
+
 import System.Process
 import TestFW.GCMCheck
-import Compile0
-import GL
 import TestFW.GCMP
 import qualified Test.QuickCheck as QC
-import Data.List.Split
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
+
+import Compile0
+import GCM
+import CP
+
+  -- TODO: update to fix the Variable / Port type mismatch
 
 data Pump = Pump {inflow :: Port Int, outflow :: Port Int, capacity :: Param Int}
 
@@ -64,7 +69,7 @@ wasSucess s =
 
 test :: GCMP a -> IO ()
 test prop = do
-  let generator = makeGenerator prop 
+  let generator = makeGenerator prop
   results <- replicateM 10 $ QC.generate generator >>= run
   if and results then
     putStrLn "Success"

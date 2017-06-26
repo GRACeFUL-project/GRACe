@@ -1,6 +1,7 @@
 module QualitativeExample where
 
-import GL
+import GCM
+import CP
 import Compile0
 
 type Sign = Int
@@ -20,6 +21,7 @@ ambig = 1000
 isAmbig :: CPExp Sign -> CPExp Bool
 isAmbig x = (x .> 1) .|| (x .< -1)
 
+-- TODO: migrate to new internal structure (GCP + CP)
 times :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
 times p x y = assert $ val p === (x * y)
 

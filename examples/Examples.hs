@@ -1,6 +1,7 @@
 module Examples where
 
-import GL
+import GCM
+import CP
 
 -- A source of flow a
 source :: (CPType a) => a -> GCM (Port a)
@@ -15,7 +16,7 @@ sink :: (CPType a, Ord a, Num a) => a -> GCM (Port a)
 sink a = do
   p <- createPort
   component $ do
-    inflow <- value p 
+    inflow <- value p
     assert $ inflow `inRange` (0, lit a)
   return p
 
@@ -74,7 +75,7 @@ pump cmax =
                 assert $ c `inRange` (0, lit cmax)
                 assert $ f `inRange` (0, c)
         return (flow, cap)
-    
+
 -- Simple example with outputs and everything
 example :: GCM ()
 example =
@@ -114,14 +115,14 @@ requirement xs =
         totalP <- createPort
         component $
            do
-            total <- value totalP 
+            total <- value totalP
             sequence_ [do
                          v <- value p
                          assert $ total*(lit per) === v*(lit eff)
                       | (p, per, eff) <- xs]
         return totalP
 
--- A GCM representing a simluation of the swedish energy system
+-- A GCM representing a simluation of the Swedish energy system
 energySystem :: GCM ()
 energySystem =
     do
