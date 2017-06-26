@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-} 
+{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -26,7 +26,7 @@ data GCMCommand a where
   CreateVariable :: CPType a => Proxy a    -> GCMCommand (Variable a)
   CreatePort     :: CPType a => Proxy a    -> GCMCommand (Port a)
   -- | Unsure that hardcoding this to Int is a good idea
-  CreateGoal     ::             GCMCommand (Goal Int) 
+  CreateGoal     ::             GCMCommand (Goal Int)
   CreateParam    :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
   CreateAction   :: CPType a => Param a    -> GCMCommand (Action a)
   EmbedAction    ::             ActM a     -> GCMCommand ()
@@ -84,7 +84,7 @@ action = Instr . EmbedAction
 act :: CPType a => (CPExp Int -> CPExp a -> CPExp a) -> Action a -> ActM ()
 act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf $ Var i) (lit a)) act)
 
--- | Document this.
+-- | Embed a constraint programming component in a `GCM`.
 component :: CP a -> GCM ()
 component = Instr . Component
 
@@ -113,10 +113,10 @@ mutex a1 a2 = do
         assert $ nt ((v1 .> 0) .&& (v2 .> 0))
 
 -- | @'linkBy' f a b@ documentation goes here.
-linkBy :: (CPType a, CPType b, IsVar pa, IsVar pb, IsVar pi, IsVar po) 
+linkBy :: (CPType a, CPType b, IsVar pa, IsVar pb, IsVar pi, IsVar po)
     => GCM (pi a, po b)
-    -> pa a 
-    -> pb b 
+    -> pa a
+    -> pb b
     -> GCM ()
 linkBy f a b = do
   (i, o) <- f
@@ -134,10 +134,10 @@ set p a = component $ do
     assert $ v === lit a
 
 -- | TODO: Nice, but unused.
-foldGCM :: (CPType a, CPType b) 
-        => Int 
-        -> (CPExp b -> CPExp a -> CPExp b) 
-        -> CPExp b 
+foldGCM :: (CPType a, CPType b)
+        => Int
+        -> (CPExp b -> CPExp a -> CPExp b)
+        -> CPExp b
         -> GCM ([Port a], Port b)
 foldGCM i f v = do
     inputs <- replicateM i createPort
@@ -162,7 +162,7 @@ fun f = do
     assert  $ f va === vb
   return (a, b)
 
--- * Ports 
+-- * Ports
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- A port is just a variable
@@ -170,7 +170,7 @@ newtype Port a = Port (Variable a) deriving (Show, Functor)
 
 -- | A parameter port is a port with a default value.
 -- TODO: Document.
-data Param a = Param a (Port a) 
+data Param a = Param a (Port a)
 
 -- | A goal.
 -- TODO: Document.

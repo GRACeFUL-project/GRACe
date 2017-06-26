@@ -1,9 +1,10 @@
 module Deliverable where
 
-import Compile0
-import GCM
-import CP
-import Library
+import Compile0(runGCM)
+import GCM     (GCM, output, component, Port, createPort, link, value, set)
+import CP      (createLVar, assert, lit, (.>=), (.>), (===), (==>), inRange)
+import Library (Library(Library), item, (#), TypedValue((:::)), tFloat,
+                tPair, tTuple3, tPort, tGCM, (.->))
 
 library :: Library
 library = Library "crud"
