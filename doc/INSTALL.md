@@ -8,7 +8,7 @@ wget https://github.com/MiniZinc/MiniZincIDE/releases/download/2.1.0/MiniZincIDE
 tar zxf MiniZincIDE-2.1.0-bundle-linux-x86_64.tgz
 cd ~/Downloads/MiniZincIDE-2.1.0-bundle-linux-x86_64
 cp solns2out mzn2fzn fzn-gecode mzn-gecode minizinc \
-   ~/bin
+   ~/.local/bin
 export MZN_STDLIB_DIR=~/Downloads/MiniZincIDE-2.1.0-bundle-linux-x86_64/share/minizinc
 ```
 
