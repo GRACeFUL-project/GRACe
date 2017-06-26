@@ -23,6 +23,10 @@ relation s = do
 
   return (pi, po)
 
+-- We can make a "+" link an infix operator:
+(-+>) :: Port Int -> Port Int -> GCM ()
+(-+>) = linkBy (relation p)
+
 cldNode :: GCM (Port Int)
 cldNode = do
   p <- createPort
@@ -31,14 +35,18 @@ cldNode = do
     assert  $ pv `inRange` (-1, 1)
   return p
 
+
 example :: GCM ()
 example = do
   a <- cldNode
   b <- cldNode
 
-  linkBy (relation p) a b
+  a -+> b
 
   set a p
 
   output a "a"
   output b "b"
+
+main = runGCM example >>= putStr
+-- TODO: Check the result and explain the example

@@ -15,6 +15,8 @@ import Program
 import CP
 import GCM
 
+debug = True
+
 runGCM :: GCM a -> IO String
 runGCM gcm = do
   writeFile   "model.mzn" (compileGCM gcm)
@@ -25,7 +27,7 @@ runGCM gcm = do
   res <- readProcess "solns2out"  [ "--soln-sep", ","
                                   , "--search-complete-msg", ""
                                   , "model.ozn"] out
-  callCommand "rm model.mzn model.ozn model.fzn"
+  unless debug $ callCommand "rm model.mzn model.ozn model.fzn"
   return res
 
 -- Compilation
