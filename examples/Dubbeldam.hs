@@ -3,8 +3,11 @@
 
 module Main where
 
-import GL
-import Compile0
+import Compile0(runGCM)
+import GCM     (GCM, output, component, Param, createParam,
+                Action, createAction, taken,
+                Port, createPort, link, linkBy, value, set, fun)
+import CP      (CPType, assert, lit, max', (.>), (===), (.||), inRange)
 
 type Volume   = Int
 type Cost     = Int
