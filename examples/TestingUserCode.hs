@@ -41,7 +41,8 @@ prop_pump = do
 
   pmp <- liftGCM $ pump k
 
-  property $ val (inflow pmp) .< lit k
+  vi <- value (inflow pmp)
+  property $ vi .< lit k
 
 -- | Runs a prog expected to contain "prop_..." output
 -- and tests if that output contained any "prop_... = false"

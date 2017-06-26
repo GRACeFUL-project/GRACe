@@ -180,7 +180,7 @@ newtype Goal a = Goal (Variable a)
 -- | Can I get a port ID
 -- TODO: Document.
 class IsVar v where
-  value  :: v a -> CP (CPExp a)
+  value  :: Monad m => v a -> m (CPExp a)
 
 instance IsVar Variable where
   value = return . ValueOf
