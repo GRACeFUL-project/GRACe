@@ -16,6 +16,7 @@ import Program
 import System.Process
 
 import CP
+-- TODO: also re-export CP (or parts of CP) to simplify for users
 
 -- * The GCM monad
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

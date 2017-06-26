@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-} 
+{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -29,9 +29,12 @@ instance Show (Variable a) where
 class (Show a, Eq a) => CPType a where
   typeDec :: Proxy a -> String -> String
 
-instance CPType Int where 
-  -- We have to constraint integers to this range, because the solver is kind of dumb
-  typeDec = const (++ " -10000000..10000000")
+-- We have to constraint integers to this range, because the solver is kind of dumb
+defaultIntRange :: String
+defaultIntRange = " -10000000..10000000"
+
+instance CPType Int where
+  typeDec = const (++ defaultIntRange)
 
 instance CPType Float where
   typeDec = const (++ " float")
@@ -57,7 +60,7 @@ data CPExp a where
   Div     :: (Fractional a, CPType a) => CPExp a    -> CPExp a -> CPExp a
   I2F     ::                             CPExp Int  -> CPExp Float
   ForAll  ::                             ComprehensionMonad (CPExp Bool) -> CPExp Bool
-  Sum     :: (Num a)                  => ComprehensionMonad (CPExp a)    -> CPExp a 
+  Sum     :: (Num a)                  => ComprehensionMonad (CPExp a)    -> CPExp a
   MaxA    :: (Ord a)                  => ComprehensionMonad (CPExp a)    -> CPExp a
   MinA    :: (Ord a)                  => ComprehensionMonad (CPExp a)    -> CPExp a
   -- This makes me a sad sad boy :(
@@ -119,18 +122,18 @@ instance (Fractional a, CPType a) => Fractional (CPExp a) where
 data CPCommands a where
   Assert        ::             CPExp Bool -> CPCommands ()
   CreateLVar    :: CPType a => Proxy a    -> CPCommands (Variable a)
-  
+
 
 -- | Constraint programs.
 type CP a = Program CPCommands a
 
 -- | Assert expressions in the `CP` monad.
 assert :: CPExp Bool -> CP ()
-assert = Instr . Assert 
+assert = Instr . Assert
 
 -- | Create a new local variable in the `CP` monad.
 createLVar :: CPType a => CP (Variable a)
-createLVar = Instr $ CreateLVar Proxy 
+createLVar = Instr $ CreateLVar Proxy
 
 -- * Base CP operations
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
