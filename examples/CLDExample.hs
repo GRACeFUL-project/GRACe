@@ -1,12 +1,14 @@
 module CLDExample where
 
-import Compile0
-import GL
+import Compile0(runGCM)
+import GCM     (GCM, component, output, Port, createPort, linkBy, value, set)
+import CP      (assert, lit, nt, (===), (==>), inRange)
 
+-- Labels for the relations (arrows) in a Causal Loop Diagram
 q, p, m :: Num a => a
-q = 0
-p = 1
-m = -1
+q =  0  -- ? = question mark
+p =  1  -- + = plus
+m = -1  -- - = minus
 
 relation :: Int -> GCM (Port Int, Port Int)
 relation s = do
@@ -24,13 +26,14 @@ relation s = do
 cldNode :: GCM (Port Int)
 cldNode = do
   p <- createPort
-  component $
-    assert  $ val p `inRange` (-1, 1)
+  component $ do
+    pv <- value p
+    assert  $ pv `inRange` (-1, 1)
   return p
 
 example :: GCM ()
 example = do
-  a <- cldNode 
+  a <- cldNode
   b <- cldNode
 
   linkBy (relation p) a b
