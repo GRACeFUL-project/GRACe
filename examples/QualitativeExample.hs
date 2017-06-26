@@ -21,9 +21,10 @@ ambig = 1000
 isAmbig :: CPExp Sign -> CPExp Bool
 isAmbig x = (x .> 1) .|| (x .< -1)
 
--- TODO: migrate to new internal structure (GCP + CP)
 times :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
-times p x y = assert $ val p === (x * y)
+times p x y = do 
+  vp <- value p
+  assert $ vp === (x * y)
 
 add :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
 add p x y = do
@@ -38,9 +39,10 @@ node xs = constructSum xs
 
 edge :: Sign -> GCM (Port Sign, Port Sign)
 edge s = do
-  i <- createPort
-  o <- createPort
-  component $ times o (val i) (lit s)
+  i  <- createPort
+  o  <- createPort
+  vi <- value i
+  component $ times o vi (lit s)
   return (i, o)
 
 constructSum :: [Port Sign] -> GCM (Port Sign)
@@ -51,7 +53,9 @@ constructSum [] = do
 constructSum (x:xs) = do
   hereResult <- createPort
   restResult <- constructSum xs
-  component $ add hereResult (val x) (val restResult)
+  vx <- value x
+  vr <- value restResult
+  component $ add hereResult vx vr
   return hereResult
 
 linkNodeEdge :: Port Sign
