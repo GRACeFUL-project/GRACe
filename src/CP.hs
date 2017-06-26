@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE GADTs         #-}
 
 module CP where
 
