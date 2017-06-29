@@ -2,109 +2,61 @@
 
 A DSL for GRACeFUL components.
 
-## Installing
+## Overview
 
-In order to use `GRACe`, the following software dependencies must be
-met:
+| Directory    | Contents                                   |
+| ------------ | ------------------------------------------ |
+| doc/         | Various documentation.                     |
+| docker_dist/ | Scripts for creating a Docker image.       |
+| examples/    | Example programs written in GRACe.         |
+| src/         | Haskell source code for the GRACe library. |
+| test/        | Test suite.                                |
 
-* [The MiniZinc distribution](http://www.minizinc.org/index.html)
-* [GHC](https://www.haskell.org/downloads)
+## Installation
 
-To ensure that library dependencies are exactly met, we recommend that
-you use `stack`. `stack` handles the entire Haskell toolchain
+Development of `GRACe` programs requires the following software dependencies 
+to be met:
+
+* [GHC][ghcurl]
+* [The MiniZinc distribution][mzurl]
+
+The recommended way of installing GHC and other Haskell libraries/tools are
+through **stack**. **stack** handles the entire Haskell toolchain
 (including the compiler GHC), library dependencies, building and
-executing. Instructions for installing `stack` on macOS, Linux and
-Windows can be found
-[here](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
+executing. Instructions for installing **stack** on macOS, Linux and Windows can 
+be found [here][stackurl].
 
-### Installing MiniZinc: Linux
+The recommended way of installing the required **MiniZinc** solver tools is 
+through the bundled binary packages available [here][mzurl].
 
-Patrik has provided an [install script](doc/INSTALL.md) for Linux.
+## Usage
 
-### Installing MiniZinc: macOS
-
-1. Download and install the complete MiniZinc distribution from
-  [the MiniZinc page](http://www.minizinc.org/index.html).
-2. The MiniZinc binaries will now be located under
-  `/Applications/MiniZincIDE.app/Contents/Resources`. Add this directory to your
-  path, like so:
-
-      export PATH="$PATH:/Applications/MiniZincIDE.app/Contents/Resources"
-
-## Running a constraint program
-
-### Using sandboxes
-
-Create a new sandbox and install the required dependencies.
+First, clone the GRACe repository:
 
 ```shell
-cabal sandbox init
-cabal update
-cabal install --dependencies-only
+git clone https://github.com/GRACeFUL-project/GRACe grace
 ```
 
-Build and execute using
-
-```shell
-cabal build
-cabal run examples
-```
-
-### Using stack
-
-Stack will automatically take care of dependencies. Build and execute using
+GRACe comes with a few examples that can be built using 
 
 ```shell
 stack build
 stack exec examples
 ```
 
-Copy executables to `~/.local/bin` (put them on PATH) with
-
-```shell
-stack install
-```
-
-The executables will then be available from the command line. For example
-
-```shell
-example
-```
-
-### Testing using stack
-
-Run entire test suite with
+**stack** will automatically take care of dependencies. Optionally, a small
+test suite is available. Run the tests by executing
 
 ```shell
 stack test
 ```
 
-Load test modules in ghci by
+## Development
 
-```shell
-stack ghci GRACe:test:test
-```
+Currently there are no usage instructions for the GRACe language itself.
+Instead, we refer to the source files of the [examples](examples/).
 
-Run test suite for a single module with
+[stackurl]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
+[ghcurl]: https://www.haskell.org/downloads
+[mzurl]: http://www.minizinc.org/software.html
 
-```shell
-stack runghc test/TestModule.hs
-```
-
-This assumes there is a `main` function in `TestModule.hs`.
-
-### Generate project documentation
-
-Run haddock to generate project documentation
-
-```shell
-stack haddock --haddock-arguments --hyperlinked-source
-```
-
-To open the documentation directly append `--open`.
-
-Find the path to the documentation by running
-
-```shell
-stack path --local-doc-root
-```
