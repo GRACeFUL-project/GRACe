@@ -27,7 +27,7 @@ executing. Instructions for installing **stack** on macOS, Linux and Windows can
 be found [here].
 
 The recommended way of installing the required **MiniZinc** solver tools is 
-through the bundled binary packages available [here.][minizinc2]
+through the bundled binary packages available [here][minizinc2].
 
 ## Usage
 
