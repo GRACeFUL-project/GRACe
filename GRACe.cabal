@@ -1,5 +1,5 @@
 name:                GRACe
-version:             0.1.2.1
+version:             0.1.2.2
 -- synopsis:
 -- description:
 license:             BSD3
@@ -21,12 +21,12 @@ library
     TestFW.GCMCheck,
     OutParser,
     Compile0,
+    Types,
+    Utils,
     Library
   other-modules:
     TestFW.GenT,
-    Program,
-    Types,
-    Utils
+    Program
   other-extensions:
     GADTs,
     FlexibleInstances,
@@ -56,18 +56,12 @@ executable RestAPI
   main-is:
     Main.hs
   other-modules:
-      Compile0
-    , CP
-    , GCM
-    , GRACeGraph
-    , Library
-    , Program
+      GRACeGraph
     , Service
     , Submit
-    , Types
-    , Utils
   build-depends:
-      base
+      GRACe
+    , base
     , aeson >= 1.1
     , aeson-pretty
     , bytestring
@@ -83,7 +77,7 @@ executable RestAPI
     , wai-extra
     , warp
   hs-source-dirs:
-    src
+    RestAPI
   default-language:
     Haskell2010
 
@@ -162,4 +156,3 @@ executable OilCrops
     examples
   default-language:
     Haskell2010
-
