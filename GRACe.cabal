@@ -152,3 +152,14 @@ executable Biodiesel
   default-language:
     Haskell2010
 
+executable OilCrops
+  main-is:
+    OilCrops.hs
+  build-depends:
+    base,
+    GRACe
+  hs-source-dirs:
+    examples
+  default-language:
+    Haskell2010
+
