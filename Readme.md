@@ -21,13 +21,13 @@ to be met:
 * [The MiniZinc distribution][minizinc1]
 
 The recommended way of installing GHC and other Haskell libraries/tools are
-through *stack*. *stack* handles the entire Haskell toolchain
+through **stack**. **stack** handles the entire Haskell toolchain
 (including the compiler GHC), library dependencies, building and
-executing. Instructions for installing *stack* on macOS, Linux and Windows can 
+executing. Instructions for installing **stack** on macOS, Linux and Windows can 
 be found [here].
 
-The recommended way of installing the required MiniZinc solver tools is through
-the bundled binary packages available [here.][minizinc2]
+The recommended way of installing the required **MiniZinc** solver tools is 
+through the bundled binary packages available [here.][minizinc2]
 
 ## Usage
 
