@@ -10,7 +10,7 @@ A DSL for GRACeFUL components.
 | docker_dist/ | Scripts for creating a Docker image.       |
 | examples/    | Example programs written in GRACe.         |
 | src/         | Haskell source code for the GRACe library. |
-| test/        | Test suite                                 |
+| test/        | Test suite.                                |
 
 ## Installation
 
@@ -54,7 +54,7 @@ stack test
 ## Development
 
 Currently there are no usage instructions for the GRACe language itself.
-Instead, we refer to the source files [examples](examples/).
+Instead, we refer to the source files of the [examples](examples/).
 
 [stackurl]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 [ghcurl]: https://www.haskell.org/downloads
