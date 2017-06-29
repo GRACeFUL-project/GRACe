@@ -116,6 +116,9 @@ executable examples
     examples
   default-language:
     Haskell2010
+  other-modules:
+    Examples,
+    SmallExample
 
 executable TestingUserCode
   main-is:
