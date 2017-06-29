@@ -1,13 +1,10 @@
 module Main where
 
 import Compile0 (runGCM)
-import GCM      ( GCM, output, component
-                , Param, createParam
-                , Goal, createGoal
-                , Action, createAction, taken
-                , Port, createPort, link, linkBy, value, set, fun
+import GCM      ( GCM, output, component, createGoal
+                , Port, createPort, link, value
                 )
-import CP       ( CPType, assert, lit, max', (===), (.<=), inRange, CPExp)
+import CP       ( assert, lit, (===), (.<=), inRange )
 
 
 -- * Vegetable oil manufacturing
@@ -73,7 +70,8 @@ cropToOil crop = do
 
 -- | GCM component for optimizing crop production to provide the maximum amount
 --   of oil for the available land and water.
-oilProduction :: Area -> Water -> GCM (Port Oil, Port Water, Port Area, Port Area, Port Area)
+oilProduction :: Area -> Water ->
+                 GCM (Port Oil, Port Water, Port Area, Port Area, Port Area)
 oilProduction farmland water = do
 
   -- Port for total vegetable oil yield.
