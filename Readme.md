@@ -18,7 +18,7 @@ Development of `GRACe` programs requires the following software dependencies
 to be met:
 
 * [GHC][ghcurl]
-* [The MiniZinc distribution][minizinc1]
+* [The MiniZinc distribution][mzurl]
 
 The recommended way of installing GHC and other Haskell libraries/tools are
 through **stack**. **stack** handles the entire Haskell toolchain
@@ -27,7 +27,7 @@ executing. Instructions for installing **stack** on macOS, Linux and Windows can
 be found [here].
 
 The recommended way of installing the required **MiniZinc** solver tools is 
-through the bundled binary packages available [here][minizinc2].
+through the bundled binary packages available [here][mzurl].
 
 ## Usage
 
@@ -58,6 +58,5 @@ Instead, we refer to the source files [examples](examples/).
 
 [stackurl]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 [ghcurl]: https://www.haskell.org/downloads
-[minizinc1]: http://www.minizinc.org/index.html
-[minizinc2]: http://www.minizinc.org/software.html
+[mzurl]: http://www.minizinc.org/software.html
 
