@@ -44,7 +44,7 @@ stack build
 stack exec examples
 ```
 
-*stack* will automatically take care of dependencies. Optionally, a small
+**stack** will automatically take care of dependencies. Optionally, a small
 test suite is available. Run the tests by executing
 
 ```shell
