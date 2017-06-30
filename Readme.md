@@ -53,9 +53,11 @@ stack test
 
 ## Development
 
-Currently there are no usage instructions for the GRACe language itself.
-Instead, we refer to the source files of the [examples](examples/).
+The [examples](examples/) folder contains several examples of GRACe programs. 
+In addition to these, we provide a short tutorial on how to write GRACe 
+programs [here][tutorial].
 
+[tutorial]: https://github.com/GRACeFUL-project/DSL-WP/blob/master/tutorial/pdf/GRACeTutorial.pdf
 [stackurl]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 [ghcurl]: https://www.haskell.org/downloads
 [mzurl]: http://www.minizinc.org/software.html
