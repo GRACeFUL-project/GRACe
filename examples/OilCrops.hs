@@ -144,4 +144,4 @@ problem = do
   output cot "Cotton area"
 
 main :: IO ()
-main = print =<< runGCM problem
+main = putStr =<< runGCM problem

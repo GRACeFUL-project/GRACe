@@ -146,7 +146,7 @@ problem = do
   (cotArea, cotWater, cotOil) <- crop $ cropTable Cotton
 
   [soy_a, sun_a, cot_a] <- farm 1600 3
-  [soy_w, sun_w, cot_w] <- reservoir 5000 3
+    [soy_w, sun_w, cot_w] <- reservoir 5000 3
   ([soy_o, sun_o, cot_o], oilProduced) <- oilProduction 3
 
   -- Link the appropriate ports together.
@@ -172,4 +172,4 @@ problem = do
   output cotArea "Cotton area"
 
 main :: IO ()
-main = print =<< runGCM problem
+main = putStr =<< runGCM problem

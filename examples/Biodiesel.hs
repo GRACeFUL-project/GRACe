@@ -188,7 +188,7 @@ oilToBlend blend = do
     --
     assert $ 0.9 * biodiesel === oil + 0.2 * methanol
     assert $ diesel === lit frac * biodiesel + (1 - lit frac) * petrol
-    assert $ profit === diesel * lit (eur * (1 - tax)) 
+    assert $ profit === diesel * lit (eur * (1 - tax))
                       - methanol * lit methanolPrice
                       - petrol   * lit petrolPrice
 
@@ -231,7 +231,7 @@ dieselProduction = do
     vegOil <- value vegOilPort
 
     -- Set euro port to sum of profits. Also, assert that we only use
-    -- available petrol. Finally, assert that vegetable oil used is in 
+    -- available petrol. Finally, assert that vegetable oil used is in
     -- range of what is available.
     assert $ euro === sum profits
     assert $ sum oils `inRange` (0, vegOil)
@@ -269,7 +269,7 @@ problem = do
 
   -- Assert demand is exceeded
   component $ do
-    oils <- sequence [ value p | p <- [b5Port, b30Port, b100Port]] 
+    oils <- sequence [ value p | p <- [b5Port, b30Port, b100Port]]
     assert $ lit demand .<= sum oils
 
   output b5Port   "B5"
@@ -279,4 +279,4 @@ problem = do
   output euroPort "Profits EUR"
 
 main :: IO ()
-main = print =<< runGCM problem
+main = putStr =<< runGCM problem
