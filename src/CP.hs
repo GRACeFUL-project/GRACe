@@ -14,7 +14,7 @@ import System.Process
 
 data Proxy a = Proxy
 
-data Variable a = Var { varID :: Int } deriving (Eq, Functor)
+newtype Variable a = Var { varID :: Int } deriving (Eq, Ord, Functor)
 
 instance Show (Variable a) where
   show (Var n) = show n
