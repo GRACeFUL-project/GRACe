@@ -5,7 +5,8 @@ import Control.Monad
 
 import Compile0
 import Compile1
-import GL
+import GCM
+import CP
 
 import Interfaces.MZPrinter(layout)
 

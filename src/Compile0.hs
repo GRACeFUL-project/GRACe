@@ -121,7 +121,7 @@ comp2paren a op b = do
   bc <- compileCPExp b
   return $ paren ac ++ op ++ paren bc
 
--- | Prenethesise a string
+-- | Parenethesise a string
 paren :: String -> String
 paren s = "(" ++ s ++ ")"
 
