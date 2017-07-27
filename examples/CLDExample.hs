@@ -1,6 +1,6 @@
 module CLDExample where
 
-import Compile0(runGCM)
+import Compile(runCompare)
 import GCM     (GCM, component, output, Port, createPort, linkBy, value, set)
 import CP      (assert, lit, nt, (===), (==>), inRange)
 
@@ -48,5 +48,5 @@ example = do
   output a "a"
   output b "b"
 
-main = runGCM example >>= putStr
+main = runCompare example
 -- TODO: Check the result and explain the example

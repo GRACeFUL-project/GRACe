@@ -20,7 +20,9 @@ library
     TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
+    Compile,
     Compile0,
+    Compile1,
     Types,
     Utils,
     Library
@@ -47,6 +49,7 @@ library
     , text
     , aeson
     , bytestring
+    , haskelzinc           
   hs-source-dirs:
     src
   default-language:
@@ -76,6 +79,7 @@ executable RestAPI
     , text
     , wai-extra
     , warp
+    , haskelzinc
   hs-source-dirs:
     RestAPI
   default-language:

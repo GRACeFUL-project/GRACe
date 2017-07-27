@@ -1,6 +1,6 @@
 module Deliverable where
 
-import Compile0(runGCM)
+import Compile(runCompare)
 import GCM     (GCM, output, component, Port, createPort, link, value, set)
 import CP      (createLVar, assert, lit, (.>=), (.>), (===), (==>), inRange)
 import Library (Library(Library), item, (#), TypedValue((:::)), tFloat,
@@ -74,6 +74,6 @@ example = do
 
   output overflowS "Overflow"
 
+main :: IO ()
 main = do
-  result <- runGCM example
-  putStr result
+  runCompare example
