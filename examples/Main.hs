@@ -3,9 +3,9 @@ module Main where
 import SmallExample as Small
 import Examples as E
 import GCM
-import Compile0
+import Compile
 
 main = do
-  runGCM Small.example
-  runGCM E.example
-  runGCM E.energySystem
+  runCompare Small.example
+  runCompare E.example
+  runCompare E.energySystem

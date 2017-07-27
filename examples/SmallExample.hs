@@ -1,8 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 module SmallExample where
 
-import TestFW.GCMCheck
-import Compile0
 import CP
 import GCM
 import TestFW.GCMP

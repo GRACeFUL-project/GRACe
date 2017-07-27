@@ -20,7 +20,9 @@ library
     TestFW.GCMP,
     TestFW.GCMCheck,
     OutParser,
+    Compile,
     Compile0,
+    Compile1,
     Types,
     Utils,
     Library

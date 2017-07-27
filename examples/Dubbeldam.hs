@@ -1,9 +1,9 @@
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE FlexibleInstances      #-}
 
-module Main where
+module Dubbeldam where
 
-import Compile0(runGCM)
+import Compile(runCompare)
 import GCM     (GCM, output, component, Param, createParam,
                 Action, createAction, taken,
                 Port, createPort, link, linkBy, value, set, fun)
@@ -187,5 +187,4 @@ dubbeldam = do
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 main :: IO ()
-main = do msg <- runGCM dubbeldam
-          putStrLn msg
+main = runCompare dubbeldam

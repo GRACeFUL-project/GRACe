@@ -2,7 +2,7 @@ module QualitativeExample where
 
 import GCM
 import CP
-import Compile0
+import Compile(runCompare)
 
 type Sign = Int
 
@@ -82,3 +82,6 @@ tinyExample = do
   output a "a"
   output b "b"
   output c "c"
+
+main :: IO ()
+main = runCompare tinyExample
