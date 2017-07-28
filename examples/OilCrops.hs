@@ -1,5 +1,5 @@
 module Main where
-import Compile(runCompare)
+import Compile(run)
 import GCM      ( GCM, output, component, createGoal
                 , Port, createPort, link, value
                 )
@@ -171,4 +171,4 @@ problem = do
   output cotArea "Cotton area"
 
 main :: IO ()
-main = runCompare problem
+main = putStr =<< run True problem

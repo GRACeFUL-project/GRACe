@@ -10,14 +10,14 @@ import CP
 
 import Interfaces.MZPrinter(layout)
 
--- Print minizinc code produced by old compiler.
+-- | Print minizinc code produced by old compiler.
 compileString :: GCM a -> IO ()
 compileString ex = do
   putStrLn "Old compiler: --------"
   putStr $ compileGCM ex
   putStrLn ""
 
--- Print minizinc model produced by haskelzinc compiler.
+-- | Print minizinc model produced by haskelzinc compiler.
 compileMZ :: GCM a -> IO ()
 compileMZ ex = do
   let modl = compileGCM' ex
@@ -28,17 +28,19 @@ compileMZ ex = do
   putStrLn "Haskelzinc Pretty: --------"
   putStrLn (layout modl)
 
+-- | Print both minizinc models for comparison.
 compileCompare :: GCM a -> IO ()
 compileCompare ex = do
   compileString ex
   compileMZ ex
 
--- Run a GRACe program, setting the first argument to True for haskelzinc
+-- | Run a GRACe program, setting the first argument to True for haskelzinc
 -- compiler, False for old compiler.
 run :: Bool -> GCM a -> IO String
 run True p  = runGCM' p
 run False p = runGCM p
 
+-- | Run using both compilers to compare results.
 runCompare :: GCM a -> IO ()
 runCompare ex = do
   putStrLn ""

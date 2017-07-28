@@ -89,10 +89,14 @@ act f act@(Action i (Param a j)) = Instr (Act (f (ValueOf $ Var i) (lit a)) act)
 component :: CP a -> GCM ()
 component = Instr . Component
 
+-- | A different name for component, as seen in Deliverable 4.3 code examples.
+constrain :: CP a -> GCM ()
+constrain = component
+
 -- * Derived GCM operations
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- See if the action was taken.
+-- | See if the action was taken.
 taken :: CPType a => Action a -> GCM (Port Int)
 taken (Action i _) = return (Port $ Var i)
 

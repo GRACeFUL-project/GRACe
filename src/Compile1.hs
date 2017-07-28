@@ -21,6 +21,10 @@ import qualified Interfaces.MZASTBase as HZ
 import qualified Interfaces.MZBuiltIns as HZBuiltIns
 import qualified Interfaces.MZPrinter as HZPrinter
 
+-- Compilation via haskelzinc
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- TODO: Rebase, along with Compile0 and Compile, remove redundancies.
+
 debug = True
 
 runGCM' :: GCM a -> IO String
