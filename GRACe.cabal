@@ -1,10 +1,10 @@
 name:                GRACe
-version:             0.1.2.2
+version:             0.1.2.3
 -- synopsis:
 -- description:
 license:             BSD3
 license-file:        LICENSE
-author:              Maximilian Algehed
+author:              Maximilian Algehed, Alex Gerdes, Sólrún Einarsdóttir, Oskar Abrahamsson, Patrik Jansson.
 maintainer:          algehed@chalmers.se
 -- copyright:
 -- category:
@@ -49,7 +49,7 @@ library
     , text
     , aeson
     , bytestring
-    , haskelzinc           
+    , haskelzinc
   hs-source-dirs:
     src
   default-language:
@@ -109,7 +109,7 @@ test-suite test
   default-language:
     Haskell2010
 
-executable examples
+executable Examples
   main-is:
     Main.hs
   build-depends:
