@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
