@@ -8,7 +8,7 @@ import Compile1
 import GCM
 import CP
 
-import Interfaces.MZPrinter(layout)
+import Interfaces.MZPrinter(layoutModel)
 
 -- | Print minizinc code produced by old compiler.
 compileString :: GCM a -> IO ()
@@ -26,7 +26,7 @@ compileMZ ex = do
   forM_ modl print
   putStrLn ""
   putStrLn "Haskelzinc Pretty: --------"
-  putStrLn (layout modl)
+  putStrLn (layoutModel modl)
 
 -- | Print both minizinc models for comparison.
 compileCompare :: GCM a -> IO ()
