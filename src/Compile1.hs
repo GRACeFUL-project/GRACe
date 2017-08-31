@@ -71,6 +71,7 @@ compileCPExp' = \case
     MaxA m     -> genCall m "max"
     MinA m     -> genCall m "min"
 
+genCall :: ComprehensionMonad (CPExp a) -> String -> IntermMonad (HZ.Expr)
 genCall m call = do
       (bexpr, s) <- runWriterT (compileComprehension m)
       bexprc <- compileCPExp' bexpr

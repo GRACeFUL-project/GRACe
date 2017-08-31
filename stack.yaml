@@ -3,8 +3,8 @@ extra-package-dbs: []
 packages:
 - '.'
 - location:
-    git: git@github.com:GRACeFUL-project/haskelzinc.git
-    commit: 443e159b8aa1be798a67e26416c0c50b4729e194
+    git: https://github.com/GRACeFUL-project/haskelzinc.git
+    commit: 35be178483848f24bfba75d457d7351f93880b49
   extra-dep: true
 extra-deps:
 - aeson-1.1.0.0
