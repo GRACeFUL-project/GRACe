@@ -12,7 +12,31 @@ A DSL for GRACeFUL components.
 | src/         | Haskell source code for the GRACe library. |
 | test/        | Test suite.                                |
 
-## Installation
+## Installation for users
+We provide a platform-independent Docker image containing an executable
+for the ``OilCrops`` example, written in GRACe.
+
+Running the example requires the Docker Community Edition (CE)
+to be installed. Docker CE, as well as installation instructions are available
+at [the docker website][dockerurl]. Once Docker CE is installed,
+the example can be executed using the Docker application as follows: 
+
+Open a terminal (the command prompt for Windows users) and execute the commands
+
+```
+  docker pull eugraceful/grace-examples:latest
+  docker run --rm eugraceful/grace-examples:latest
+```
+This will run the ``OilCrops`` example and write the problem solution to
+standard output.
+
+This example contains a small optimization problem in
+which the objective is to dedicate a set amount of farmland area to
+three different crops, with the goal of maximizing the yield of
+vegetable oil produced from these crops. A description of the
+example can be found in the [tutorial] and the source code is [here][OilCropsCode].
+
+## Installation for developers
 
 Development of `GRACe` programs requires the following software dependencies 
 to be met:
@@ -41,7 +65,7 @@ GRACe comes with a few examples that can be built using
 
 ```shell
 stack build
-stack exec examples
+stack exec SomeExamples
 ```
 
 **stack** will automatically take care of dependencies. Optionally, a small
@@ -61,4 +85,6 @@ programs [here][tutorial].
 [stackurl]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 [ghcurl]: https://www.haskell.org/downloads
 [mzurl]: http://www.minizinc.org/software.html
+[OilCropsCode]: https://github.com/GRACeFUL-project/GRACe/blob/master/examples/OilCrops.hs
+[dockerurl]: https://www.docker.com/products/docker
 
