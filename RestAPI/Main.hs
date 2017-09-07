@@ -20,6 +20,7 @@ import Data.Aeson.Encode.Pretty
 import Data.Aeson.Types hiding (Bool, String)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
+import Data.Maybe
 import Servant
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger
@@ -27,18 +28,14 @@ import Servant.HTML.Lucid
 import System.Environment (getArgs)
 import Lucid
 
-data Res = Res String deriving (Show, Eq)
-
-instance ToJSON Res where
-    toJSON (Res x) = object ["result" .= x]
-
+--
 -- Cross-Origin Resource Sharing (CORS) prevents browser warnings
 -- about cross-site scripting
 type Resp a = Headers '[Header "Access-Control-Allow-Origin" String] a
 
 type API = 
         "library" :> Capture "name" String :> Get  '[JSON, HTML] (Resp Library)
-  :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       (Resp Res)
+  :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       (Resp Value)
 
 server :: Server API
 server   =  library 
@@ -52,13 +49,11 @@ library n = hdr $ case M.lookup n libraries of
     Just lib -> return lib
     Nothing  -> throwError $ err404 { errBody =  "No such lib" }
 
-submit :: Graph -> Handler (Resp Res)
+submit :: Graph -> Handler (Resp Value)
 submit graph = hdr $ do 
     out <- liftIO $ runGCM $ mkGCM (nodes graph) crud
-    return $ Res $ process out
-  where
-    brackets s = "[" ++ s ++ "]"
-    process = brackets . unlines . init . lines
+    let res = fromMaybe Null $ decode $ BS.pack out
+    return $ object ["result" .= res]
 
 api :: Proxy API
 api = Proxy

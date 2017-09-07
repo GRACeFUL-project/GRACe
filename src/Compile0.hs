@@ -24,7 +24,7 @@ runGCM gcm = do
   out <- readProcess "fzn-gecode" [ "-p", "4"
                                   , "-n", "-1"
                                   , "model.fzn"] ""
-  res <- readProcess "solns2out"  [ "--soln-sep", ","
+  res <- readProcess "solns2out"  [ "--soln-sep", ""
                                   , "--search-complete-msg", ""
                                   , "model.ozn"] out
   unless debug $ callCommand "rm model.mzn model.ozn model.fzn"
