@@ -13,7 +13,8 @@
                 {
                     "connection": [
                         3,
-                        "outlet"
+                        "outlet",
+                        null
                     ],
                     "name": "inflow",
                     "type": "Float"
@@ -38,7 +39,8 @@
                 {
                     "connection": [
                         3,
-                        "inflow"
+                        "inflow",
+                        null
                     ],
                     "name": "rainfall",
                     "type": "Float"

@@ -104,8 +104,9 @@ putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
 link2 :: Map Id TypedValue -- ^ Document
       -> Id                -- ^ Document
       -> Id                -- ^ Document
+      -> Maybe Int         -- ^ Offset
       -> GCM ()
-link2 m i j = join $ linkTV <$> lookupG i m <*> lookupG j m
+link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> lookupG j m
   where
     linkTV :: TypedValue -> TypedValue -> GCM ()
     linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
@@ -115,6 +116,15 @@ link2 m i j = join $ linkTV <$> lookupG i m <*> lookupG j m
             output x i
             output y j
             link (f x) y
+    
+    -- If an offset is given, and the type is a list of ports, then index into
+    -- the list using the offset
+    at :: Maybe Int -> TypedValue -> TypedValue
+    at offset tv = case offset of
+      Just n -> case tv of
+        (xs ::: List p@(Port' _)) -> (xs !! n) ::: p
+        _ -> tv
+      _ -> tv
 
 -- Convenience function.
 lookat :: (Show k, Show v, Ord k) => Map k (Map k v) -> k -> k -> GCM v
@@ -150,20 +160,20 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
         Just ptv -> return (parameterName, fromPrimType parameterName ptv)
 
 -- | Extract all `Node` links.
-getLinks :: [Node] -> [(Id, Id)]
+getLinks :: [Node] -> [(Id, Id, Maybe Int)]
 getLinks = concatMap fromNode
   where
-    fromNode :: Node -> [(Id, Id)]
+    fromNode :: Node -> [(Id, Id, Maybe Int)]
     fromNode Node {..} =
       case identity of
         Nothing    -> fail "failure in getLinks.fromNode"
         Just ident -> mapMaybe (fromInterface (show ident)) interface
 
-    fromInterface :: Id -> Interface -> Maybe (Id, Id)
+    fromInterface :: Id -> Interface -> Maybe (Id, Id, Maybe Int)
     fromInterface from Interface {..} =
       case interfaceConnection of
         Nothing          -> Nothing
-        Just (node, tag) -> Just (interfaceName ++ from, tag ++ show node)
+        Just (node, tag, offset) -> Just (interfaceName ++ from, tag ++ show node, offset)
 
 -- | Construct a `Library` containing an `Item` instance from the given `Library`
 --   for each `Node` in the given list.
@@ -181,4 +191,4 @@ mkGCM ns l = do
   m   <- paramTVs ns
   lib <- applyLibrary (nodeLibrary ns l) (lookat m)
   gs  <- foldM putItem Map.empty (items lib)
-  mapM_ (uncurry (link2 gs)) (getLinks ns)
+  mapM_ (\(n, p, m) -> link2 gs n p m) (getLinks ns)

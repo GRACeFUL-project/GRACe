@@ -93,7 +93,7 @@ instance FromJSON PrimTypeValue where
 -- | Fix the prefixes
 data Interface = Interface { interfaceName       :: String
                            , interfaceType       :: String
-                           , interfaceConnection :: Maybe (Int, String)
+                           , interfaceConnection :: Maybe (Int, String, Maybe Int)
                            }
   deriving (Generic, Show, Eq)
 
@@ -112,24 +112,24 @@ example = Graph
      "pump"
      [ Parameter "capacity" FloatT (Just (FloatV 5))
      ]
-     [ Interface "inflow"  "flow"  (Just (3, "outlet"))
-     , Interface "outflow" "flow"  Nothing
+     [ Interface "inflow"  "Float"  (Just (3, "outlet", Nothing))
+     , Interface "outflow" "Float"  Nothing
      ]
   , Node
      (Just 2)
      "rain"
      [ Parameter "amount"   FloatT (Just (FloatV 10))
      ]
-     [ Interface "rainfall" "flow" (Just (3, "inflow"))
+     [ Interface "rainfall" "Float" (Just (3, "inflow", Nothing))
      ]
   , Node
      (Just 3)
      "runoffArea"
      [ Parameter "capacity" FloatT (Just (FloatV 5))
      ]
-     [ Interface "inflow"   "flow" Nothing
-     , Interface "outlet"   "flow" Nothing
-     , Interface "overflow" "flow" Nothing
+     [ Interface "inflow"   "Float" Nothing
+     , Interface "outlet"   "Float" Nothing
+     , Interface "overflow" "Float" Nothing
      ]
   ]
 
