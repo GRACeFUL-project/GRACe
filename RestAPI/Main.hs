@@ -28,6 +28,8 @@ import Servant.HTML.Lucid
 import System.Environment (getArgs)
 import Lucid
 import Language.Haskell.Interpreter hiding (set)
+import System.Directory
+import System.FilePath
 
 --
 -- Cross-Origin Resource Sharing (CORS) prevents browser warnings
@@ -67,16 +69,16 @@ app libs = serve api (server libs)
 main :: IO ()
 main = do
     args <- getArgs
-    mlib <- case args of
-              ("--lib":libfile:as) -> do
-                res <- runInterpreter $ loadLib libfile
-                case res of
-                  Left _  -> return Nothing
-                  Right l -> return $ Just (takeWhile (/='.') libfile, l)
-              _ -> return Nothing
+    libs <- case args of
+              ("--lib":libdir:as) -> do
+                fs <- listDirectory libdir 
+                let libfiles = filter (\l -> takeExtension l == ".hs") fs
+                res <- withCurrentDirectory libdir $ mapM (runInterpreter . loadLib) libfiles
+                return $ foldr (\(n, l) m -> M.insert n l m) libraries [ (dropExtension f, l) | (f, Right l) <- zip libfiles res ]
+              _ -> return libraries
     run 8081 $ case args of
-        ["--log"] -> logStdoutDev $ app $ maybe libraries (\(n, l) -> M.insert n l libraries) mlib
-        _         -> app $ maybe libraries (\(n, l) -> M.insert n l libraries) mlib
+        ["--log"] -> logStdoutDev $ app libs
+        _         -> app $ libs
 
 loadLib :: String -> Interpreter Library
 loadLib lib = do
@@ -93,7 +95,6 @@ instance ToHtml Library where
     toHtmlRaw = toHtml
 
 -- Test data
-
 testLibrary file = do
   Just gr <- (decode . BS.pack) <$> readFile file
   return $ mkGCM (nodes gr) crud

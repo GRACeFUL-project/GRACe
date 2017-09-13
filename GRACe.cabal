@@ -84,6 +84,8 @@ executable RestAPI
     , warp
     , haskelzinc
     , hint >= 0.7.0 && <0.8.0
+    , directory
+    , filepath
   hs-source-dirs:
     RestAPI
   default-language:
