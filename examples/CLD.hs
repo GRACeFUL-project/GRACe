@@ -21,6 +21,18 @@ mArrow = do
     assert $ q === (-1) * p
   return (p, q)
 
+(-+>) :: Port S -> Port S -> GCM ()
+p -+> q = do
+ (p0, q0) <- pArrow
+ link p p0
+ link q q0
+
+(-->) :: Port S -> Port S -> GCM ()
+p --> q = do
+ (p0, q0) <- mArrow
+ link p p0
+ link q q0
+
 combine :: GCM (Port S, Port S, Port S)
 combine = do
   i0 <- createPort

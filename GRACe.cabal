@@ -25,7 +25,8 @@ library
     Compile1,
     Types,
     Utils,
-    Library
+    Library,
+    GRACeGraph
   other-modules:
     TestFW.GenT,
     Program
@@ -50,8 +51,10 @@ library
     , aeson
     , bytestring
     , haskelzinc
+    , scientific
   hs-source-dirs:
-    src
+    src,
+    RestAPI
   default-language:
     Haskell2010
 
@@ -80,6 +83,7 @@ executable RestAPI
     , wai-extra
     , warp
     , haskelzinc
+    , hint >= 0.7.0 && <0.8.0
   hs-source-dirs:
     RestAPI
   default-language:

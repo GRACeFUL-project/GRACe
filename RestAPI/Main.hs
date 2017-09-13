@@ -26,6 +26,7 @@ import Network.Wai.Middleware.RequestLogger
 import Servant.HTML.Lucid
 import System.Environment (getArgs)
 import Lucid
+import Language.Haskell.Interpreter hiding (set)
 
 data Res = Res String deriving (Show, Eq)
 
@@ -40,15 +41,17 @@ type API =
         "library" :> Capture "name" String :> Get  '[JSON, HTML] (Resp Library)
   :<|>  "submit"  :> ReqBody '[JSON] Graph :> Post '[JSON]       (Resp Res)
 
-server :: Server API
-server   =  library 
-       :<|> submit
+type Libraries = M.Map String Library
+
+server :: Libraries -> Server API
+server libs =    library libs
+            :<|> submit
 
 hdr :: Handler a -> Handler (Resp a)
 hdr h = h >>= return . addHeader "*" 
 
-library :: String -> Handler (Resp Library)
-library n = hdr $ case M.lookup n libraries of
+library :: M.Map String Library ->  String -> Handler (Resp Library)
+library libs n = hdr $ case M.lookup n libs of
     Just lib -> return lib
     Nothing  -> throwError $ err404 { errBody =  "No such lib" }
 
@@ -63,15 +66,30 @@ submit graph = hdr $ do
 api :: Proxy API
 api = Proxy
 
-app :: Application
-app = serve api server
+app :: Libraries -> Application
+app libs = serve api (server libs)
 
 main :: IO ()
 main = do
     args <- getArgs
+    mlib <- case args of
+              ("--lib":libfile:as) -> do
+                res <- runInterpreter $ loadLib libfile
+                case res of
+                  Left _  -> return Nothing
+                  Right l -> return $ Just (takeWhile (/='.') libfile, l)
+              _ -> return Nothing
     run 8081 $ case args of
-        ["--log"] -> logStdoutDev app
-        _         -> app
+        ["--log"] -> logStdoutDev $ app $ maybe libraries (\(n, l) -> M.insert n l libraries) mlib
+        _         -> app $ maybe libraries (\(n, l) -> M.insert n l libraries) mlib
+
+loadLib :: String -> Interpreter Library
+loadLib lib = do
+  loadModules [lib]
+
+  setTopLevelModules [takeWhile (/='.') lib]
+
+  interpret "library" (as :: Library)
 
 -- HTML rep
 instance ToHtml Library where
