@@ -1,1 +1,1 @@
-{"result":"[{\"inflow1\" : 0.0,\n\"outlet3\" : 0.0,\n\"rainfall2\" : 10.0,\n\"inflow3\" : 10.0}\n]"}
+{"result":{"inflow1":0.0,"inflow3":10.0,"rainfall2":10.0,"outlet3":0.0}}

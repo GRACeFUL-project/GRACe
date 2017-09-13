@@ -1,7 +1,11 @@
 flags: {}
 extra-package-dbs: []
 packages:
-- .
+- '.'
+- location:
+    git: https://github.com/GRACeFUL-project/haskelzinc.git
+    commit: 35be178483848f24bfba75d457d7351f93880b49
+  extra-dep: true
 extra-deps:
 - aeson-1.1.0.0
 - haskelzinc-0.3.0.9
@@ -11,4 +15,5 @@ extra-deps:
 - parsec3-1.0.1.8
 - servant-0.10
 - servant-server-0.10
+- parsec3-1.0.1.8
 resolver: lts-8.17

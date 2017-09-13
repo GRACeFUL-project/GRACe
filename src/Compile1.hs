@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE RankNTypes #-}
 module Compile1 where
 
 import Control.Monad.Writer hiding (Sum)
@@ -29,7 +30,7 @@ debug = True
 
 runGCM' :: GCM a -> IO String
 runGCM' gcm = do
-  writeFile   "model.mzn" (HZPrinter.layout $ compileGCM' gcm)
+  writeFile   "model.mzn" (HZPrinter.layoutModel $ compileGCM' gcm)
   callCommand "mzn2fzn model.mzn"
   out <- readProcess "fzn-gecode" [ "-p", "4"
                                   , "-n", "-1"
@@ -70,6 +71,7 @@ compileCPExp' = \case
     MaxA m     -> genCall m "max"
     MinA m     -> genCall m "min"
 
+genCall :: ComprehensionMonad (CPExp a) -> String -> IntermMonad (HZ.Expr)
 genCall m call = do
       (bexpr, s) <- runWriterT (compileComprehension m)
       bexprc <- compileCPExp' bexpr
@@ -99,19 +101,19 @@ translateComprehensionCommand' (Range (low, high)) = do
   nvar <- lift getAndIncrVar
   lows <- lift $ compileCPExp' low
   highs <- lift $ compileCPExp' high
-  let compTail = [varName nvar] HZast.@@ lows HZBuiltIns.... highs
+  let compTail = [varNameStr nvar] HZast.@@ lows HZBuiltIns.... highs
   tell [compTail]
   return (ValueOf (Var nvar))
 
 translateCPCommands' :: CPCommands a -> IntermMonad a
 translateCPCommands' (Assert bexp) = do
   bexprc <- compileCPExp' bexp
-  let line = HZast.constraint bexprc
+  let line = constr bexprc
   modify $ \st -> st {model = model st ++ [line]}
 translateCPCommands' (CreateLVar proxy) = do
   vid <- getAndIncrVar
   let varType = hzType proxy
-  let line = HZast.declare $ HZast.variable HZ.Dec varType (varName vid)
+  let line = declVar varType (varNameStr vid)
   modify $ \st -> st { model = model st ++ [line]
                      }
   return (Var vid)
@@ -122,7 +124,7 @@ instance Interprets IntermMonad CPCommands where
 translateActionCommands' :: ActCommand a -> IntermMonad a
 translateActionCommands' (Act expr (Action _ (Param _ (Port j)))) = do
   exprc <- compileCPExp' expr
-  let line = HZast.constraint (HZ.Var (actName $ varID j) HZBuiltIns.->. (HZ.Var (varName $ varID j) HZBuiltIns.=.= exprc))
+  let line = constr (HZ.Var (actName $ varID j) HZBuiltIns.->. (HZ.Var (varName $ varID j) HZBuiltIns.=.= exprc))
   modify $ \st -> st { model = model st ++ [line]
                      }
 
@@ -139,18 +141,18 @@ translateGCMCommand' :: GCMCommand a -> IntermMonad a
 translateGCMCommand' = \case
   Output (Port v) s -> do
     let i = varID v
-    modify $ \st -> st { outputs = outputs st ++ [(s, varName i)] }
+    modify $ \st -> st { outputs = outputs st ++ [(s, varNameStr i)] }
   CreatePort proxy -> do
     vid <- getAndIncrVar
     let varType = hzType proxy
-    let line = HZ.Declare $ HZ.Declaration (HZ.Variable (HZ.Dec, varType, varName vid)) [] Nothing
+    let line = declVar varType (varNameStr vid)
     modify $ \st -> st { model = model st ++ [line]
                        }
     return $ Port (Var vid)
   CreateGoal -> do
     vid <- getAndIncrVar
     let varType = HZ.Int
-    let line = HZast.declare $ HZast.variable HZ.Dec varType (varName vid)
+    let line = declVar varType (varNameStr vid)
     modify $ \st -> st { goals = vid : goals st
                        , model = model st ++ [line]
                        }
@@ -158,9 +160,9 @@ translateGCMCommand' = \case
   CreateParam proxy def -> do
     vid <- getAndIncrVar
     let varType = hzType proxy
-    let lines = [ HZast.declare $ HZast.variable HZ.Dec varType (varName vid)
-                , HZast.declare $ HZast.variable HZ.Dec HZ.Bool (actName vid)
-                , HZast.constraint (HZBuiltIns.not_ (HZ.Var (actName vid)) HZBuiltIns.->. (HZ.Var (varName vid) HZBuiltIns.=.= hzConst def))
+    let lines = [ declVar varType (varNameStr vid)
+                , declVar HZ.Bool (actNameStr vid)
+                , constr (HZBuiltIns.not_ (HZ.Var (actName vid)) HZBuiltIns.->. (HZ.Var (varName vid) HZBuiltIns.=.= hzConst def))
                 ]
     modify $ \st -> st { model = model st ++ lines
                        }
@@ -168,14 +170,13 @@ translateGCMCommand' = \case
   CreateAction p@(Param _ (Port j)) -> do
     vid <- getAndIncrVar
     let varType = HZ.Int
-    let lines = [ HZast.declare $ HZast.variable HZ.Dec varType (varName vid)
-                , HZast.constraint (HZ.Var (varName vid) HZBuiltIns.>=. HZ.IConst 0)
-                , HZast.constraint ((HZ.Var (varName vid) HZBuiltIns.>. HZ.IConst 0)
-                                    HZBuiltIns.->. HZ.Var (actName $ varID j))
+    let lines = [ declVar varType (varNameStr vid)
+                , constr (HZ.Var (varName vid) HZBuiltIns.>=. HZ.IConst 0)
+                , constr ((HZ.Var (varName vid) HZBuiltIns.>. HZ.IConst 0) HZBuiltIns.->. HZ.Var (actName $ varID j))
                 ]
     modify $ \st -> st { model = model st ++ lines
                        }
-    return (Action vid p)
+    return $ Action vid p
   Component cp -> void $ interpret cp
   EmbedAction actm -> void $ interpret actm
 
@@ -191,21 +192,33 @@ compileGCM' gcm = stateToModel $ flip execState (CompilationState [] [] [] 0) $ 
       [makeGoals $ goals cs]
     makeOutputs os = HZast.string "{" : outputsToExpr os ++ [HZast.string "}"]
     -- the text is quoted with single quotes until \" is added to haskelzinc
-    outputToExpr (text, vname) = [HZast.string $ "'" ++ text ++ "' : ", HZBuiltIns.mz_show [HZast.var vname]]
+    outputToExpr (text, vname) = [HZast.string $ "'" ++ text ++ "' : ", HZBuiltIns.mz_show [HZast.Var (HZ.Simpl vname)]]
     outputsToExpr os = intercalate [HZast.string ",\n"] (map outputToExpr os)
     makeGoals [] = HZ.Solve $ HZ.Satisfy []
     makeGoals gls = HZ.Solve $ HZ.Maximize [] (foldl (HZBuiltIns.+.) (HZast.int 0) (map intToVar gls))
 
 intToVar :: Int -> HZ.Expr
-intToVar i = HZ.Var (varName i)
+intToVar = HZ.Var . varName
 
 hzZero :: HZ.Type -> HZ.Expr
 hzZero HZ.Int = HZ.IConst 0
 hzZero HZ.Float = HZ.FConst 0
 hzZero HZ.Bool = HZ.BConst False
 
-varName :: Int -> String
-varName i = 'v' : show i
+varName :: Int -> HZ.Ident
+varName = HZ.Simpl . varNameStr
 
-actName :: Int -> String
-actName i = 'a' : show i
+varNameStr :: Int -> String
+varNameStr i = 'v' : show i
+
+actName :: Int -> HZ.Ident
+actName = HZ.Simpl . actNameStr
+
+actNameStr :: Int -> String
+actNameStr i = 'a' : show i
+
+constr :: HZ.Expr -> HZ.Item
+constr e = HZast.turnToItem $ HZast.constraint e
+
+declVar :: HZ.Type -> String -> HZ.Item
+declVar t s = HZast.declare $ HZast.declareOnly $ HZast.variable HZ.Dec t s
