@@ -86,6 +86,7 @@ executable RestAPI
     , hint >= 0.7.0 && <0.8.0
     , directory
     , filepath
+    , optparse-applicative
   hs-source-dirs:
     RestAPI
   default-language:
