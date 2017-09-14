@@ -17,9 +17,13 @@ module Library
     ( module Types
     , Library(..)
     , Item(..), item
+      -- Re export
+    , module GCM
+    , module CP
     ) where
 
 import GCM hiding (Item)
+import CP
 import Types
 import Utils
 

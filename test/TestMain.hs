@@ -15,8 +15,8 @@ import TestFW.TestGCMCheck (tests)
 main :: IO ()
 main = do
     -- Setup
-    server <- spawnCommand "stack exec RestAPI"
-    threadDelay 1000000  -- wait a second for the server to get started
+    server <- spawnProcess "stack" ["exec", "RestAPI", "--", "--lib", "/Users/alex/Repositories/research/graceful/GRACe/libraries"]
+    threadDelay 3000000  -- wait a second for the server to get started
 
     -- Test
     defaultMain (testGroup "Test all"
@@ -30,8 +30,8 @@ main = do
 
 serviceTests = testGroup "Unit tests" 
   [ testService "library/crud" [] "test/test_library.exp"
-  , testService "submit" [ "-H", "Content-Type: application/json"
-                         , "--data", "@example.json"] "test/test_submit.exp"
+  , testService "submit/crud"  [ "-H", "Content-Type: application/json"
+                               ,  "--data", "@example.json"] "test/test_submit.exp"
   ]
 
 testService :: String -> [String] -> FilePath -> TestTree
