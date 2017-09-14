@@ -15,7 +15,7 @@ import TestFW.TestGCMCheck (tests)
 main :: IO ()
 main = do
     -- Setup
-    server <- spawnProcess "stack" ["exec", "RestAPI"]
+    server <- spawnProcess "stack" ["exec", "GRACeServer"]
     threadDelay 3000000  -- wait a second for the server to get started
 
     -- Test

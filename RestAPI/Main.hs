@@ -92,7 +92,7 @@ main = do
       ( fullDesc
      <> progDesc "GRACe is a DSL for expressing concept maps of system dynamics \
                  \models that can be evaluated by a constraint solver."
-     <> header "RestAPI - a server for evaluating GRACe programs" 
+     <> header "GRACeServer - a server for evaluating GRACe programs" 
       )
 
   -- Options parser

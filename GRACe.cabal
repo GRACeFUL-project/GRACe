@@ -58,7 +58,7 @@ library
   default-language:
     Haskell2010
 
-executable RestAPI
+executable GRACeServer
   main-is:
     Main.hs
   other-modules:
