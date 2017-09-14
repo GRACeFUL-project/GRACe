@@ -8,17 +8,16 @@ module Main where
 
 import Compile0
 import GRACeGraph
-import Library hiding (Proxy)
+import Library hiding (Proxy, value)
 import Submit
 
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson hiding (Bool, String)
-import Data.Aeson.Encode.Pretty
-import Data.Aeson.Types hiding (Bool, String)
+import Data.Aeson.Encode.Pretty 
+import Data.Aeson.Types hiding (Bool, String, Parser, Options)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
-import Data.Either
 import Data.Maybe
 import Servant
 import Network.Wai.Handler.Warp (run)
@@ -29,16 +28,28 @@ import Lucid
 import Language.Haskell.Interpreter hiding (set)
 import System.Directory
 import System.FilePath
+import Options.Applicative
+import Data.Semigroup ((<>))
+
 
 -- Cross-Origin Resource Sharing (CORS) prevents browser warnings
 -- about cross-site scripting
 type Resp a = Headers '[Header "Access-Control-Allow-Origin" String] a
 
 type API = 
-        "library" :> Capture "name" String :> Get '[JSON, HTML] (Resp Library)
-  :<|>  "submit"  :> Capture "lib"  String :> ReqBody '[JSON] Graph :> Post '[JSON] (Resp Value)
+        "library" :> Capture "name" String             -- identifier of the library
+                  :> Get '[JSON, HTML] (Resp Library)  -- return a library in eiterh JSON or HTML format
+
+  :<|>  "submit"  :> Capture "lib"  String             -- library identifier
+                  :> ReqBody '[JSON] Graph             -- Graph representation of a GCM model in JSON format
+                  :> Post '[JSON] (Resp Value)         -- the result of the constraint solver in JSON
 
 type Libraries = M.Map String Library
+
+data Options = Options
+  { log    :: Bool
+  , libdir :: FilePath 
+  } deriving Show
 
 server :: Libraries -> Server API
 server libs =    library libs
@@ -70,23 +81,46 @@ app libs = serve api (server libs)
 
 main :: IO ()
 main = do
-    args <- getArgs
-    libs <- case args of
-      ("--lib":libdir:as) -> do
-        fs <- listDirectory libdir 
-        let libfiles = filter (\l -> takeExtension l == ".hs") fs
-        libs <- withCurrentDirectory libdir $ mapM (runInterpreter . loadLib) libfiles
-        return $ foldr (\l m -> M.insert (libraryId l) l m) M.empty $ rights libs
-      _ -> return M.empty
-    run 8081 $ case args of
-        ["--log"] -> logStdoutDev $ app libs
-        _         -> app $ libs
+  Options log dir <- execParser parser
+  libs            <- loadLibraries dir
+  run 8081 $ if log 
+    then logStdoutDev $ app libs
+    else app libs
+ where
+  -- Usage information and options parser
+  parser = info (flags <**> helper)
+      ( fullDesc
+     <> progDesc "GRACe is a DSL for expressing concept maps of system dynamics \
+                 \models that can be evaluated by a constraint solver."
+     <> header "GRACeServer - a server for evaluating GRACe programs" 
+      )
 
-loadLib :: String -> Interpreter Library
-loadLib lib = do
-  loadModules [lib]
-  setTopLevelModules [takeWhile (/='.') lib]
-  interpret "library" (as :: Library)
+  -- Options parser
+  flags = Options <$> 
+      switch
+      ( long "log"
+     <> help "Turn logging on" 
+      )
+    <*> strOption
+      ( long "lib"
+     <> short 'l'
+     <> help "File path to library modules." 
+     <> showDefault
+     <> value "libraries"
+      )
+
+-- Load all libraries in given directory
+loadLibraries :: FilePath -> IO Libraries
+loadLibraries dir = do
+  fs   <- listDirectory dir >>= return . filter (\l -> takeExtension l == ".hs")
+  libs <- withCurrentDirectory dir $ mapM (runInterpreter . loadLib) fs
+  return $ M.fromList [(libraryId l, l) | Right l <- libs]
+ where
+  loadLib :: String -> Interpreter Library
+  loadLib lib = do
+    loadModules [lib]
+    setTopLevelModules [takeWhile (/='.') lib]
+    interpret "library" (as :: Library)
 
 -- HTML rep
 instance ToHtml Library where
