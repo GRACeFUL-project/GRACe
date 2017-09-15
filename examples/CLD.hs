@@ -2,29 +2,52 @@ module CLD where
 import GCM
 import CP
 import Compile
+import Compile0
+import qualified Interfaces.MZASTBase as HZ
 
-type S = Int
 
-plus :: (Num a) => a
-plus = 1
+data Sign = M   -- minus
+          | Z   -- zero
+          | P   -- plus
+          | Q   -- ambigu
+          deriving (Eq, Ord)  -- ordering of constructors is important for Ord
 
-minus :: (Num a) => a
-minus = -1
+instance CPType Sign where
+  typeDec = const (++ " -100..100")
+  hzType = const (HZ.Set HZ.Int)
+  hzConst x = HZ.SetLit [HZ.IConst n | n <- [-100 .. 100]]
 
-zero :: (Num a) => a
-zero = 0
+instance Num Sign where
+  x + y = case (x, y) of
+    (Z, b) -> b
+    (a, Z) -> a
+    (P, P) -> P
+    (M, M) -> M
+    (P, M) -> Z
+    (M, P) -> Z
+    (Q, _) -> Q
+    (_, Q) -> Q
+  fromInteger x | x <  0    = M
+                | x == 0    = Z
+                | x >  10   = Q
+                | otherwise = P
 
-ambig :: (Num a) => a
-ambig = 100
 
-add :: Port S -> CPExp S -> CPExp S -> CP ()
+instance Show Sign where
+  show x = case x of
+    Z -> "0"
+    P -> "1"
+    M -> "-1"
+    Q -> "100"
+
+add :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
 add p x y = do
   vp <- value p
   assert $ (x === y) ==> (vp === x)
-  assert $ ((x /== y) .&& (x /== 0) .&& (y /== 0)) ==> (vp === ambig)
-  assert $ ((x === 0) .|| (y === 0)) ==> (vp === (x + y))
+  assert $ ((x /== y) .&& (x /== Lit Z) .&& (y /== Lit Z)) ==> (vp === Lit Q)
+  assert $ ((x === Lit Z) .|| (y === Lit Z)) ==> (vp === (x + y))  -- the plus needs to be changed for Haskelzinc to work
 
-constructSum :: [Port S] -> GCM (Port S)
+constructSum :: [Port Sign] -> GCM (Port Sign)
 constructSum [] = do
   p <- createPort
   set p 0
@@ -37,14 +60,14 @@ constructSum (x:xs) = do
   component $ add hereResult vx vr
   return hereResult
 
-pArrow :: GCM (Port S, Port S)
+pArrow :: GCM (Port Sign, Port Sign)
 pArrow = do
   p <- createPort
   q <- createPort
   link p q
   return (p, q)
 
-mArrow :: GCM (Port S, Port S)
+mArrow :: GCM (Port Sign, Port Sign)
 mArrow = do
   p <- createPort
   q <- createPort
@@ -54,19 +77,19 @@ mArrow = do
     assert $ qv === (-1) * pv
   return (p, q)
 
-(-+>) :: Port S -> Port S -> GCM ()
+(-+>) :: Port Sign -> Port Sign -> GCM ()
 p -+> q = do
  (p0, q0) <- pArrow
  link p p0
  link q q0
 
-(-->) :: Port S -> Port S -> GCM ()
+(-->) :: Port Sign -> Port Sign -> GCM ()
 p --> q = do
  (p0, q0) <- mArrow
  link p p0
  link q q0
 
-cldNode :: Maybe S -> Int -> GCM ([Port S], Port S)
+cldNode :: Maybe Sign -> Int -> GCM ([Port Sign], Port Sign)
 cldNode obsSign n = do
   outPort <- createPort
   inPorts <- mapM (\_ -> createPort) [1..n]
@@ -87,9 +110,9 @@ cldNode obsSign n = do
 
 tinyExample :: GCM ()
 tinyExample = do
-  ([], a) <- cldNode (Just plus) 0
+  ([], a) <- cldNode (Just P) 0
 
-  ([], b) <- cldNode (Just minus) 0
+  ([], b) <- cldNode (Just M) 0
 
   ([c1,c2], c) <- cldNode Nothing 2
 
@@ -104,8 +127,8 @@ tinyExample2 = do
   ([], a) <- cldNode Nothing 0
   ([], b) <- cldNode Nothing 0
 
-  ([c1,c2], c) <- cldNode (Just plus) 2
-  ([d1], d) <- cldNode (Just plus) 1
+  ([c1,c2], c) <- cldNode (Just P) 2
+  ([d1], d) <- cldNode (Just P) 1
   a -+> c1
   b --> c2
   b --> d1
@@ -116,7 +139,7 @@ tinyExample2 = do
 
 drudzelHenrion :: GCM ()
 drudzelHenrion = do
-  ([a1], a ) <- cldNode (Just plus) 1
+  ([a1], a ) <- cldNode (Just P) 1
   ([], b) <- cldNode Nothing 0
   ([c1], c) <- cldNode Nothing 1
   ([d1,d2], d) <- cldNode Nothing 2
@@ -143,4 +166,4 @@ main = do
   runCompare drudzelHenrion
 
   --compileString tinyExample2
-  --runCompare tinyExample2
+  runCompare tinyExample2
