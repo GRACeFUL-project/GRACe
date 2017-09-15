@@ -1,7 +1,7 @@
 module CLD where
 import GCM
 import CP
-import Compile(runCompare)
+import Compile
 
 type S = Int
 
@@ -15,7 +15,7 @@ zero :: (Num a) => a
 zero = 0
 
 ambig :: (Num a) => a
-ambig = 1000
+ambig = 100
 
 add :: Port S -> CPExp S -> CPExp S -> CP ()
 add p x y = do
@@ -66,26 +66,32 @@ p --> q = do
  link p p0
  link q q0
 
-cldNode :: S -> Int -> GCM ([Port S], Port S)
+cldNode :: Maybe S -> Int -> GCM ([Port S], Port S)
 cldNode obsSign n = do
-  inPorts <- mapM (\_ -> createPort) (take n (repeat 0))
-  influence <- constructSum inPorts
   outPort <- createPort
+  inPorts <- mapM (\_ -> createPort) [1..n]
+  influence <- constructSum inPorts
   component $ do
     i <- value influence
     o <- value outPort
-    assert $ (i === 0) ==> (o === lit obsSign)
-    assert $ ((lit obsSign) === 0) ==> (o === i)
-    assert $ ((i /== 0) .&& ((lit obsSign) /== 0)) ==> (o === (i * (lit obsSign)))
+    case obsSign of
+      Just s -> do
+        assert $ (o === lit s)
+        if n > 0
+          then (assert $ (i === lit s))
+          else return ()
+      Nothing -> if n > 0
+        then assert $ (i === o)
+        else return ()
   return (inPorts, outPort)
 
 tinyExample :: GCM ()
 tinyExample = do
-  ([], a) <- cldNode plus 0
+  ([], a) <- cldNode (Just plus) 0
 
-  ([], b) <- cldNode minus 0
+  ([], b) <- cldNode (Just minus) 0
 
-  ([c1,c2], c) <- cldNode zero 2
+  ([c1,c2], c) <- cldNode Nothing 2
 
   a --> c1
   b -+> c2
@@ -93,14 +99,29 @@ tinyExample = do
   output b "b"
   output c "c"
 
+tinyExample2 :: GCM ()
+tinyExample2 = do
+  ([], a) <- cldNode Nothing 0
+  ([], b) <- cldNode Nothing 0
+
+  ([c1,c2], c) <- cldNode (Just plus) 2
+  ([d1], d) <- cldNode (Just plus) 1
+  a -+> c1
+  b --> c2
+  b --> d1
+  output a "a"
+  output b "b"
+  output c "c"
+  output d "d"
+
 drudzelHenrion :: GCM ()
 drudzelHenrion = do
-  ([a1], a ) <- cldNode plus 1
-  ([], b) <- cldNode zero 0
-  ([c1], c) <- cldNode zero 1
-  ([d1,d2], d) <- cldNode zero 2
-  ([e1,e2], e) <- cldNode zero 2
-  ([], f) <- cldNode zero 0
+  ([a1], a ) <- cldNode (Just plus) 1
+  ([], b) <- cldNode Nothing 0
+  ([c1], c) <- cldNode Nothing 1
+  ([d1,d2], d) <- cldNode Nothing 2
+  ([e1,e2], e) <- cldNode Nothing 2
+  ([], f) <- cldNode Nothing 0
   b -+> a1
   b -+> c1
   b -+> d1
@@ -117,5 +138,9 @@ drudzelHenrion = do
 
 main :: IO ()
 main = do
-  runCompare tinyExample
+  --runCompare tinyExample
+  compileString drudzelHenrion
   runCompare drudzelHenrion
+
+  --compileString tinyExample2
+  --runCompare tinyExample2
