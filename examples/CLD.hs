@@ -14,7 +14,7 @@ data Sign = M   -- minus
 
 instance CPType Sign where
   typeDec = const (++ " -100..100")
-  hzType = const HZ.Int
+  hzType = const (HZ.Range (HZ.IConst $ -100) (HZ.IConst 100))
   hzConst x = HZ.IConst $ case x of
     M -> -1
     Z -> 0
