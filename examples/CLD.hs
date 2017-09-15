@@ -14,8 +14,12 @@ data Sign = M   -- minus
 
 instance CPType Sign where
   typeDec = const (++ " -100..100")
-  hzType = const (HZ.Set HZ.Int)
-  hzConst x = HZ.SetLit [HZ.IConst n | n <- [-100 .. 100]]
+  hzType = const HZ.Int
+  hzConst x = HZ.IConst $ case x of
+    M -> -1
+    Z -> 0
+    P -> 1
+    Q -> 100
 
 instance Num Sign where
   x + y = case (x, y) of
@@ -45,7 +49,7 @@ add p x y = do
   vp <- value p
   assert $ (x === y) ==> (vp === x)
   assert $ ((x /== y) .&& (x /== Lit Z) .&& (y /== Lit Z)) ==> (vp === Lit Q)
-  assert $ ((x === Lit Z) .|| (y === Lit Z)) ==> (vp === (x + y))  -- the plus needs to be changed for Haskelzinc to work
+  assert $ ((x === Lit Z) .|| (y === Lit Z)) ==> (vp === (x + y)) 
 
 constructSum :: [Port Sign] -> GCM (Port Sign)
 constructSum [] = do
