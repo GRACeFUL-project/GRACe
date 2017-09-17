@@ -20,7 +20,7 @@ module Types
       Type(..), Const(..), TypedValue(..)
     , Equal(..), equalM
      -- * Constructing types
-    , tInt, tBool, tString, tFloat
+    , tInt, tBool, tString, tFloat, tSign
     , tUnit, tPair, tTuple3, tTuple4, tTuple5, tMaybe, tList
     , tError, (.->), tIO, tPort, tGCM, (#)
      -- * Evaluating and searching a typed value
@@ -30,8 +30,9 @@ module Types
     ) where
 
 import Utils
-import GCM 
-import CP 
+import GCM
+import CP
+import Sign
 
 import Control.Arrow ((***))
 import qualified Control.Category as C
@@ -74,6 +75,7 @@ data Const t where
     Int    :: Const Int
     Float  :: Const Float
     String :: Const String
+    Sign   :: Const Sign
 
 instance Show (Type t) where
     show (Iso _ t)      = show t
@@ -184,6 +186,9 @@ tInt = Const Int
 tFloat :: Type Float
 tFloat = Const Float
 
+tSign :: Type Sign
+tSign = Const Sign
+
 tTuple3 :: Type t1 -> Type t2 -> Type t3 -> Type (t1, t2, t3)
 tTuple3 t1 t2 t3 = Iso (f <-> g) (Pair t1 (Pair t2 t3))
     where
@@ -210,7 +215,7 @@ class Equal f where
 
 equalM :: Monad m => Type t1 -> Type t2 -> m (t1 -> t2)
 equalM t1 t2 = maybe (fail msg) return (equal t1 t2)
-  where 
+  where
     msg = "Types not equal: " ++ show t1 ++ " and " ++ show t2
 
 instance Equal Type where
@@ -225,7 +230,7 @@ instance Equal Type where
     equal t1         (Tag s2 b) = equal t1 b
     equal Unit       Unit       = Just id
     equal (Const a)  (Const b)  = equal a b
-    equal (Port' a)  (Port' b)  = fmap (\f -> fmap f) $ equal a b 
+    equal (Port' a)  (Port' b)  = fmap (\f -> fmap f) $ equal a b
     equal _          _          = Nothing
 
 instance Equal Const where
@@ -233,6 +238,7 @@ instance Equal Const where
     equal Bool        Bool      = Just id
     equal Float       Float     = Just id
     equal String      String    = Just id
+    equal Sign        Sign      = Just id
     equal _           _         = Nothing
 
 findValuesOfType :: Type t -> TypedValue -> [t]
@@ -286,6 +292,11 @@ instance IsTyped Float where
     typeOf _ = tFloat
     fromTyped (x ::: Const Float) = return x
     fromTyped _                   = fail errMsg
+
+instance IsTyped Sign where
+    typeOf _ = tSign
+    fromTyped (x ::: Const Sign) = return x
+    fromTyped _                  = fail errMsg
 
 instance {-# OVERLAPPING #-} IsTyped String where
     typeOf _ = tString

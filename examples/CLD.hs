@@ -2,47 +2,7 @@ module CLD where
 import GCM
 import CP
 import Compile
-import Compile0
-import qualified Interfaces.MZASTBase as HZ
-
-
-data Sign = M   -- minus
-          | Z   -- zero
-          | P   -- plus
-          | Q   -- ambigu
-          deriving (Eq, Ord)  -- ordering of constructors is important for Ord
-
-instance CPType Sign where
-  typeDec = const (++ " -100..100")
-  hzType = const HZ.Int
-  hzConst x = HZ.IConst $ case x of
-    M -> -1
-    Z -> 0
-    P -> 1
-    Q -> 100
-
-instance Num Sign where
-  x + y = case (x, y) of
-    (Z, b) -> b
-    (a, Z) -> a
-    (P, P) -> P
-    (M, M) -> M
-    (P, M) -> Z
-    (M, P) -> Z
-    (Q, _) -> Q
-    (_, Q) -> Q
-  fromInteger x | x <  0    = M
-                | x == 0    = Z
-                | x >  10   = Q
-                | otherwise = P
-
-
-instance Show Sign where
-  show x = case x of
-    Z -> "0"
-    P -> "1"
-    M -> "-1"
-    Q -> "100"
+import Sign
 
 add :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
 add p x y = do
@@ -166,7 +126,7 @@ drudzelHenrion = do
 main :: IO ()
 main = do
   --runCompare tinyExample
-  compileString drudzelHenrion
+  --compileString drudzelHenrion
   runCompare drudzelHenrion
 
   --compileString tinyExample2

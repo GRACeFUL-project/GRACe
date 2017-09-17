@@ -26,7 +26,8 @@ library
     Types,
     Utils,
     Library,
-    GRACeGraph
+    GRACeGraph,
+    Sign
   other-modules:
     TestFW.GenT,
     Program
