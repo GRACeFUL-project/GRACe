@@ -88,9 +88,8 @@ put cid tv@(x ::: t) m =
                                  <*> put cid (snd x ::: b) m
     Iso iso (Pair a b) -> Map.union <$> put cid (fst (to iso x) ::: a) m
                                     <*> put cid (snd (to iso x) ::: b) m
-    --Iso iso t' -> return $ Map.insert cid (to iso x ::: t') m
-    List t' -> Map.unions <$> zipWithM (\y n -> put cid (y ::: Tag (show n) t') m) x [1..]
-    _ -> fail $ "- unable to split the Type of value " ++ show tv ++ show cid
+    Tag n (List (Port' p)) -> return $ Map.insert (n ++ cid) (x ::: List (Port' p)) m
+    _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | Document
 putItem :: Map Id TypedValue       -- ^ Document
