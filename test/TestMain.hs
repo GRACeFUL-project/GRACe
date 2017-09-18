@@ -33,7 +33,7 @@ serviceTests = testGroup "Unit tests"
   , testService "submit/crud"  [ "-H", "Content-Type: application/json"
                                ,  "--data", "@submit_crud.json"] "test/test_submit.exp"
   , testService "submit/cld"   [ "-H", "Content-Type: application/json"
-                               ,  "--data", "@submit_cld_small.json"] "test/test_submit_cld.exp"
+                               ,  "--data", "@submit_cld.json"] "test/test_submit_cld.exp"
   ]
 
 testSubmit :: String -> String -> FilePath -> TestTree

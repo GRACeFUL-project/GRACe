@@ -107,7 +107,7 @@ link2 :: Map Id TypedValue -- ^ Document
       -> Id                -- ^ Document
       -> Maybe Int         -- ^ Offset
       -> GCM ()
-link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> lookupG j m
+link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> (at offset <$> lookupG j m)
   where
     linkTV :: TypedValue -> TypedValue -> GCM ()
     linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
@@ -117,6 +117,8 @@ link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> lookupG j
             output x i
             output y j
             link (f x) y
+    linkTV (x ::: t1) (y ::: t2) =
+      fail ("unable to link " ++ show t1 ++ show t2)
 
     -- If an offset is given, and the type is a list of ports, then index into
     -- the list using the offset
@@ -132,7 +134,8 @@ lookat :: (Show k, Show v, Ord k) => Map k (Map k v) -> k -> k -> GCM v
 lookat m k1 k2 =
   lookupG k2 =<< lookupG k1 m
 
--- | Generate a `TypedValue` from an identifier tag and a `PrimTypeValue`.
+-- | Generate a `TypedValue` from an identifier tag, a type annotation,
+--   and a `PrimTypeValue`.
 fromPrimType :: String -> String -> PrimTypeValue -> TypedValue
 fromPrimType name typ ptv =
   case (typ, ptv) of
@@ -163,7 +166,9 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
     fromParam :: Monad m => Parameter -> m (Id, TypedValue)
     fromParam Parameter {..} =
       case parameterValue of
-        Nothing  -> fail "failure in paramTVs.fromParam"
+        Nothing  -> case parameterType of
+          "Maybe Sign" -> return (parameterName, fromPrimType parameterName parameterType NullV)
+          _            -> fail ("failure in paramTVs.fromParam " ++ parameterName)
         Just ptv -> return (parameterName, fromPrimType parameterName parameterType ptv)
 
 -- | Extract all `Node` links.

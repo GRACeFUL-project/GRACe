@@ -4,20 +4,21 @@
             "name": "factor",
             "parameters": [
                 {
-                    "obsSign": 1,
-                    "numIn": 0
+                    "name": "obsSign",
+                    "value": 1,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 0,
+                    "type": "Int"
                 }
             ],
             "interface": [
                 {
-                    "connection": [
-                        5,
-                        "fromNode",
-                        null
-                    ],
                     "name": "outSign",
                     "type": "Sign"
-                },
+                }
             ],
             "identity": 1
         },
@@ -25,17 +26,18 @@
             "name": "factor",
             "parameters": [
                 {
-                    "obsSign": -1,
-                    "numIn": 0
+                    "name": "obsSign",
+                    "value": -1,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 0,
+                    "type": "Int"
                 }
             ],
             "interface": [
                 {
-                    "connection": [
-                        4,
-                        "fromNode",
-                        null
-                    ],
                     "name": "outSign",
                     "type": "Sign"
                 }
@@ -46,14 +48,20 @@
             "name": "factor",
             "parameters": [
                 {
-                    "obsSign": null,
-                    "numIn": 2
+                    "name": "obsSign",
+                    "value": null,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 2,
+                    "type": "Int"
                 }
             ],
             "interface": [
-                {   "name": "influences"
+                {   "name": "influences",
                     "type": "[Sign]"
-                }
+                },
                 {
                     "name": "outSign",
                     "type": "Sign"
@@ -61,11 +69,16 @@
             ],
             "identity": 3
         },
-        {
+       {
             "name": "plus arrow",
             "parameters": [],
             "interface": [
                 {
+                    "connection": [
+                        2,
+                        "outSign",
+                        null
+                    ],
                     "name": "fromNode",
                     "type": "Sign"
                 },
@@ -80,12 +93,17 @@
                 }
             ],
             "identity": 4
-        },
+       },
         {
             "name": "minus arrow",
             "parameters": [],
             "interface": [
                 {
+                    "connection": [
+                        1,
+                        "outSign",
+                        null
+                    ],
                     "name": "fromNode",
                     "type": "Sign"
                 },
