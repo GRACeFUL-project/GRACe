@@ -39,15 +39,15 @@ instance FromJSON Node where
   parseJSON  = genericParseJSON  nodeOptions
 
 data Parameter = Parameter { parameterName  :: String
-                           , parameterType  :: PrimType
+                           , parameterType  :: String
                            , parameterValue :: Maybe PrimTypeValue
                            }
   deriving (Generic, Show, Eq)
 
 fixParameter :: Parameter -> Parameter
 fixParameter p@(Parameter n t1 (Just t2)) =
-  case (t1, t2) of 
-    (FloatT, IntV x) -> Parameter n t1 (Just (FloatV (fromIntegral x)))
+  case (t1, t2) of
+    ("Float", IntV x) -> Parameter n t1 (Just (FloatV (fromIntegral x)))
     _ -> p
 fixParameter param = param
 
@@ -61,6 +61,7 @@ instance FromJSON Parameter where
   parseJSON  = genericParseJSON  parameterOptions
 
 -- | The primitive types in `GRACe`
+{-
 data PrimType = FloatT | IntT | StringT | BoolT
   deriving (Generic, Show, Eq)
 
@@ -72,8 +73,9 @@ instance ToJSON PrimType where
 
 instance FromJSON PrimType where
   parseJSON  = genericParseJSON  primTypeOptions
-
+-}
 data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
+                   | NullV
   deriving (Generic, Show, Eq)
 
 -- | PrimTypeValue are represented in JSON as just String/Bool/Number
@@ -82,12 +84,14 @@ instance ToJSON PrimTypeValue where
   toJSON (IntV i)    = Number $ fromInteger (toInteger i)
   toJSON (StringV s) = String (T.pack s)
   toJSON (BoolV b)   = Bool b
+  toJSON NullV       = Null
 
 -- | Derived from the above instance
 instance FromJSON PrimTypeValue where
   parseJSON (String s) = return $ StringV (T.unpack s)
   parseJSON (Bool b)   = return $ BoolV b
   parseJSON (Number s) = return $ either FloatV IntV $ floatingOrInteger s
+  parseJSON (Null)     = return NullV
   parseJSON _          = fail "Does not comform to interface"
 
 -- | Fix the prefixes
@@ -110,7 +114,7 @@ example = Graph
   [ Node
      (Just 1)
      "pump"
-     [ Parameter "capacity" FloatT (Just (FloatV 5))
+     [ Parameter "capacity" "Float" (Just (FloatV 5))
      ]
      [ Interface "inflow"  "Float"  (Just (3, "outlet", Nothing))
      , Interface "outflow" "Float"  Nothing
@@ -118,14 +122,14 @@ example = Graph
   , Node
      (Just 2)
      "rain"
-     [ Parameter "amount"   FloatT (Just (FloatV 10))
+     [ Parameter "amount"   "Float" (Just (FloatV 10))
      ]
      [ Interface "rainfall" "Float" (Just (3, "inflow", Nothing))
      ]
   , Node
      (Just 3)
      "runoffArea"
-     [ Parameter "capacity" FloatT (Just (FloatV 5))
+     [ Parameter "capacity" "Float" (Just (FloatV 5))
      ]
      [ Interface "inflow"   "Float" Nothing
      , Interface "outlet"   "Float" Nothing

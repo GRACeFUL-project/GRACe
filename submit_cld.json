@@ -11,17 +11,13 @@
             "interface": [
                 {
                     "connection": [
-                        3,
-                        "outlet",
+                        5,
+                        "fromNode",
                         null
                     ],
-                    "name": "inflow",
-                    "type": "Float"
+                    "name": "outSign",
+                    "type": "Sign"
                 },
-                {
-                    "name": "outflow",
-                    "type": "Float"
-                }
             ],
             "identity": 1
         },
@@ -36,12 +32,12 @@
             "interface": [
                 {
                     "connection": [
-                        3,
-                        "inflow",
+                        4,
+                        "fromNode",
                         null
                     ],
-                    "name": "rainfall",
-                    "type": "Float"
+                    "name": "outSign",
+                    "type": "Sign"
                 }
             ],
             "identity": 2
@@ -55,17 +51,12 @@
                 }
             ],
             "interface": [
+                {   "name": "influences"
+                    "type": "[Sign]"
+                }
                 {
-                    "name": "inflow",
-                    "type": "Float"
-                },
-                {
-                    "name": "outlet",
-                    "type": "Float"
-                },
-                {
-                    "name": "overflow",
-                    "type": "Float"
+                    "name": "outSign",
+                    "type": "Sign"
                 }
             ],
             "identity": 3
@@ -75,19 +66,40 @@
             "parameters": [],
             "interface": [
                 {
-                    "name": "inflow",
-                    "type": "Float"
+                    "name": "fromNode",
+                    "type": "Sign"
                 },
                 {
-                    "name": "outlet",
-                    "type": "Float"
-                },
-                {
-                    "name": "overflow",
-                    "type": "Float"
+                    "connection": [
+                        3,
+                        "influences",
+                        1
+                    ],
+                    "name": "toNode",
+                    "type": "Sign"
                 }
             ],
-            "identity": 3
+            "identity": 4
+        },
+        {
+            "name": "minus arrow",
+            "parameters": [],
+            "interface": [
+                {
+                    "name": "fromNode",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        3,
+                        "influences",
+                        0
+                    ],
+                    "name": "toNode",
+                    "type": "Sign"
+                }
+            ],
+            "identity": 5
         }
     ]
 }

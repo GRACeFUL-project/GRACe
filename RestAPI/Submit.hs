@@ -88,7 +88,9 @@ put cid tv@(x ::: t) m =
                                  <*> put cid (snd x ::: b) m
     Iso iso (Pair a b) -> Map.union <$> put cid (fst (to iso x) ::: a) m
                                     <*> put cid (snd (to iso x) ::: b) m
-    _ -> fail $ "- unable to split the Type of value " ++ show tv
+    --Iso iso t' -> return $ Map.insert cid (to iso x ::: t') m
+    List t' -> Map.unions <$> zipWithM (\y n -> put cid (y ::: Tag (show n) t') m) x [1..]
+    _ -> fail $ "- unable to split the Type of value " ++ show tv ++ show cid
 
 -- | Document
 putItem :: Map Id TypedValue       -- ^ Document
@@ -116,7 +118,7 @@ link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> lookupG j
             output x i
             output y j
             link (f x) y
-    
+
     -- If an offset is given, and the type is a list of ports, then index into
     -- the list using the offset
     at :: Maybe Int -> TypedValue -> TypedValue
@@ -132,13 +134,19 @@ lookat m k1 k2 =
   lookupG k2 =<< lookupG k1 m
 
 -- | Generate a `TypedValue` from an identifier tag and a `PrimTypeValue`.
-fromPrimType :: String -> PrimTypeValue -> TypedValue
-fromPrimType name ptv =
-  case ptv of
-    FloatV f  -> f ::: name # tFloat
-    IntV i    -> i ::: name # tInt
-    StringV s -> s ::: name # tString
-    BoolV b   -> b ::: name # tBool
+fromPrimType :: String -> String -> PrimTypeValue -> TypedValue
+fromPrimType name typ ptv =
+  case (typ, ptv) of
+    ("Float", FloatV f)  -> f ::: name # tFloat
+    ("Int", IntV i)    -> i ::: name # tInt
+    ("Sign", IntV i)    -> (fromInteger (toInteger i)) ::: name # tSign
+    ("Maybe Sign", v)    -> case v of
+      IntV i -> Just (fromInteger (toInteger i)) ::: name # tMaybe tSign
+      NullV  -> Nothing ::: name # tMaybe tSign
+      _      -> error "CRASH!"
+    ("String", StringV s) -> s ::: name # tString
+    ("Bool", BoolV b)   -> b ::: name # tBool
+    (_,_) -> error "Types don't match"
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
@@ -157,7 +165,7 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
     fromParam Parameter {..} =
       case parameterValue of
         Nothing  -> fail "failure in paramTVs.fromParam"
-        Just ptv -> return (parameterName, fromPrimType parameterName ptv)
+        Just ptv -> return (parameterName, fromPrimType parameterName parameterType ptv)
 
 -- | Extract all `Node` links.
 getLinks :: [Node] -> [(Id, Id, Maybe Int)]

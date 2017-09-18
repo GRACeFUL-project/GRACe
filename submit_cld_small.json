@@ -1,0 +1,26 @@
+{
+    "nodes": [
+        {
+            "name": "factor",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": 1,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 0,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "outSign",
+                    "type": "Sign"
+                }
+            ],
+            "identity": 1
+        }
+    ]
+}

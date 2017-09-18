@@ -36,7 +36,7 @@ import Data.Semigroup ((<>))
 -- about cross-site scripting
 type Resp a = Headers '[Header "Access-Control-Allow-Origin" String] a
 
-type API = 
+type API =
         "library" :> Capture "name" String             -- identifier of the library
                   :> Get '[JSON, HTML] (Resp Library)  -- return a library in eiterh JSON or HTML format
 
