@@ -1,0 +1,93 @@
+{
+    "nodes": [
+        {
+            "name": "factor",
+            "parameters": [
+                {
+                    "obsSign": 1,
+                    "numIn": 0
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        3,
+                        "outlet",
+                        null
+                    ],
+                    "name": "inflow",
+                    "type": "Float"
+                },
+                {
+                    "name": "outflow",
+                    "type": "Float"
+                }
+            ],
+            "identity": 1
+        },
+        {
+            "name": "factor",
+            "parameters": [
+                {
+                    "obsSign": -1,
+                    "numIn": 0
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        3,
+                        "inflow",
+                        null
+                    ],
+                    "name": "rainfall",
+                    "type": "Float"
+                }
+            ],
+            "identity": 2
+        },
+        {
+            "name": "factor",
+            "parameters": [
+                {
+                    "obsSign": null,
+                    "numIn": 2
+                }
+            ],
+            "interface": [
+                {
+                    "name": "inflow",
+                    "type": "Float"
+                },
+                {
+                    "name": "outlet",
+                    "type": "Float"
+                },
+                {
+                    "name": "overflow",
+                    "type": "Float"
+                }
+            ],
+            "identity": 3
+        },
+        {
+            "name": "plus arrow",
+            "parameters": [],
+            "interface": [
+                {
+                    "name": "inflow",
+                    "type": "Float"
+                },
+                {
+                    "name": "outlet",
+                    "type": "Float"
+                },
+                {
+                    "name": "overflow",
+                    "type": "Float"
+                }
+            ],
+            "identity": 3
+        }
+    ]
+}

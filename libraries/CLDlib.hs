@@ -7,17 +7,20 @@ import Library
 library :: Library
 library = Library "cld"
   [ Item "factor" "Factor" "pathToFactorImage" $
-    cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .->
-    tGCM (tPair ("influences" # tList (tPort tSign))
-                ("outSign" # tPort tSign))
+      cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .->
+      tGCM (tPair ("influences" # tList (tPort tSign))
+                  ("outSign" # tPort tSign))
+
   , Item "relation" "Causal relation" "pathToArrowImage" $
       relate ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPort tSign)
                                                 ("toNode"  #  tPort tSign)
                                          )
+
   , Item "plus arrow" "Positive relation" "pathToParrowImage" $
       pArrow ::: tGCM (tPair ("fromNode" # tPort tSign)
                              ("toNode"  #  tPort tSign)
                       )
+
   , Item "minus arrow" "Negative relation" "pathToMarrowImage" $
       mArrow ::: tGCM (tPair ("fromNode" # tPort tSign)
                              ("toNode"  #  tPort tSign)

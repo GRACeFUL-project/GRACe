@@ -31,8 +31,15 @@ main = do
 serviceTests = testGroup "Unit tests" 
   [ testService "library/crud" [] "test/test_library.exp"
   , testService "submit/crud"  [ "-H", "Content-Type: application/json"
-                               ,  "--data", "@example.json"] "test/test_submit.exp"
+                               ,  "--data", "@submit_crud.json"] "test/test_submit.exp"
+  , testService "submit/cld"   [ "-H", "Content-Type: application/json"
+                               ,  "--data", "@submit_cld.json"] "test/test_submit.exp"
   ]
+
+testSubmit :: String -> String -> FilePath -> TestTree 
+testSubmit lib input exp = testService ("submit" ++ lib) flags exp
+ where
+  flags = ["-H", "Content-Type: application/json",  "--data", input]
 
 testService :: String -> [String] -> FilePath -> TestTree
 testService endpoint options file = testCase ("Testing: " ++ file) $ do
