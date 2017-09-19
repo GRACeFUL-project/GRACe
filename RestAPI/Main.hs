@@ -14,7 +14,7 @@ import Submit
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson hiding (Bool, String)
-import Data.Aeson.Encode.Pretty 
+import Data.Aeson.Encode.Pretty
 import Data.Aeson.Types hiding (Bool, String, Parser, Options)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Map as M
@@ -48,7 +48,7 @@ type Libraries = M.Map String Library
 
 data Options = Options
   { log    :: Bool
-  , libdir :: FilePath 
+  , libdir :: FilePath
   } deriving Show
 
 server :: Libraries -> Server API
@@ -56,7 +56,7 @@ server libs =    library libs
             :<|> submit libs
 
 hdr :: Handler a -> Handler (Resp a)
-hdr h = h >>= return . addHeader "*" 
+hdr h = h >>= return . addHeader "*"
 
 library :: Libraries -> String -> Handler (Resp Library)
 library libs = hdr . getLib libs
@@ -83,7 +83,7 @@ main :: IO ()
 main = do
   Options log dir <- execParser parser
   libs            <- loadLibraries dir
-  run 8081 $ if log 
+  run 8081 $ if log
     then logStdoutDev $ app libs
     else app libs
  where
@@ -92,19 +92,19 @@ main = do
       ( fullDesc
      <> progDesc "GRACe is a DSL for expressing concept maps of system dynamics \
                  \models that can be evaluated by a constraint solver."
-     <> header "GRACeServer - a server for evaluating GRACe programs" 
+     <> header "GRACeServer - a server for evaluating GRACe programs"
       )
 
   -- Options parser
-  flags = Options <$> 
+  flags = Options <$>
       switch
       ( long "log"
-     <> help "Turn logging on" 
+     <> help "Turn logging on"
       )
     <*> strOption
       ( long "lib"
      <> short 'l'
-     <> help "File path to library modules." 
+     <> help "File path to library modules."
      <> showDefault
      <> value "libraries"
       )
@@ -125,7 +125,7 @@ loadLibraries dir = do
 -- HTML rep
 instance ToHtml Library where
     toHtml lib = tr_ $ do
-        td_ (toHtml $ libraryId lib) 
+        td_ (toHtml $ libraryId lib)
     toHtmlRaw = toHtml
 
 -- Debug functions

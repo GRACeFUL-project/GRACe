@@ -86,17 +86,17 @@ put cid tv@(x ::: t) m =
     Tag n (Port' p) -> do
       output x (n ++ cid)
       return $ Map.insert (n ++ cid) (x ::: Port' p) m
-    
-    Pair a b -> 
+
+    Pair a b ->
       Map.union <$> put cid (fst x ::: a) m <*> put cid (snd x ::: b) m
 
-    Iso iso (Pair a b) -> 
+    Iso iso (Pair a b) ->
       Map.union <$> put cid (fst (to iso x) ::: a) m
                 <*> put cid (snd (to iso x) ::: b) m
 
     Tag n (List (Port' p)) ->
       return $ Map.insert (n ++ cid) (x ::: List (Port' p)) m
-    
+
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | Document

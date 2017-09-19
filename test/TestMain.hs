@@ -8,7 +8,7 @@ import System.Exit (ExitCode)
 import Test.Tasty (defaultMain, testGroup, TestTree)
 import Test.Tasty.HUnit
 import System.Process
-import System.FilePath (replaceExtension) 
+import System.FilePath (replaceExtension)
 
 import TestOutParser (tests)
 import TestFW.TestGCMCheck (tests)
@@ -40,7 +40,7 @@ testSubmit lib input = testService ("submit/" ++ lib) flags exp
  where
   flags = [ "-H", "Content-Type: application/json"
           ,  "--data", '@' : input ]
-  exp   = replaceExtension input "exp" 
+  exp   = replaceExtension input "exp"
 
 testService :: String -> [String] -> FilePath -> TestTree
 testService endpoint options file = testCase ("Testing: " ++ file) $ do

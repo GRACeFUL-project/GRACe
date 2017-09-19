@@ -1,7 +1,7 @@
 {
     "nodes": [
         {
-            "name": "factor",
+            "name": "node",
             "parameters": [
                 {
                     "name": "obsSign",
@@ -23,7 +23,7 @@
             "identity": 1
         },
         {
-            "name": "factor",
+            "name": "node",
             "parameters": [
                 {
                     "name": "obsSign",
@@ -45,7 +45,7 @@
             "identity": 2
         },
         {
-            "name": "factor",
+            "name": "node",
             "parameters": [
                 {
                     "name": "obsSign",

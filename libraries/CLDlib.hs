@@ -6,7 +6,7 @@ import Library
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "factor" "Factor" "pathToFactorImage" $
+  [ Item "node" "Node" "pathToNodeImage" $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .->
       tGCM (tPair ("influences" # tList (tPort tSign))
                   ("outSign" # tPort tSign))
