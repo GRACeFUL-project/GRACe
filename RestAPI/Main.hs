@@ -114,6 +114,7 @@ loadLibraries :: FilePath -> IO Libraries
 loadLibraries dir = do
   fs   <- listDirectory dir >>= return . filter (\l -> takeExtension l == ".hs")
   libs <- withCurrentDirectory dir $ mapM (runInterpreter . loadLib) fs
+  mapM (\l -> putStrLn $ "Found library: " ++ l) [ libraryId l | Right l <- libs ]
   return $ M.fromList [(libraryId l, l) | Right l <- libs]
  where
   loadLib :: String -> Interpreter Library
