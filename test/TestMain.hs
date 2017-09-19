@@ -8,6 +8,7 @@ import System.Exit (ExitCode)
 import Test.Tasty (defaultMain, testGroup, TestTree)
 import Test.Tasty.HUnit
 import System.Process
+import System.FilePath (replaceExtension) 
 
 import TestOutParser (tests)
 import TestFW.TestGCMCheck (tests)
@@ -29,17 +30,17 @@ main = do
     terminateProcess server
 
 serviceTests = testGroup "Unit tests"
-  [ testService "library/crud" [] "test/test_library.exp"
-  , testService "submit/crud"  [ "-H", "Content-Type: application/json"
-                               ,  "--data", "@submit_crud.json"] "test/test_submit.exp"
-  , testService "submit/cld"   [ "-H", "Content-Type: application/json"
-                               ,  "--data", "@submit_cld.json"] "test/test_submit_cld.exp"
+  [ testService "library/crud" [] "test/library_crud.exp"
+  , testSubmit "crud" "test/submit_crud.json"
+  , testSubmit "cld"  "test/submit_cld.json"
   ]
 
-testSubmit :: String -> String -> FilePath -> TestTree
-testSubmit lib input exp = testService ("submit" ++ lib) flags exp
+testSubmit :: String -> FilePath -> TestTree
+testSubmit lib input = testService ("submit/" ++ lib) flags exp
  where
-  flags = ["-H", "Content-Type: application/json",  "--data", input]
+  flags = [ "-H", "Content-Type: application/json"
+          ,  "--data", '@' : input ]
+  exp   = replaceExtension input "exp" 
 
 testService :: String -> [String] -> FilePath -> TestTree
 testService endpoint options file = testCase ("Testing: " ++ file) $ do
