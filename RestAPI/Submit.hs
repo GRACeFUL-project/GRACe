@@ -83,12 +83,20 @@ put :: Id                      -- ^ Document
     -> GCM (Map Id TypedValue)
 put cid tv@(x ::: t) m =
   case t of
-    Tag n (Port' p) -> return $ Map.insert (n ++ cid) (x ::: Port' p) m
-    Pair a b        -> Map.union <$> put cid (fst x ::: a) m
-                                 <*> put cid (snd x ::: b) m
-    Iso iso (Pair a b) -> Map.union <$> put cid (fst (to iso x) ::: a) m
-                                    <*> put cid (snd (to iso x) ::: b) m
-    Tag n (List (Port' p)) -> return $ Map.insert (n ++ cid) (x ::: List (Port' p)) m
+    Tag n (Port' p) -> do
+      output x (n ++ cid)
+      return $ Map.insert (n ++ cid) (x ::: Port' p) m
+    
+    Pair a b -> 
+      Map.union <$> put cid (fst x ::: a) m <*> put cid (snd x ::: b) m
+
+    Iso iso (Pair a b) -> 
+      Map.union <$> put cid (fst (to iso x) ::: a) m
+                <*> put cid (snd (to iso x) ::: b) m
+
+    Tag n (List (Port' p)) ->
+      return $ Map.insert (n ++ cid) (x ::: List (Port' p)) m
+    
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | Document
@@ -113,10 +121,7 @@ link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> (at offse
     linkTV (x ::: t1@(Port' _)) (y ::: t@(Port' _)) =
       case equal t1 t of
         Nothing -> fail "- unable to link"
-        Just f  -> do
-            output x i
-            output y j
-            link (f x) y
+        Just f  -> link (f x) y
     linkTV (x ::: t1) (y ::: t2) =
       fail ("unable to link " ++ show t1 ++ show t2)
 
