@@ -82,7 +82,9 @@ app libs = serve api (server libs)
 main :: IO ()
 main = do
   Options log dir <- execParser parser
+  putStrLn "Loading libraries..."
   libs            <- loadLibraries dir
+  putStrLn "Done! Starting GRACeServer on port 8081."
   run 8081 $ if log
     then logStdoutDev $ app libs
     else app libs
