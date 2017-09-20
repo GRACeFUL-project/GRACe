@@ -17,3 +17,13 @@ extra-deps:
 - servant-server-0.10
 - parsec3-1.0.1.8
 resolver: lts-8.17
+
+# Build inside Docker container
+docker:
+  enable: true
+
+# Generate Docker images
+image:
+  container:
+    base: 'eugraceful/stack-run'
+    name: 'eugraceful/grace'
