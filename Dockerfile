@@ -8,8 +8,10 @@ RUN curl -sSL https://github.com/MiniZinc/MiniZincIDE/releases/download/2.1.5/Mi
    && mv solns2out mzn2fzn fzn-gecode mzn-gecode minizinc /usr/bin/
 
 ENV MZN_STDLIB_DIR /MiniZinc/share/minizinc
-RUN mkdir /app
-WORKDIR /app
-ADD . /app
+RUN mkdir /grace
+WORKDIR /grace
+ADD . /grace
 RUN stack install --system-ghc
-ENTRYPOINT ["stack", "exec" "--", "GRACeServer"]
+WORKDIR /app
+ENTRYPOINT ["stack", "exec", "--system-ghc", "--allow-different-user", "--", "GRACeServer"]
+
