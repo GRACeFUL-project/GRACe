@@ -12,5 +12,4 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app
 RUN stack install --system-ghc
-ENTRYPOINT ["GRACeServer"]
-
+ENTRYPOINT ["stack", "exec" "--", "GRACeServer"]
