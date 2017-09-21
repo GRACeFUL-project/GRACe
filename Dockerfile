@@ -10,5 +10,7 @@ RUN curl -sSL https://github.com/MiniZinc/MiniZincIDE/releases/download/2.1.5/Mi
 ENV MZN_STDLIB_DIR /MiniZinc/share/minizinc
 RUN mkdir /app
 WORKDIR /app
+ADD . /app
+RUN stack install --system-ghc
 ENTRYPOINT ["GRACeServer"]
 

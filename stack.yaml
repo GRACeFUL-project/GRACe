@@ -19,11 +19,11 @@ extra-deps:
 resolver: lts-8.17
 
 # Build inside Docker container
-docker:
-  enable: true
+#docker:
+#  enable: true
 
 # Generate Docker images
-image:
-  container:
-    base: 'eugraceful/stack-run'
-    name: 'eugraceful/grace'
+#image:
+#  container:
+#    base: 'eugraceful/stack-run'
+#    name: 'eugraceful/grace'
