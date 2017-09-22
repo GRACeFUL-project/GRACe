@@ -7,6 +7,9 @@ RUN curl -sSL https://github.com/MiniZinc/MiniZincIDE/releases/download/2.1.5/Mi
    && cd /MiniZinc \
    && mv solns2out mzn2fzn fzn-gecode mzn-gecode minizinc /usr/bin/
 
+RUN apt-get update \
+   && echo "Y" | apt-get install libqt5printsupport5
+
 ENV MZN_STDLIB_DIR /MiniZinc/share/minizinc
 RUN mkdir /grace
 WORKDIR /grace
