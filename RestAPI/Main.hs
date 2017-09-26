@@ -43,7 +43,9 @@ type API =
   :<|>  "submit"  :> Capture "lib"  String             -- library identifier
                   :> ReqBody '[JSON] Graph             -- Graph representation of a GCM model in JSON format
                   :> Post '[JSON] (Resp Value)         -- the result of the constraint solver in JSON
-
+  :<|> "static" :> Raw
+  
+  
 type Libraries = M.Map String Library
 
 data Options = Options
@@ -54,6 +56,7 @@ data Options = Options
 server :: Libraries -> Server API
 server libs =    library libs
             :<|> submit libs
+            :<|> serveDirectoryFileServer "/webapp"
 
 hdr :: Handler a -> Handler (Resp a)
 hdr h = h >>= return . addHeader "*"
