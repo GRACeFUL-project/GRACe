@@ -37,12 +37,14 @@ import Data.Semigroup ((<>))
 type Resp a = Headers '[Header "Access-Control-Allow-Origin" String] a
 
 type API =
-        "library" :> Capture "name" String             -- identifier of the library
-                  :> Get '[JSON, HTML] (Resp Library)  -- return a library in eiterh JSON or HTML format
+        "library"   :> Capture "name" String             -- identifier of the library
+                    :> Get '[JSON, HTML] (Resp Library)  -- return a library in eiterh JSON or HTML format
 
-  :<|>  "submit"  :> Capture "lib"  String             -- library identifier
-                  :> ReqBody '[JSON] Graph             -- Graph representation of a GCM model in JSON format
-                  :> Post '[JSON] (Resp Value)         -- the result of the constraint solver in JSON
+  :<|>  "libraries" :> Get '[JSON] (Resp [String])       -- return the list of available libraries
+
+  :<|>  "submit"    :> Capture "lib"  String             -- library identifier
+                    :> ReqBody '[JSON] Graph             -- Graph representation of a GCM model in JSON format
+                    :> Post '[JSON] (Resp Value)         -- the result of the constraint solver in JSON
 
 type Libraries = M.Map String Library
 
@@ -53,6 +55,7 @@ data Options = Options
 
 server :: Libraries -> Server API
 server libs =    library libs
+            :<|> libraries libs
             :<|> submit libs
 
 hdr :: Handler a -> Handler (Resp a)
@@ -60,6 +63,9 @@ hdr h = h >>= return . addHeader "*"
 
 library :: Libraries -> String -> Handler (Resp Library)
 library libs = hdr . getLib libs
+
+libraries :: Libraries -> Handler (Resp [String])
+libraries = hdr . return . M.keys
 
 submit :: Libraries -> String -> Graph -> Handler (Resp Value)
 submit libs n graph = hdr $ do
