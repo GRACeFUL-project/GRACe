@@ -4,14 +4,14 @@ import Library
 
 library :: Library
 library = Library "crud"
-    [ Item "rain" "Rain" "./data/img/rain.png" $
+    [ Item "rain" "Rain" "./data/img/rain.png" False $
          rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
 
-    , Item "pump" "Pump" "./data/img/pump.png"  $
+    , Item "pump" "Pump" "./data/img/pump.png" False $
         pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflow" # tPort tFloat)
                                                     ("outflow" # tPort tFloat))
 
-    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" $
+    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" False $
         runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
                                                                      ("outlet" # tPort tFloat)
                                                                      ("overflow" # tPort tFloat))

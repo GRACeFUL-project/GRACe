@@ -6,22 +6,22 @@ import Library
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" "Node" "pathToNodeImage" $
+  [ Item "node" "Node" "pathToNodeImage" False $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .->
       tGCM (tPair ("influences" # tList (tPort tSign))
                   ("outSign" # tPort tSign))
 
-  , Item "relation" "Causal relation" "pathToArrowImage" $
+  , Item "relation" "Causal relation" "pathToArrowImage" True $
       relate ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPort tSign)
                                                 ("toNode"  #  tPort tSign)
                                          )
 
-  , Item "plus arrow" "Positive relation" "pathToParrowImage" $
+  , Item "plus arrow" "Positive relation" "pathToParrowImage" True $
       pArrow ::: tGCM (tPair ("fromNode" # tPort tSign)
                              ("toNode"  #  tPort tSign)
                       )
 
-  , Item "minus arrow" "Negative relation" "pathToMarrowImage" $
+  , Item "minus arrow" "Negative relation" "pathToMarrowImage" True $
       mArrow ::: tGCM (tPair ("fromNode" # tPort tSign)
                              ("toNode"  #  tPort tSign)
                       )

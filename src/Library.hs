@@ -45,22 +45,24 @@ instance ToJSON Library where
         [ "library" .= toJSONList is]
 
 data Item = Item
-    { itemId  :: Id
-    , comment :: String
-    , icon    :: URL
-    , f       :: TypedValue
+    { itemId     :: Id
+    , comment    :: String
+    , icon       :: URL
+    , relational :: Bool
+    , f          :: TypedValue
     } deriving Show
 
 item :: Id -> TypedValue -> Item
-item n = Item n "no comment" ""
+item n = Item n "no comment" "" False
 
 instance ToJSON Item where
-    toJSON (Item n c i (f ::: t)) = object
+    toJSON (Item n c i r (f ::: t)) = object
         [ "name"       .= n
         , "parameters" .= parameters t
         , "interface"  .= ports t
         , "comment"    .= c
         , "icon"       .= i
+        , "relational"    .= toJSON r
         ]
 
 parameters :: Type a -> Value
