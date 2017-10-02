@@ -46,6 +46,8 @@ type API =
                     :> ReqBody '[JSON] Graph             -- Graph representation of a GCM model in JSON format
                     :> Post '[JSON] (Resp Value)         -- the result of the constraint solver in JSON
 
+  :<|>  "static"    :> Raw                               -- set path for raw call (direct call into a specified folder "/webapp")
+
 type Libraries = M.Map String Library
 
 data Options = Options
@@ -57,6 +59,7 @@ server :: Libraries -> Server API
 server libs =    library libs
             :<|> libraries libs
             :<|> submit libs
+            :<|> serveDirectoryFileServer "/webapp" -- tells the static path where to look (location of the editor (index.html and java scripts))
 
 hdr :: Handler a -> Handler (Resp a)
 hdr h = h >>= return . addHeader "*"
