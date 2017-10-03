@@ -117,7 +117,8 @@ mutex a1 a2 = do
         v2 <- value p2
         assert $ nt ((v1 .> 0) .&& (v2 .> 0))
 
--- | @'linkBy' f a b@ documentation goes here.
+-- | @'linkBy' f p1 p2@ creates a connection from port @p1@ to port @p2@
+--          via relation @f@.
 linkBy :: (CPType a, CPType b, IsVar pa, IsVar pb, IsVar pi, IsVar po)
     => GCM (pi a, po b)
     -> pa a
@@ -133,6 +134,7 @@ linkBy f a b = do
     assert $ va === vi
     assert $ vb === vo
 
+-- | @'set' p v@ sets the value of port @p@ to @v@.
 set :: (CPType a) => Port a -> a -> GCM ()
 set p a = component $ do
     v <- value p
@@ -157,6 +159,7 @@ foldGCM i f v = do
 sumGCM :: (CPType a, Num a) => Int -> GCM ([Port a], Port a)
 sumGCM i = foldGCM i (+) 0
 
+-- | @'fun' f@ creates a GCM component for function @f@.
 fun :: (CPType a, CPType b) => (CPExp a -> CPExp b) -> GCM (Port a, Port b)
 fun f = do
   a <- createPort
@@ -174,15 +177,12 @@ fun f = do
 newtype Port a = Port (Variable a) deriving (Show, Functor)
 
 -- | A parameter port is a port with a default value.
--- TODO: Document.
 data Param a = Param a (Port a)
 
--- | A goal.
--- TODO: Document.
+-- | A goal contains a variable we'd like to i.e. maximize or minimize.
 newtype Goal a = Goal (Variable a)
 
--- | Can I get a port ID
--- TODO: Document.
+-- | Instances of IsVar are linkable.
 class IsVar v where
   value  :: Monad m => v a -> m (CPExp a)
 

@@ -75,12 +75,10 @@ applyLibrary :: Library -> (Id -> Id -> GCM TypedValue) -> GCM Library
 applyLibrary (Library n is) f =
   Library n <$> mapM (\x -> applyItem (f (itemId x)) x) is
 
--- | Document.
+-- | @'put' id tv m@ finds the ports or lists of ports in tv and inserts them
+--   into m along with keys made up of id combined with their tags.
 -- TODO Instance for n-tuples with Iso
-put :: Id                      -- ^ Document
-    -> TypedValue              -- ^ Document
-    -> Map Id TypedValue       -- ^ Document
-    -> GCM (Map Id TypedValue)
+put :: Id -> TypedValue -> Map Id TypedValue -> GCM (Map Id TypedValue)
 put cid tv@(x ::: t) m =
   case t of
     Tag n (Port' p) -> do
@@ -99,22 +97,19 @@ put cid tv@(x ::: t) m =
 
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
--- | Document
-putItem :: Map Id TypedValue       -- ^ Document
-        -> Item                    -- ^ Document
-        -> GCM (Map Id TypedValue)
+-- | @'putItem' m i@ puts the `Id` and `TypedValue` from i into m.
+putItem :: Map Id TypedValue -> Item -> GCM (Map Id TypedValue)
 putItem m (Item n _ _ _ (x ::: GCM t)) = do
   x1 <- x
   put n (x1 ::: t) m
 putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
 
 
--- | Document
-link2 :: Map Id TypedValue -- ^ Document
-      -> Id                -- ^ Document
-      -> Id                -- ^ Document
-      -> Maybe Int         -- ^ Offset
-      -> GCM ()
+-- | @'link2' m i j n@ looks up the values with ids @i@ and @j@ in @m@ and
+--   links the port with offset @n@ in one to the port with offset @n@ in the
+--   other (we assume that at most one contains a list of ports).
+--  TODO: What if we have 2 lists and 2 offsets?
+link2 :: Map Id TypedValue -> Id -> Id -> Maybe Int -> GCM ()
 link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> (at offset <$> lookupG j m)
   where
     linkTV :: TypedValue -> TypedValue -> GCM ()
