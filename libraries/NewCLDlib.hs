@@ -11,7 +11,7 @@ library = Library "cld"
                     ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
-  , Item "relation" "Causal relation" "pathToArrowImage" True $
+  , Item "edge" "Causal relation" "pathToArrowImage" True $
       cldArrow ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPair (tPort tSign) (tPort tSign))
                                                   ("toNode"   # tPair (tPort tSign) (tPort tSign))
                                          )

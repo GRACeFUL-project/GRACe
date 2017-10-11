@@ -94,7 +94,7 @@
             "identity": 3
         },
        {
-           "name": "relation",
+           "name": "edge",
            "parameters": [
                {
                    "name": "sign",
@@ -125,7 +125,7 @@
             "identity": 4
        },
         {
-            "name": "relation",
+            "name": "edge",
             "parameters": [
                {
                    "name": "sign",
