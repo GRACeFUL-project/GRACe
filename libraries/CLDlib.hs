@@ -5,7 +5,7 @@ import Library
 
 -- Missing urls to appropriate images
 library :: Library
-library = Library "cld"
+library = Library "oldcld"
   [ Item "node" "Node" "pathToNodeImage" False $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .->
       tGCM (tPair ("influences" # tList (tPort tSign))

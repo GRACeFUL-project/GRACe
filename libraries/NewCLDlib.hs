@@ -3,7 +3,7 @@ import Library
 
 -- Missing urls to appropriate images
 library :: Library
-library = Library "newcld"
+library = Library "cld"
   [ Item "node" "Node" "pathToNodeImage" False $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("value" # tPort tSign)
