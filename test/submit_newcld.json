@@ -1,0 +1,159 @@
+
+{
+    "nodes": [
+        {
+            "name": "node",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": 1,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 0,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 1,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 1
+        },
+        {
+            "name": "node",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": -1,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 0,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 1,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 2
+        },
+        {
+            "name": "node",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": null,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 2,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 0,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {   "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 3
+        },
+       {
+           "name": "relation",
+           "parameters": [
+               {
+                   "name": "sign",
+                   "value": 1,
+                   "type": "Sign"
+               }
+           ],
+           "interface": [
+               {
+                   "connection": [
+                       2,
+                       "outgoing",
+                       0
+                    ],
+                    "name": "fromNode",
+                    "type": "(Sign,Sign)"
+                },
+                {
+                    "connection": [
+                        3,
+                        "incoming",
+                        1
+                    ],
+                    "name": "toNode",
+                    "type": "(Sign,Sign)"
+                }
+            ],
+            "identity": 4
+       },
+        {
+            "name": "relation",
+            "parameters": [
+               {
+                   "name": "sign",
+                   "value": -1,
+                   "type": "Sign"
+               }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        1,
+                        "outgoing",
+                        0
+                    ],
+                    "name": "fromNode",
+                    "type": "(Sign,Sign)"
+                },
+                {
+                    "connection": [
+                        3,
+                        "incoming",
+                        0
+                    ],
+                    "name": "toNode",
+                    "type": "(Sign,Sign)"
+                }
+            ],
+            "identity": 5
+        }
+    ]
+}

@@ -4,41 +4,7 @@ import CP
 import Compile
 import Sign
 
-add :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
-add p x y = do
-  vp <- value p
-  assert $ (x === y) ==> (vp === x)
-  assert $ ((x /== y) .&& (x /== Lit Z) .&& (y /== Lit Z)) ==> (vp === Lit Q)
-  assert $ ((x === Lit Z) .|| (y === Lit Z)) ==> (vp === (x + y))
-
-constructSum :: [Port Sign] -> GCM (Port Sign)
-constructSum [] = do
-  p <- createPort
-  set p 0
-  return p
-constructSum (x:xs) = do
-  hereResult <- createPort
-  restResult <- constructSum xs
-  vx <- value x
-  vr <- value restResult
-  component $ add hereResult vx vr
-  return hereResult
-
-partialSums :: [Port Sign] -> GCM [Port Sign]
-partialSums xs = do
-  let n = length xs
-  res  <- mapM (\_ -> createPort) [1..n]
-  mapM_ (\k -> pSum k xs res) [0..(n-1)]
-  return res
-  where
-    pSum k ys zs = do
-      before <- constructSum (take k ys)
-      after <- constructSum (drop (k + 1) ys)
-      b <- value before
-      a <- value after
-      component $ add (zs !! k) b a
-
-cldArrow :: Sign -> GCM (Port Sign, Port Sign, Port Sign, Port Sign)
+cldArrow :: Sign -> GCM ((Port Sign, Port Sign), (Port Sign, Port Sign))
 cldArrow s = do
   inup <- createPort
   indown <- createPort
@@ -51,25 +17,22 @@ cldArrow s = do
     odo <- value outdown
     assert $ odo === (lit s) * ido -- flow in arrow direction
     assert $ iup === (lit s) * oup  -- flow in opposite direction
-  return (inup,indown,outup,outdown)
+  return ((inup,indown),(outup,outdown))
 
-cldLink :: Sign -> Port Sign -> Port Sign -> Port Sign -> Port Sign -> GCM ()
-cldLink s pou pod qiu qid = do
-  (iu, idn, ou, od) <- cldArrow s
+cldLink :: Sign -> (Port Sign, Port Sign) -> (Port Sign, Port Sign) -> GCM ()
+cldLink s (pou, pod) (qiu, qid) = do
+  ((iu, idn), (ou, od)) <- cldArrow s
   link pou iu
   link pod idn
   link qiu ou
   link qid od
 
--- TODO clarify what is what
 cldNode :: Maybe Sign  -- Observed sign
         -> Int         -- No. of incoming arrows
         -> Int         -- No. of outgoing arrows
         -> GCM ( Port Sign  -- Sign of node
-               ,[Port Sign] -- Flows up incoming arrows
-               ,[Port Sign] -- Flows down incoming arrows
-               ,[Port Sign] -- Flows up outgoing arrows
-               ,[Port Sign] -- Flows down outgoing arrows
+               ,[(Port Sign, Port Sign)] -- Flows up and down incoming arrows
+               ,[(Port Sign, Port Sign)] -- Flows up and down outgoing arrows
                )
 cldNode obsSign n m = do
   valPort <- createPort
@@ -110,18 +73,56 @@ cldNode obsSign n m = do
              if m > 1 then mapM_ (\(x,y) -> assert $ x === y) (zip ods pous)
              else return ()
           else return ()
-  return (valPort, inUps, inDowns, outUps, outDowns)
+  return (valPort, zip inUps inDowns, zip outUps outDowns)
+
+
+-- Helper functions to construct CLDs
+----------------------------------------
+
+add :: Port Sign -> CPExp Sign -> CPExp Sign -> CP ()
+add p x y = do
+  vp <- value p
+  assert $ (x === y) ==> (vp === x)
+  assert $ ((x /== y) .&& (x /== Lit Z) .&& (y /== Lit Z)) ==> (vp === Lit Q)
+  assert $ ((x === Lit Z) .|| (y === Lit Z)) ==> (vp === (x + y))
+
+constructSum :: [Port Sign] -> GCM (Port Sign)
+constructSum [] = do
+  p <- createPort
+  set p 0
+  return p
+constructSum (x:xs) = do
+  hereResult <- createPort
+  restResult <- constructSum xs
+  vx <- value x
+  vr <- value restResult
+  component $ add hereResult vx vr
+  return hereResult
+
+partialSums :: [Port Sign] -> GCM [Port Sign]
+partialSums xs = do
+  let n = length xs
+  res  <- mapM (\_ -> createPort) [1..n]
+  mapM_ (\k -> pSum k xs res) [0..(n-1)]
+  return res
+  where
+    pSum k ys zs = do
+      before <- constructSum (take k ys)
+      after <- constructSum (drop (k + 1) ys)
+      b <- value before
+      a <- value after
+      component $ add (zs !! k) b a
 
 tinyExample :: GCM ()
 tinyExample = do
-  (a, [], [], [acu], [acd]) <- cldNode (Just P) 0 1
+  (a, [], [ac]) <- cldNode (Just P) 0 1
 
-  (b, [], [], [bcu], [bcd]) <- cldNode (Just M) 0 1
+  (b, [], [bc]) <- cldNode (Just M) 0 1
 
-  (c, [cau,cbu], [cad, cbd], [], []) <- cldNode Nothing 2 0
+  (c, [ca,cb], []) <- cldNode Nothing 2 0
 
-  cldLink M acu acd cau cad
-  cldLink P bcu bcd cbu cbd
+  cldLink M ac ca
+  cldLink P bc cb
 
   output a "a"
   output b "b"
@@ -129,62 +130,63 @@ tinyExample = do
 
 tinyExample2 :: GCM ()
 tinyExample2 = do
-  (a, [], [], [acu], [acd]) <- cldNode Nothing 0 1
-  (b, [], [], [bcu, bdu],[bcd, bdd]) <- cldNode Nothing 0 2
+  (a, [], [ac]) <- cldNode Nothing 0 1
+  (b, [], [bc, bd]) <- cldNode Nothing 0 2
 
-  (c,[cau, cbu], [cad, cbd], [], []) <- cldNode (Just P) 2 0
-  (d, [dbu], [dbd], [], []) <- cldNode (Just P) 1 0
-  cldLink P acu acd cau cad
-  cldLink M bcu bcd cbu cbd
-  cldLink M bdu bdd dbu dbd
+  (c,[ca,cb], []) <- cldNode (Just P) 2 0
+  (d, [db], []) <- cldNode (Just P) 1 0
+  cldLink P ac ca
+  cldLink M bc cb
+  cldLink M bd db
   output a "a"
   output b "b"
   output c "c"
   output d "d"
+
 -- Loops
 positiveLoop :: GCM ()
 positiveLoop = do
-  (a, [abu], [abd], [ab2u], [ab2d]) <- cldNode (Just M) 1 1
-  (b, [ba2u], [ba2d], [bau], [bad]) <- cldNode Nothing 1 1
-  cldLink P abu abd bau bad
-  cldLink P ba2u ba2d ab2u ab2d
+  (a, [ab], [ab2]) <- cldNode (Just M) 1 1
+  (b, [ba2], [ba]) <- cldNode Nothing 1 1
+  cldLink P ab ba
+  cldLink P ba2 ab2
   output a "a"
   output b "b"
 
 posNegLoop :: GCM ()
 posNegLoop = do
-  (a, [abu], [abd], [ab2u], [ab2d]) <- cldNode (Just M) 1 1
-  (b, [ba2u], [ba2d], [bau], [bad]) <- cldNode Nothing 1 1
-  cldLink M abu abd bau bad
-  cldLink M ba2u ba2d ab2u ab2d
+  (a, [ab], [ab2]) <- cldNode (Just M) 1 1
+  (b, [ba2], [ba]) <- cldNode Nothing 1 1
+  cldLink M ab ba
+  cldLink M ba2 ab2
   output a "a"
   output b "b"
 
 -- | Negative feedback loop. The solver returns ambig for b.
 negativeLoop :: GCM ()
 negativeLoop = do
-  (a, [abu], [abd], [ab2u], [ab2d]) <- cldNode (Just M) 1 1
-  (b, [ba2u], [ba2d], [bau], [bad]) <- cldNode Nothing 1 1
-  cldLink P abu abd bau bad
-  cldLink M ba2u ba2d ab2u ab2d
+  (a, [ab], [ab2]) <- cldNode (Just M) 1 1
+  (b, [ba2], [ba]) <- cldNode Nothing 1 1
+  cldLink P ab ba
+  cldLink M ba2 ab2
   output a "a"
   output b "b"
 
 -- | Example CLD from Druzdel & Henrion 1993
 drudzelHenrion :: GCM ()
 drudzelHenrion = do
-  (a, [abu], [abd], [], []) <- cldNode (Just P) 1 0
-  (b, [], [], [bau,bcu,bdu], [bad, bcd, bdd]) <- cldNode Nothing 0 3
-  (c, [cbu], [cbd], [cdu], [cdd]) <- cldNode Nothing 1 1
-  (d, [dbu, dcu], [dbd, dcd], [deu], [ded]) <- cldNode Nothing 2 1
-  (e, [edu,efu], [edd, efd], [], [] ) <- cldNode Nothing 2 0
-  (f, [], [], [feu], [fed]) <- cldNode Nothing 0 1
-  cldLink P bau bad abu abd
-  cldLink P bcu bcd cbu cbd
-  cldLink P bdu bdd dbu dbd
-  cldLink P cdu cdd dcu dcd
-  cldLink M deu ded edu edd
-  cldLink M feu fed efu efd
+  (a, [ab], []) <- cldNode (Just P) 1 0
+  (b, [], [ba,bc,bd]) <- cldNode Nothing 0 3
+  (c, [cb], [cd]) <- cldNode Nothing 1 1
+  (d, [db,dc], [de]) <- cldNode Nothing 2 1
+  (e, [ed,ef], [] ) <- cldNode Nothing 2 0
+  (f, [], [fe]) <- cldNode Nothing 0 1
+  cldLink P ba ab
+  cldLink P bc cb
+  cldLink P bd db
+  cldLink P cd dc
+  cldLink M de ed
+  cldLink M fe ef
 
   output a "a"
   output b "b"
@@ -196,29 +198,29 @@ drudzelHenrion = do
 -- | Example CLD from p.51, Figure 3.6, of Van Kouwen’s Ph.D. thesis, The Quasta Approach
 vanKouwen1 :: GCM ()
 vanKouwen1 = do
-  (a,[], [], [abu], [abd]) <- cldNode Nothing 0 1
-  (b, [bau,beu,bcu],[bad, bed, bcd], [bgu,bdu], [bgd, bdd]) <- cldNode Nothing 3 2
-  (c, [], [], [cbu,cdu],[cbd,cdd]) <- cldNode Nothing 0 2
-  (d, [dcu, dbu], [dcd, dbd], [], []) <- cldNode Nothing 2 0
-  (e, [], [], [ebu, efu], [ebd, efd]) <- cldNode Nothing 0 2
-  (f, [feu], [fed], [fgu], [fgd]) <- cldNode Nothing 1 1
-  (g, [gfu, gbu], [gfd, gbd], [], []) <- cldNode (Just P) 2 0
+  (a,[], [ab]) <- cldNode Nothing 0 1
+  (b, [ba,be,bc], [bg, bd]) <- cldNode Nothing 3 2
+  (c, [], [cb,cd]) <- cldNode Nothing 0 2
+  (d, [dc, db], []) <- cldNode Nothing 2 0
+  (e, [], [eb, ef]) <- cldNode Nothing 0 2
+  (f, [fe], [fg]) <- cldNode Nothing 1 1
+  (g, [gf, gb], []) <- cldNode (Just P) 2 0
   --a -+> b2
-  cldLink P abu abd bau bad
+  cldLink P ab ba
   --e -+> b1
-  cldLink P ebu ebd beu bed
+  cldLink P eb be
   --e -+> f1
-  cldLink P efu efd feu fed
+  cldLink P ef fe
   --f -+> g1
-  cldLink P fgu fgd gfu gfd
+  cldLink P fg gf
   --b -+> g2
-  cldLink P bgu bgd gbu gbd
+  cldLink P bg gb
   --c --> b3
-  cldLink M cbu cbd bcu bcd
+  cldLink M cb bc
   --c -+> d2
-  cldLink P cdu cdd dcu dcd
+  cldLink P cd dc
   --b -+> d1
-  cldLink P bdu bdd dbu dbd
+  cldLink P bd db
 
   output a "a"
   output b "b"
@@ -231,30 +233,30 @@ vanKouwen1 = do
 -- | Example CLD from p.52, Figure 3.8, of Van Kouwen’s Ph.D. thesis, The Quasta Approach
 vanKouwen2 :: GCM ()
 vanKouwen2 = do
-  (a, [], [], [abu], [abd]) <- cldNode Nothing 0 1
-  (b, [bau, beu, bcu], [bad, bed, bcd], [bgu, bdu], [bgd, bdd]) <- cldNode Nothing 3 2
-  (c, [], [], [cbu, cdu], [cbd, cdd]) <- cldNode Nothing 0 2
-  (d, [dbu,dcu],[dbd, dcd], [], []) <- cldNode (Just P) 2 0
-  (e, [],[], [ebu, efu], [ebd, efd]) <- cldNode Nothing 0 2
-  (f, [feu], [fed], [fgu], [fgd]) <- cldNode Nothing 1 1
-  (g, [gbu,gfu],[gbd, gfd], [], []) <- cldNode Nothing 2 0
+  (a, [], [ab]) <- cldNode Nothing 0 1
+  (b, [ba, be, bc], [bg, bd]) <- cldNode Nothing 3 2
+  (c, [], [cb, cd]) <- cldNode Nothing 0 2
+  (d, [db,dc], []) <- cldNode (Just P) 2 0
+  (e, [], [eb, ef]) <- cldNode Nothing 0 2
+  (f, [fe], [fg]) <- cldNode Nothing 1 1
+  (g, [gb,gf], []) <- cldNode Nothing 2 0
 
   --e -+> f1
-  cldLink P efu efd feu fed
+  cldLink P ef fe
   --f -+> g1
-  cldLink P fgu fgd gfu gfd
+  cldLink P fg gf
   --e -+> b1
-  cldLink P ebu ebd beu bed
+  cldLink P eb be
   --a -+> b2
-  cldLink P abu abd bau bad
+  cldLink P ab ba
   --b -+> g2
-  cldLink P bgu bgd gbu gbd
+  cldLink P bg gb
   --c --> b3
-  cldLink M cbu cbd bcu bcd
+  cldLink M cb bc
   --b -+> d1
-  cldLink P bdu bdd dbu dbd
+  cldLink P bd db
   --c -+> d2
-  cldLink P cdu cdd dcu dcd
+  cldLink P cd dc
 
   output a "a"
   output b "b"
@@ -267,25 +269,25 @@ vanKouwen2 = do
 -- | Example CLD from p.68, Figure 4.5, of Van Kouwen’s Ph.D. thesis, The Quasta Approach
 vanKouwen3 :: GCM ()
 vanKouwen3 = do
-  (a, [], [], [abu], [abd]) <- cldNode Nothing 0 1      -- Sea level rise
-  (b, [bau,bdu], [bad,bdd], [bcu], [bcd]) <- cldNode Nothing 2 1 -- Risk of flooding
-  (c, [cbu], [cbd], [cdu], [cdd]) <- cldNode Nothing 1 1     -- Flooding
-  (d, [dcu, dfu], [dcd, dfd], [dbu, deu], [dbd,ded]) <- cldNode Nothing 2 2 -- Measures to prevent flooding
-  (e, [edu],[edd],[], []) <- cldNode (Just P) 1 0   -- Ecology in coastal zone
-  (f, [], [], [fdu], [fdd]) <- cldNode Nothing 0 1     -- Investments
+  (a, [], [ab]) <- cldNode Nothing 0 1      -- Sea level rise
+  (b, [ba,bd], [bc]) <- cldNode Nothing 2 1 -- Risk of flooding
+  (c, [cb], [cd]) <- cldNode Nothing 1 1     -- Flooding
+  (d, [dc,df], [db,de]) <- cldNode Nothing 2 2 -- Measures to prevent flooding
+  (e, [ed], []) <- cldNode (Just P) 1 0   -- Ecology in coastal zone
+  (f, [], [fd]) <- cldNode Nothing 0 1     -- Investments
 
   --a -+> b1
-  cldLink P abu abd bau bad
+  cldLink P ab ba
   --b -+> c1
-  cldLink P bcu bcd cbu cbd
+  cldLink P bc cb
   --c -+> d1
-  cldLink P cdu cdd dcu dcd
+  cldLink P cd dc
   --d --> b2
-  cldLink M dbu dbd bdu bdd
+  cldLink M db bd
   --d --> e1
-  cldLink M deu ded edu edd
+  cldLink M de ed
   --f -+> d2
-  cldLink P fdu fdd dfu dfd
+  cldLink P fd df
 
   output a "a"
   output b "b"
@@ -297,45 +299,45 @@ vanKouwen3 = do
 -- | Example CLD from p.71, Figure 4.8, of Van Kouwen’s Ph.D. thesis, The Quasta Approach.
 vanKouwen4 :: GCM ()
 vanKouwen4 = do
-  (a, [abu,acu], [abd,acd], [afu], [afd]) <- cldNode (Just M) 2 1 --Turbidity
-  (b, [bgu,biu], [bgd,bid], [bau], [bad]) <- cldNode Nothing 2 1 -- Resuspended sedimentation
-  (c, [ceu], [ced], [cau], [cad]) <- cldNode Nothing 1 1 -- Algae
-  (d,[], [], [dfu], [dfd]) <- cldNode Nothing 0 1 -- Water depth
-  (e,[ehu,efu,eku], [ehd,efd,ekd], [ecu], [ecd]) <- cldNode Nothing 3 1 -- Nutrients
-  (f,[fau,fdu], [fad,fdd], [feu,fgu,fhu,fku], [fed,fgd,fhd,fkd]) <- cldNode Nothing 2 4 -- Vegetation
-  (g,[gfu], [gfd], [gbu], [gbd]) <- cldNode Nothing 1 1 -- Waves
-  (h,[hfu], [hfd], [heu], [hed]) <- cldNode Nothing 1 1 -- Allelopathic subs.
-  (i,[], [], [ibu,iku], [ibd,ikd]) <- cldNode Nothing 0 2 -- Fish
-  (k,[kfu,kiu], [kfd,kid], [keu], [ked]) <- cldNode Nothing 2 1 -- Zooplankton
+  (a, [ab,ac], [af]) <- cldNode (Just M) 2 1 --Turbidity
+  (b, [bg,bi], [ba]) <- cldNode Nothing 2 1 -- Resuspended sedimentation
+  (c, [ce], [ca]) <- cldNode Nothing 1 1 -- Algae
+  (d, [], [df]) <- cldNode Nothing 0 1 -- Water depth
+  (e, [eh,ef,ek], [ec]) <- cldNode Nothing 3 1 -- Nutrients
+  (f, [fa,fd], [fe,fg,fh,fk]) <- cldNode Nothing 2 4 -- Vegetation
+  (g, [gf], [gb]) <- cldNode Nothing 1 1 -- Waves
+  (h, [hf], [he]) <- cldNode Nothing 1 1 -- Allelopathic subs.
+  (i, [], [ib,ik]) <- cldNode Nothing 0 2 -- Fish
+  (k, [kf,ki], [ke]) <- cldNode Nothing 2 1 -- Zooplankton
 
   --b -+> a1
-  cldLink P bau bad abu abd
+  cldLink P ba ab
   --c -+> a2
-  cldLink P cau cad acu acd
+  cldLink P ca ac
   --g -+> b1
-  cldLink P gbu gbd bgu bgd
+  cldLink P gb bg
   --i -+> b2
-  cldLink P ibu ibd biu bid
+  cldLink P ib bi
   --e -+> c1
-  cldLink P ecu ecd ceu ced
+  cldLink P ec ce
   --h --> e1
-  cldLink M heu hed ehu ehd
+  cldLink M he eh
   --f --> e2
-  cldLink M feu fed efu efd
+  cldLink M fe ef
   --k --> e3
-  cldLink M keu ked eku ekd
+  cldLink M ke ek
   --a --> f1
-  cldLink M afu afd fau fad
+  cldLink M af fa
   --d --> f2
-  cldLink M dfu dfd fdu fdd
+  cldLink M df fd
   --f --> g1
-  cldLink M fgu fgd gfu gfd
+  cldLink M fg gf
   --f -+> h1
-  cldLink P fhu fhd hfu hfd
+  cldLink P fh hf
   --f -+> k1
-  cldLink P fku fkd kfu kfd
+  cldLink P fk kf
   --i --> k2
-  cldLink M iku ikd kiu kid
+  cldLink M ik ki
 
   output a "a"
   output b "b"
@@ -348,30 +350,11 @@ vanKouwen4 = do
   output i "i"
   output k "k"
 
-tinyExample3 :: GCM ()
-tinyExample3 = do
-  (a, [], [], [acu], [acd]) <- cldNode (Just P) 0 1
-
-  (b, [], [], [bcu], [bcd]) <- cldNode Nothing 0 1
-
-  (c, [cau,cbu], [cad, cbd], [], []) <- cldNode Nothing 2 0
-
-  cldLink M acu acd cau cad
-  cldLink M bcu bcd cbu cbd
-
-  output a "a"
-  output b "b"
-  output c "c"
-
 main :: IO ()
 main = do
-  --runCompare tinierExample
-  --compileString tinyExample
   putStrLn "tinyExample"
   runCompare tinyExample
   putStrLn "Drudzel Henrion"
-  --compileString drudzelHenrion
-  --compileMZ drudzelHenrion
   runCompare drudzelHenrion
   putStrLn "vk1"
   runCompare vanKouwen1
@@ -382,9 +365,6 @@ main = do
   putStrLn "vk4"
   runCompare vanKouwen4
   {-
-  putStrLn "tinyExample3"
-  --compileString tinyExample3
-  runCompare tinyExample3
   putStrLn "tinyExample2"
   runCompare tinyExample2
   putStrLn "posLoop"

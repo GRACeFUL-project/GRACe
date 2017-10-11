@@ -78,6 +78,7 @@ applyLibrary (Library n is) f =
 -- | @'put' id tv m@ finds the ports or lists of ports in tv and inserts them
 --   into m along with keys made up of id combined with their tags.
 -- TODO Instance for n-tuples with Iso
+-- TODO: update documentation
 put :: Id -> TypedValue -> Map Id TypedValue -> GCM (Map Id TypedValue)
 put cid tv@(x ::: t) m =
   case t of
@@ -95,6 +96,12 @@ put cid tv@(x ::: t) m =
     Tag n (List (Port' p)) ->
       return $ Map.insert (n ++ cid) (x ::: List (Port' p)) m
 
+    Tag n (List (Pair (Port' p) (Port' q))) ->
+      return $ Map.insert (n ++ cid) (x ::: List (Pair (Port' p) (Port' q))) m
+
+    Tag n (Pair (Port' p) (Port' q)) ->
+      return $ Map.insert (n ++ cid) (x ::: Pair (Port' p) (Port' q)) m
+
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | @'putItem' m i@ puts the `Id` and `TypedValue` from i into m.
@@ -108,7 +115,6 @@ putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
 -- | @'link2' m i j n@ looks up the values with ids @i@ and @j@ in @m@ and
 --   links the port with offset @n@ in one to the port with offset @n@ in the
 --   other (we assume that at most one contains a list of ports).
---  TODO: What if we have 2 lists and 2 offsets?
 link2 :: Map Id TypedValue -> Id -> Id -> Maybe Int -> GCM ()
 link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> (at offset <$> lookupG j m)
   where
@@ -117,15 +123,21 @@ link2 m i j offset = join $ linkTV <$> (at offset <$> lookupG i m) <*> (at offse
       case equal t1 t of
         Nothing -> fail "- unable to link"
         Just f  -> link (f x) y
-    linkTV (x ::: t1) (y ::: t2) =
+    linkTV (x ::: (Pair t11 t12)) (y ::: (Pair t21 t22)) = do
+      case (x,y) of
+        ((x1,x2),(y1,y2)) -> do
+          linkTV (x1 ::: t11) (y1 ::: t21)
+          linkTV (x2 ::: t12) (y2 ::: t22)
+        --_ -> fail ("unable to link " ++ show t1 ++ show t2 ++ show offset)
+    linkTV (_ ::: t1) (_ ::: t2) =
       fail ("unable to link " ++ show t1 ++ show t2)
 
-    -- If an offset is given, and the type is a list of ports, then index into
+    -- If an offset is given, and the type is a list, then index into
     -- the list using the offset
     at :: Maybe Int -> TypedValue -> TypedValue
-    at offset tv = case offset of
+    at offs tv = case offs of
       Just n -> case tv of
-        (xs ::: List p@(Port' _)) -> (xs !! n) ::: p
+        (xs ::: List p) -> (xs !! n) ::: p
         _ -> tv
       _ -> tv
 

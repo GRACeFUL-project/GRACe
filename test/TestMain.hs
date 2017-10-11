@@ -34,6 +34,7 @@ serviceTests = testGroup "Unit tests"
   , testService "libraries" [] "test/libraries.exp"
   , testSubmit "crud" "test/submit_crud.json"
   , testSubmit "cld"  "test/submit_cld.json"
+  , testSubmit "newcld" "test/submit_newcld.json"
   ]
 
 testSubmit :: String -> FilePath -> TestTree
