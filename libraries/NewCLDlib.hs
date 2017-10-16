@@ -15,6 +15,19 @@ library = Library "cld"
       cldArrow ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPair (tPort tSign) (tPort tSign))
                                                   ("toNode"   # tPair (tPort tSign) (tPort tSign))
                                          )
+
+  , Item "attachFunction" "Attach a function to a port" "/dev/null" False $
+      attachFunction ::: "mapping" # tList (tPair tSign tInt) .-> tGCM (tPair ("atPort" # tPort tSign)
+                                                                              ("funValue" # tPort tInt)
+                                                                       )
+
+  , Item "budget" "Set a maximum budget" "/dev/null" False $
+      budget ::: "numberOfPorts" # tInt .->
+                 "maximumBudget" # tInt .->
+                 tGCM (tList (tPort tInt))
+  , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
+      optimise ::: "numberOfPorts" # tInt .->
+                   tGCM (tList (tPort tInt))
   ]
 
 cldArrow :: Sign -> GCM ((Port Sign, Port Sign), (Port Sign, Port Sign))
