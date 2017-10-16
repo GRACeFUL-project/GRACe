@@ -25,6 +25,7 @@ library = Library "cld"
       budget ::: "numberOfPorts" # tInt .->
                  "maximumBudget" # tInt .->
                  tGCM (tList (tPort tInt))
+
   , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
       optimise ::: "numberOfPorts" # tInt .->
                    tGCM (tList (tPort tInt))
@@ -139,6 +140,15 @@ partialSums xs = do
       a <- value after
       component $ add (zs !! k) b a
 
+-- Useful functions for constructing examples
+port :: (Port a, b, c) -> Port a
+port (p, _, _) = p
+
+inc :: Int -> (a, [(Port Sign, Port Sign)], b) -> (Port Sign, Port Sign)
+inc i (_, ps, _) = ps !! i
+
+out :: Int -> (a, [(Port Sign, Port Sign)], b) -> (Port Sign, Port Sign)
+out i (_, ps, _) = ps !! i
 
 -- CLD actions, budget, and optimisation
 
@@ -171,3 +181,36 @@ optimise num = do
   g <- createGoal
   link tot g
   return ports
+
+-- Some examples
+simpleExample :: GCM ()
+simpleExample = do
+  let bud = 10
+
+  bioswale     <- cldNode Nothing 0 2
+  waterStorage <- cldNode Nothing 2 1
+  pumps        <- cldNode Nothing 0 1
+  flooding     <- cldNode Nothing 1 1
+  greenSpace   <- cldNode Nothing 1 0
+  nuisance     <- cldNode Nothing 1 0 
+
+  (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
+  (pumpsInput,      pumpCost) <- attachFunction [ (Z, 0), (P, 5)  ]
+  (greenSpaceInput, greenSpaceBenefit) <- attachFunction [ (M, -5), (Z, 0), (P, 5) ]
+  (nuisanceInput,   nuisanceBenefit)    <- attachFunction [ (M, 5), (Z, 0), (P, -5) ]
+
+  bugetPorts <- budget 2 bud 
+  optimisePorts <- optimise 2
+
+  zipWithM link budgetPorts [bioCost, pumpCost]
+
+  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
+
+  zipWithM link [bioInput, pumpsInput, greenSpaceInput, nuisanceInput]
+                [port poswale, port pumps, port greenSpace, port nuisance]
+
+  linkCLD (inc 0 waterStorage) (out 0 bioswale)
+  linkCLD (inc 0 greenSpace)   (out 1 bioswale)
+  linkCLD (inc 0 flooding)     (out 0 waterStorage)
+  linkCLD (inc 1 waterStorage) (out 0 pumps)
+  linkCLD (inc 0 nuisance)     (out 0 flooding)
