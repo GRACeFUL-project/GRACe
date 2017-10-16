@@ -25,6 +25,7 @@ library = Library "cld"
       budget ::: "numberOfPorts" # tInt .->
                  "maximumBudget" # tInt .->
                  tGCM (tList (tPort tInt))
+
   , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
       optimise ::: "numberOfPorts" # tInt .->
                    tGCM (tList (tPort tInt))
