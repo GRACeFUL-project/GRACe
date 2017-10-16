@@ -350,8 +350,34 @@ vanKouwen4 = do
   output i "i"
   output k "k"
 
+vancouver :: GCM ()
+vancouver = do
+  (fish, [], [fp,fs,fph]) <- cldNode Nothing 0 3
+  (sediment, [sf,sp], []) <- cldNode Nothing 2 0
+  (plankton, [pf,pph,po], [ps]) <- cldNode Nothing 3 1
+  (phosphorous, [phi,pho,phf], [php]) <- cldNode (Just P) 3 1
+  (inflow, [], [iph]) <- cldNode Nothing 0 1
+  (outflow, [], [op,oph]) <- cldNode Nothing 0 2
+  cldLink M fp pf
+  cldLink P fs sf
+  cldLink Q ps sp
+  cldLink P php pph
+  cldLink M op po
+  cldLink P iph phi
+  cldLink M oph pho
+  cldLink P fph phf
+  output fish "fish"
+  output plankton "plankton"
+  output sediment "sediment"
+  output phosphorous "phosphorous"
+  output outflow "outflow"
+  output inflow "inflow"
+
 main :: IO ()
 main = do
+  putStrLn "vancouver"
+  runCompare vancouver
+  {-
   putStrLn "tinyExample"
   runCompare tinyExample
   putStrLn "Drudzel Henrion"
@@ -364,6 +390,7 @@ main = do
   runCompare vanKouwen3
   putStrLn "vk4"
   runCompare vanKouwen4
+-}
   {-
   putStrLn "tinyExample2"
   runCompare tinyExample2
