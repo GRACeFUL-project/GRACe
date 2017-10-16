@@ -126,3 +126,35 @@ partialSums xs = do
       a <- value after
       component $ add (zs !! k) b a
 
+
+-- CLD actions, budget, and optimisation
+
+attachFunction :: [(Sign, Int)] -> GCM (Port Sign, Port Int)
+attachFunction sd = do
+  s <- createPort
+  d <- createPort
+  component $ do
+    vs <- value s
+    vd <- value d
+    assert $ foldl (.||) (Lit False) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
+  return (s, d)
+
+budget :: Int -> Int -> GCM [Port Int]
+budget num cost = do
+  ports <- mapM (const createPort) [1..num]
+  component $ do
+    vs <- mapM value ports
+    assert $ sum vs .<= Lit cost
+  return ports
+
+optimise :: Int -> GCM [Port Int]
+optimise num = do
+  ports <- mapM (const createPort) [1..num]
+  tot   <- createPort 
+  component $ do
+    t <- value tot
+    p <- mapM value ports
+    assert $ t === sum p
+  g <- createGoal
+  link tot g
+  return ports
