@@ -1,6 +1,8 @@
 module NewCLDlib (library) where
 import Library
 
+import Control.Monad
+
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
@@ -199,7 +201,7 @@ simpleExample = do
   (greenSpaceInput, greenSpaceBenefit) <- attachFunction [ (M, -5), (Z, 0), (P, 5) ]
   (nuisanceInput,   nuisanceBenefit)    <- attachFunction [ (M, 5), (Z, 0), (P, -5) ]
 
-  bugetPorts <- budget 2 bud 
+  budgetPorts <- budget 2 bud 
   optimisePorts <- optimise 2
 
   zipWithM link budgetPorts [bioCost, pumpCost]
@@ -207,10 +209,11 @@ simpleExample = do
   zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
 
   zipWithM link [bioInput, pumpsInput, greenSpaceInput, nuisanceInput]
-                [port poswale, port pumps, port greenSpace, port nuisance]
+                [port bioswale, port pumps, port greenSpace, port nuisance]
 
-  linkCLD (inc 0 waterStorage) (out 0 bioswale)
-  linkCLD (inc 0 greenSpace)   (out 1 bioswale)
-  linkCLD (inc 0 flooding)     (out 0 waterStorage)
-  linkCLD (inc 1 waterStorage) (out 0 pumps)
-  linkCLD (inc 0 nuisance)     (out 0 flooding)
+  cldLink P (out 0 bioswale)     (inc 0 waterStorage)
+  cldLink P (out 1 bioswale)     (inc 0 greenSpace)
+  cldLink M (out 0 waterStorage) (inc 0 flooding)
+  cldLink P (out 0 pumps)        (inc 1 waterStorage)
+  cldLink P (out 0 flooding)     (inc 0 nuisance)
+  return ()
