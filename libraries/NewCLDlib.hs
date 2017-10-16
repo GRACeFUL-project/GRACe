@@ -1,6 +1,6 @@
 module NewCLDlib (library) where
 import Library
-
+import Compile
 import Control.Monad
 
 -- Missing urls to appropriate images
@@ -149,8 +149,8 @@ port (p, _, _) = p
 inc :: Int -> (a, [(Port Sign, Port Sign)], b) -> (Port Sign, Port Sign)
 inc i (_, ps, _) = ps !! i
 
-out :: Int -> (a, [(Port Sign, Port Sign)], b) -> (Port Sign, Port Sign)
-out i (_, ps, _) = ps !! i
+out :: Int -> (a, b, [(Port Sign, Port Sign)]) -> (Port Sign, Port Sign)
+out i (_, _, ps) = ps !! i
 
 -- CLD actions, budget, and optimisation
 
@@ -161,7 +161,7 @@ attachFunction sd = do
   component $ do
     vs <- value s
     vd <- value d
-    assert $ foldl (.||) (Lit False) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
+    assert $ foldl (.||) ((1 :: CPExp Int) === 0) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
   return (s, d)
 
 budget :: Int -> Int -> GCM [Port Int]
@@ -175,7 +175,7 @@ budget num cost = do
 optimise :: Int -> GCM [Port Int]
 optimise num = do
   ports <- mapM (const createPort) [1..num]
-  tot   <- createPort 
+  tot   <- createPort
   component $ do
     t <- value tot
     p <- mapM value ports
@@ -194,14 +194,15 @@ simpleExample = do
   pumps        <- cldNode Nothing 0 1
   flooding     <- cldNode Nothing 1 1
   greenSpace   <- cldNode Nothing 1 0
-  nuisance     <- cldNode Nothing 1 0 
+  nuisance     <- cldNode Nothing 1 0
 
+  -- value-cost pairs for actions
   (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
   (pumpsInput,      pumpCost) <- attachFunction [ (Z, 0), (P, 5)  ]
   (greenSpaceInput, greenSpaceBenefit) <- attachFunction [ (M, -5), (Z, 0), (P, 5) ]
   (nuisanceInput,   nuisanceBenefit)    <- attachFunction [ (M, 5), (Z, 0), (P, -5) ]
 
-  budgetPorts <- budget 2 bud 
+  budgetPorts <- budget 2 bud
   optimisePorts <- optimise 2
 
   zipWithM link budgetPorts [bioCost, pumpCost]
@@ -216,4 +217,22 @@ simpleExample = do
   cldLink M (out 0 waterStorage) (inc 0 flooding)
   cldLink P (out 0 pumps)        (inc 1 waterStorage)
   cldLink P (out 0 flooding)     (inc 0 nuisance)
+
+  output bioInput "bioswale action"
+  output (port bioswale) "bioswale value"
+  output bioCost "bioswale cost"
+  output pumpsInput "pump action"
+  output (port pumps) "pump value"
+  output pumpCost "pump cost"
+  output (port waterStorage) "water storage"
+  output (port flooding) "flooding"
+  output (port greenSpace) "greenSpace value"
+  output greenSpaceInput "greenspace input"
+  output greenSpaceBenefit "greenspace benefit"
+  output (port nuisance) "nuisance value"
+  output nuisanceInput "nuisance input"
+  output nuisanceBenefit "nuisance benefit"
   return ()
+
+--main :: IO ()
+--main = runCompare simpleExample
