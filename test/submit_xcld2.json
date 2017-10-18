@@ -1,0 +1,421 @@
+{
+    "nodes": [
+        {
+            "name": "acnode",
+            "parameters": [
+                    {
+                        "name": "numIn",
+                        "value": 0,
+                        "type": "Int"
+                    },
+                    {
+                        "name": "numOut",
+                        "value": 2,
+                        "type": "Int"
+                    }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 0
+        },
+        {
+            "name": "acnode",
+            "parameters": [
+                    {
+                        "name": "numIn",
+                        "value": 1,
+                        "type": "Int"
+                    },
+                    {
+                        "name": "numOut",
+                        "value": 0,
+                        "type": "Int"
+                    }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 1
+        },
+        {
+            "name": "acnode",
+            "parameters": [
+                    {
+                        "name": "numIn",
+                        "value": 1,
+                        "type": "Int"
+                    },
+                    {
+                        "name": "numOut",
+                        "value": 0,
+                        "type": "Int"
+                    }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 2
+        },
+        {
+            "name": "node",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": null,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 1,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 1,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {   "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 3
+        },
+        {
+            "name": "node",
+            "parameters": [
+                {
+                    "name": "obsSign",
+                    "value": null,
+                    "type": "Maybe Sign"
+                },
+                {
+                    "name": "numIn",
+                    "value": 1,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 1,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {   "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 4
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": 1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        0,
+                        "outgoing",
+                        0
+                        ],
+                        "name": "fromNode",
+                        "type": "(Sign,Sign)"
+                    },
+                    {
+                        "connection": [
+                            1,
+                            "incoming",
+                            0
+                        ],
+                        "name": "toNode",
+                        "type": "(Sign,Sign)"
+                    }
+                ],
+                "identity": 5
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": 1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        0,
+                        "outgoing",
+                        1
+                        ],
+                        "name": "fromNode",
+                        "type": "(Sign,Sign)"
+                    },
+                    {
+                        "connection": [
+                            3,
+                            "incoming",
+                            0
+                        ],
+                        "name": "toNode",
+                        "type": "(Sign,Sign)"
+                    }
+                ],
+                "identity": 6
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": -1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        3,
+                        "outgoing",
+                        0
+                        ],
+                        "name": "fromNode",
+                        "type": "(Sign,Sign)"
+                    },
+                    {
+                        "connection": [
+                            4,
+                            "incoming",
+                            0
+                        ],
+                        "name": "toNode",
+                        "type": "(Sign,Sign)"
+                    }
+                ],
+                "identity": 7
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": 1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        4,
+                        "outgoing",
+                        0
+                        ],
+                        "name": "fromNode",
+                        "type": "(Sign,Sign)"
+                    },
+                    {
+                        "connection": [
+                            2,
+                            "incoming",
+                            0
+                        ],
+                        "name": "toNode",
+                        "type": "(Sign,Sign)"
+                    }
+                ],
+                "identity": 8
+        },
+        {
+            "name": "attach",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [0,1],
+                    "type": "[Sign]"
+                },
+                {
+                    "name": "costs",
+                    "value": [0,10],
+                    "type": "[Int]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        0,
+                        "value",
+                        null
+                    ],
+                    "name": "atPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        12,
+                        "costs",
+                        0
+                    ],
+                    "name": "cost",
+                    "type": "Int"
+                }
+            ],
+            "identity": 9
+        },
+        {
+            "name": "evaluate",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [1,0],
+                    "type": "[Sign]"
+                },
+                {
+                    "name": "weights",
+                    "value": [1,0],
+                    "type": "[Int]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        1,
+                        "value",
+                        null
+                    ],
+                    "name": "atPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        13,
+                        "benefits",
+                        0
+                    ],
+                    "name": "benefit",
+                    "type": "Int"
+                }
+            ],
+            "identity": 10
+        },
+        {
+            "name": "evaluate",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [-1,-1],
+                    "type": "[Sign]"
+                },
+                {
+                    "name": "weights",
+                    "value": [1,2],
+                    "type": "[Int]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        2,
+                        "value",
+                        null
+                    ],
+                    "name": "atPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        13,
+                        "benefits",
+                        1
+                    ],
+                    "name": "benefit",
+                    "type": "Int"
+                }
+            ],
+            "identity": 11
+        },
+        {
+            "name": "budget",
+            "parameters": [
+                {
+                    "name": "numberOfPorts",
+                    "value": 1,
+                    "type": "Int"
+                },
+                {
+                    "name": "maximumBudget",
+                    "value": 2,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "costs",
+                    "type": "[Int]"
+                }
+            ],
+            "identity": 12
+        },
+        {
+            "name": "optimise",
+            "parameters": [
+                {
+                    "name": "numberOfPorts",
+                    "value": 2,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "benefits",
+                    "type": "[Int]"
+                }
+            ],
+            "identity": 13
+        }
+    ]
+}
