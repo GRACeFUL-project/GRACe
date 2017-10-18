@@ -6,7 +6,7 @@ import Control.Monad
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" "Node" "pathToNodeImage" False $
+  [ Item "node" "Generic node" "pathToNodeImage" False $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("value" # tPort tSign)
                     ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
@@ -18,10 +18,11 @@ library = Library "cld"
                                                   ("toNode"   # tPair (tPort tSign) (tPort tSign))
                                          )
 
-  , Item "attachFunction" "Attach a function to a port" "/dev/null" False $
-      attachFunction ::: "mapping" # tList (tPair tSign tInt) .-> tGCM (tPair ("atPort" # tPort tSign)
-                                                                              ("funValue" # tPort tInt)
-                                                                       )
+  , Item "attach" "Attach value/cost pairs to an action" "/dev/null" False $
+      attachFunction ::: "valuesAndCosts" # tList (tPair tSign tInt) .->
+      tGCM (tPair ("atPort" # tPort tSign)
+                  ("cost" # tPort tInt)
+           )
 
   , Item "budget" "Set a maximum budget" "/dev/null" False $
       budget ::: "numberOfPorts" # tInt .->
@@ -31,6 +32,18 @@ library = Library "cld"
   , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
       optimise ::: "numberOfPorts" # tInt .->
                    tGCM (tList (tPort tInt))
+
+  , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" False $
+      evalBenefits ::: "valuesAndWeights" # tList (tPair tSign tInt) .->
+      tGCM (tPair ("atPort" # tPort tSign)
+                  ("benefit" # tPort tInt)
+           )
+  , Item "acnode" "Node for actions and criteria" "/dev/null" False $
+      funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
+      tGCM (tTuple3 ("value" # tPort tSign)
+                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+           )
   ]
 
 cldArrow :: Sign -> GCM ((Port Sign, Port Sign), (Port Sign, Port Sign))
@@ -48,14 +61,7 @@ cldArrow s = do
     assert $ iup === (lit s) * oup  -- flow in opposite direction
   return ((inup,indown),(outup,outdown))
 
-cldLink :: Sign -> (Port Sign, Port Sign) -> (Port Sign, Port Sign) -> GCM ()
-cldLink s (pou, pod) (qiu, qid) = do
-  ((iu, idn), (ou, od)) <- cldArrow s
-  link pou iu
-  link pod idn
-  link qiu ou
-  link qid od
-
+-- | General CLD node
 cldNode :: Maybe Sign  -- Observed sign
         -> Int         -- No. of incoming arrows
         -> Int         -- No. of outgoing arrows
@@ -104,6 +110,29 @@ cldNode obsSign n m = do
           else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns)
 
+-- | A simplified node whose value can be directly affected by attaching a function
+funNode :: Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)])
+funNode n m = do
+  valPort <- createPort
+  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
+  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
+  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
+  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
+  inDown <- constructSum inDowns
+  outUp <-  constructSum outUps
+  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
+  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
+  component $ do
+    v <- value valPort
+    if n > 0 then do
+      iD <- value inDown
+      assert $ iD === v
+      else
+      if m > 0 then do
+        oU <- value outUp
+        assert $ (oU === v .|| v === lit Z)
+        else return ()
+  return (valPort, zip inUps inDowns, zip outUps outDowns)
 
 -- Helper functions to construct CLDs
 ----------------------------------------
@@ -143,6 +172,14 @@ partialSums xs = do
       component $ add (zs !! k) b a
 
 -- Useful functions for constructing examples
+cldLink :: Sign -> (Port Sign, Port Sign) -> (Port Sign, Port Sign) -> GCM ()
+cldLink s (pou, pod) (qiu, qid) = do
+  ((iu, idn), (ou, od)) <- cldArrow s
+  link pou iu
+  link pod idn
+  link qiu ou
+  link qid od
+
 port :: (Port a, b, c) -> Port a
 port (p, _, _) = p
 
@@ -153,7 +190,6 @@ out :: Int -> (a, b, [(Port Sign, Port Sign)]) -> (Port Sign, Port Sign)
 out i (_, _, ps) = ps !! i
 
 -- CLD actions, budget, and optimisation
-
 attachFunction :: [(Sign, Int)] -> GCM (Port Sign, Port Int)
 attachFunction sd = do
   s <- createPort
@@ -161,7 +197,7 @@ attachFunction sd = do
   component $ do
     vs <- value s
     vd <- value d
-    assert $ foldl (.||) ((1 :: CPExp Int) === 0) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
+    assert $ foldl1 (.||) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
   return (s, d)
 
 budget :: Int -> Int -> GCM [Port Int]
@@ -184,33 +220,47 @@ optimise num = do
   link tot g
   return ports
 
+-- Takes a list of desired values and their weights and returns
+-- the weighted sum of benefit for each possible value
+stakeHolders :: [(Sign, Int)] -> [(Sign, Int)]
+stakeHolders xs = map (\a -> (a, sH xs a)) [M,Z,P,Q] where
+  sH ps s = foldl (+) 0 (map (ev s) ps)
+  ev s (d,w) = if d == s then w else 0
+
+evalBenefits :: [(Sign, Int)] -> GCM (Port Sign, Port Int)
+evalBenefits = attachFunction . stakeHolders
+
 -- Some examples
 simpleExample :: GCM ()
 simpleExample = do
-  let bud = 10
-
-  bioswale     <- cldNode Nothing 0 2
-  waterStorage <- cldNode Nothing 2 1
-  pumps        <- cldNode Nothing 0 1
-  flooding     <- cldNode Nothing 1 1
-  greenSpace   <- cldNode Nothing 1 0
-  nuisance     <- cldNode Nothing 1 0
+  let bud = 11
 
   -- value-cost pairs for actions
   (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
   (pumpsInput,      pumpCost) <- attachFunction [ (Z, 0), (P, 5)  ]
-  (greenSpaceInput, greenSpaceBenefit) <- attachFunction [ (M, -5), (Z, 0), (P, 5) ]
-  (nuisanceInput,   nuisanceBenefit)    <- attachFunction [ (M, 5), (Z, 0), (P, -5) ]
+
+  -- value-benefit pairs for goals
+  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [ (M, -5), (Z, 0), (P, 7) ]
+  (nuisanceInput,   nuisanceBenefit)    <- evalBenefits [ (M, 5), (Z, 0), (P, -5) ]
+
+  bioswale     <- funNode 0 2
+
+  waterStorage <- cldNode Nothing 2 1
+  pumps        <- funNode 0 1
+  flooding     <- cldNode Nothing 1 1
+  greenSpace   <- funNode 1 0
+  nuisance     <- funNode 1 0
 
   budgetPorts <- budget 2 bud
   optimisePorts <- optimise 2
+
+  zipWithM link [bioInput, pumpsInput, greenSpaceInput, nuisanceInput]
+                [port bioswale, port pumps, port greenSpace, port nuisance]
 
   zipWithM link budgetPorts [bioCost, pumpCost]
 
   zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
 
-  zipWithM link [bioInput, pumpsInput, greenSpaceInput, nuisanceInput]
-                [port bioswale, port pumps, port greenSpace, port nuisance]
 
   cldLink P (out 0 bioswale)     (inc 0 waterStorage)
   cldLink P (out 1 bioswale)     (inc 0 greenSpace)
@@ -232,7 +282,70 @@ simpleExample = do
   output (port nuisance) "nuisance value"
   output nuisanceInput "nuisance input"
   output nuisanceBenefit "nuisance benefit"
-  return ()
+  output (head budgetPorts) "budget"
+  output (head $ tail budgetPorts) "budget"
+  output (head optimisePorts) "opt1"
+  output (head $ tail optimisePorts) "opt2"
 
---main :: IO ()
---main = runCompare simpleExample
+-- Example with stakeholders and different criteria
+-- we can play around with changing the budget, costs, and preferences/priorities
+-- and see how the results change
+stakesExample :: GCM ()
+stakesExample = do
+  let bud = 20
+
+  -- Nodes
+  bioswale <- funNode 0 2
+  fparking <- funNode 0 2
+
+  waterStorage <- cldNode Nothing 2 1
+  flooding     <- cldNode Nothing 1 1
+
+  greenSpace   <- funNode 1 0
+  nuisance     <- funNode 1 0
+  pcap         <- funNode 1 0
+
+  -- value-cost pairs for actions
+  (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
+  (parkingInput, parkingCost) <- attachFunction [ (Z, 0), (P, 15) ]
+
+  -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
+  let s1 = [(P,2), (M,1), (Z,0)]
+  -- stakeholder 2 wants less nuisance and more parking
+  let s2 = [(Z,0), (M,2), (P,1)]
+
+  -- value-benefit pairs for goals
+  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [s1 !! 0, s2 !! 0]
+  (nuisanceInput,     nuisanceBenefit) <- evalBenefits [s1 !! 1, s2 !! 1]
+  (pcapInput,            pcapBenefit)  <- evalBenefits [s1 !! 2, s2 !! 2]
+
+  budgetPorts <- budget 2 bud
+  optimisePorts <- optimise 3
+
+  zipWithM link [bioInput, parkingInput, greenSpaceInput, nuisanceInput, pcapInput]
+                [port bioswale, port fparking, port greenSpace, port nuisance, port pcap]
+
+  zipWithM link budgetPorts [bioCost, parkingCost]
+
+  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit, pcapBenefit]
+
+  cldLink P (out 0 bioswale)     (inc 0 waterStorage)
+  cldLink P (out 1 bioswale)     (inc 0 greenSpace)
+  cldLink P (out 0 fparking)     (inc 1 waterStorage)
+  cldLink P (out 1 fparking)     (inc 0 pcap)
+  cldLink M (out 0 waterStorage) (inc 0 flooding)
+  cldLink P (out 0 flooding)     (inc 0 nuisance)
+
+  output bioInput "bioswale action"
+  output parkingInput "parking action"
+  output (port greenSpace) "greenSpace value"
+  output greenSpaceBenefit "greenspace benefit"
+  output (port nuisance) "nuisance value"
+  output nuisanceBenefit "nuisance benefit"
+  output (port pcap) "pcap value"
+  output pcapBenefit "pcap benefit"
+
+main :: IO ()
+main = do
+  runCompare stakesExample
+  --compileString simpleExample
