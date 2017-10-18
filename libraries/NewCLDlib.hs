@@ -19,22 +19,21 @@ library = Library "cld"
                                          )
 
   , Item "attach" "Attach value/cost pairs to an action" "/dev/null" False $
-      attachFunction ::: "valuesAndCosts" # tList (tPair tSign tInt) .->
+      attachFunction ::: "values" # tList tSign .-> "costs" # tList tInt .->
       tGCM (tPair ("atPort" # tPort tSign)
                   ("cost" # tPort tInt)
            )
 
   , Item "budget" "Set a maximum budget" "/dev/null" False $
-      budget ::: "numberOfPorts" # tInt .->
-                 "maximumBudget" # tInt .->
-                 tGCM (tList (tPort tInt))
+      budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
+                 tGCM ("costs" # tList (tPort tInt))
 
   , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
       optimise ::: "numberOfPorts" # tInt .->
-                   tGCM (tList (tPort tInt))
+                   tGCM ("benefits" # tList (tPort tInt))
 
   , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" False $
-      evalBenefits ::: "valuesAndWeights" # tList (tPair tSign tInt) .->
+      evalBenefits ::: "values" # tList tSign .-> "weights" # tList tInt .->
       tGCM (tPair ("atPort" # tPort tSign)
                   ("benefit" # tPort tInt)
            )
@@ -190,8 +189,9 @@ out :: Int -> (a, b, [(Port Sign, Port Sign)]) -> (Port Sign, Port Sign)
 out i (_, _, ps) = ps !! i
 
 -- CLD actions, budget, and optimisation
-attachFunction :: [(Sign, Int)] -> GCM (Port Sign, Port Int)
-attachFunction sd = do
+attachFunction :: [Sign] -> [Int] -> GCM (Port Sign, Port Int)
+attachFunction xs ys = do
+  sd <- return $ zip xs ys
   s <- createPort
   d <- createPort
   component $ do
@@ -222,26 +222,26 @@ optimise num = do
 
 -- Takes a list of desired values and their weights and returns
 -- the weighted sum of benefit for each possible value
-stakeHolders :: [(Sign, Int)] -> [(Sign, Int)]
-stakeHolders xs = map (\a -> (a, sH xs a)) [M,Z,P,Q] where
-  sH ps s = foldl (+) 0 (map (ev s) ps)
+stakeHolders :: [Sign] -> [Int] -> ([Sign], [Int])
+stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q] )where
+  sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
   ev s (d,w) = if d == s then w else 0
 
-evalBenefits :: [(Sign, Int)] -> GCM (Port Sign, Port Int)
-evalBenefits = attachFunction . stakeHolders
+evalBenefits :: [Sign] -> [Int] -> GCM (Port Sign, Port Int)
+evalBenefits x y = uncurry attachFunction $ stakeHolders x y
 
 -- Some examples
 simpleExample :: GCM ()
 simpleExample = do
-  let bud = 11
+  let bud = 20
 
   -- value-cost pairs for actions
-  (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
-  (pumpsInput,      pumpCost) <- attachFunction [ (Z, 0), (P, 5)  ]
+  (bioInput,        bioCost)  <- attachFunction [Z, P] [0,10]
+  (pumpsInput,      pumpCost) <- attachFunction [Z, P] [0,5]
 
   -- value-benefit pairs for goals
-  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [ (M, -5), (Z, 0), (P, 7) ]
-  (nuisanceInput,   nuisanceBenefit)    <- evalBenefits [ (M, 5), (Z, 0), (P, -5) ]
+  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [M,Z,P] [-5,0,7]
+  (nuisanceInput,   nuisanceBenefit)    <- evalBenefits [M,Z,P] [5,0,-5]
 
   bioswale     <- funNode 0 2
 
@@ -306,18 +306,18 @@ stakesExample = do
   pcap         <- funNode 1 0
 
   -- value-cost pairs for actions
-  (bioInput,        bioCost)  <- attachFunction [ (Z, 0), (P, 10) ]
-  (parkingInput, parkingCost) <- attachFunction [ (Z, 0), (P, 15) ]
+  (bioInput,        bioCost)  <- attachFunction [Z,P] [0,10]
+  (parkingInput, parkingCost) <- attachFunction [Z,P] [0,15]
 
   -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
-  let s1 = [(P,2), (M,1), (Z,0)]
+  let s1 = ([P,M,Z], [2,1,0])
   -- stakeholder 2 wants less nuisance and more parking
-  let s2 = [(Z,0), (M,2), (P,1)]
+  let s2 = ([Z,M,P],[0,2,1])
 
   -- value-benefit pairs for goals
-  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [s1 !! 0, s2 !! 0]
-  (nuisanceInput,     nuisanceBenefit) <- evalBenefits [s1 !! 1, s2 !! 1]
-  (pcapInput,            pcapBenefit)  <- evalBenefits [s1 !! 2, s2 !! 2]
+  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [(fst s1) !! 0, (fst s2) !! 0] [(snd s1) !! 0, (snd s2) !! 0]
+  (nuisanceInput,     nuisanceBenefit) <- evalBenefits [(fst s1) !! 1, (fst s2) !! 1] [(snd s1) !! 1, (snd s2) !! 1]
+  (pcapInput,            pcapBenefit)  <- evalBenefits [(fst s1) !! 2, (fst s2) !! 2] [(snd s1) !! 2, (snd s2) !! 2]
 
   budgetPorts <- budget 2 bud
   optimisePorts <- optimise 3
@@ -345,7 +345,54 @@ stakesExample = do
   output (port pcap) "pcap value"
   output pcapBenefit "pcap benefit"
 
+-- Tiny example to translate to json
+tinyExample :: GCM ()
+tinyExample = do
+  let bud = 20
+
+  -- Nodes
+  bioswale <- funNode 0 2
+
+  waterStorage <- cldNode Nothing 1 1
+  flooding     <- cldNode Nothing 1 1
+
+  greenSpace   <- funNode 1 0
+  nuisance     <- funNode 1 0
+
+  -- value-cost pairs for actions
+  (bioInput,        bioCost)  <- attachFunction [Z,P] [0,10]
+
+  -- stakeholder 1 wants more green spaces and less nuisance
+  let s1 = ([P,M], [1,1])
+  -- stakeholder 2 wants less nuisance
+  let s2 = ([Z,M], [0,2])
+
+  -- value-benefit pairs for goals
+  (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [(fst s1) !! 0, (fst s2) !! 0] [(snd s1) !! 0, (snd s2) !! 0]
+  (nuisanceInput,     nuisanceBenefit) <- evalBenefits [(fst s1) !! 1, (fst s2) !! 1] [(snd s1) !! 1, (snd s2) !! 1]
+
+  budgetPorts <- budget 1 bud
+  optimisePorts <- optimise 2
+
+  zipWithM link [bioInput, greenSpaceInput, nuisanceInput]
+                [port bioswale, port greenSpace, port nuisance]
+
+  zipWithM link budgetPorts [bioCost]
+
+  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
+
+  cldLink P (out 0 bioswale)     (inc 0 waterStorage)
+  cldLink P (out 1 bioswale)     (inc 0 greenSpace)
+  cldLink M (out 0 waterStorage) (inc 0 flooding)
+  cldLink P (out 0 flooding)     (inc 0 nuisance)
+
+  output bioInput "bioswale action"
+  output bioCost "bioswale cost"
+  output (port greenSpace) "greenSpace value"
+  output greenSpaceBenefit "greenspace benefit"
+  output (port nuisance) "nuisance value"
+  output nuisanceBenefit "nuisance benefit"
 main :: IO ()
 main = do
-  runCompare stakesExample
+  runCompare tinyExample
   --compileString simpleExample

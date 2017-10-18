@@ -14,6 +14,7 @@ import Data.Maybe
 import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as FingBS
 import qualified Data.Text as T
+import qualified Data.Vector as V
 
 -- | An adjacency list representation of graphs
 data Graph = Graph { nodes :: [Node] }
@@ -40,14 +41,14 @@ instance FromJSON Node where
 
 data Parameter = Parameter { parameterName  :: String
                            , parameterType  :: String
-                           , parameterValue :: Maybe PrimTypeValue
+                           , parameterValue :: Maybe ExtPrimTypeValue
                            }
   deriving (Generic, Show, Eq)
 
 fixParameter :: Parameter -> Parameter
 fixParameter p@(Parameter n t1 (Just t2)) =
   case (t1, t2) of
-    ("Float", IntV x) -> Parameter n t1 (Just (FloatV (fromIntegral x)))
+    ("Float", ExV (IntV x)) -> Parameter n t1 (Just $ ExV (FloatV (fromIntegral x)))
     _ -> p
 fixParameter param = param
 
@@ -61,22 +62,23 @@ instance FromJSON Parameter where
   parseJSON  = genericParseJSON  parameterOptions
 
 -- | The primitive types in `GRACe`
-{-
-data PrimType = FloatT | IntT | StringT | BoolT
-  deriving (Generic, Show, Eq)
-
-primTypeOptions :: Options
-primTypeOptions = defaultOptions { constructorTagModifier = init }
-
-instance ToJSON PrimType where
-  toJSON = genericToJSON primTypeOptions
-
-instance FromJSON PrimType where
-  parseJSON  = genericParseJSON  primTypeOptions
--}
 data PrimTypeValue = FloatV Float | IntV Int | StringV String | BoolV Bool
                    | NullV
   deriving (Generic, Show, Eq)
+
+data ExtPrimTypeValue = ExV PrimTypeValue | ListV [ExtPrimTypeValue]
+  deriving (Generic, Show, Eq, ToJSON)
+
+instance FromJSON ExtPrimTypeValue where
+  parseJSON (String s) = return $ ExV $ StringV (T.unpack s)
+  parseJSON (Bool b)   = return $ ExV $ BoolV b
+  parseJSON (Number s) = return $ ExV $ either FloatV IntV $ floatingOrInteger s
+  parseJSON (Null)     = return $ ExV $ NullV
+  parseJSON (Array xs) = do
+    ps <- mapM parseJSON (V.toList xs)
+    return $ ListV $ ps
+
+  parseJSON _          = fail "Does not comform to interface"
 
 -- | PrimTypeValue are represented in JSON as just String/Bool/Number
 instance ToJSON PrimTypeValue where
@@ -114,7 +116,7 @@ example = Graph
   [ Node
      (Just 1)
      "pump"
-     [ Parameter "capacity" "Float" (Just (FloatV 5))
+     [ Parameter "capacity" "Float" (Just $ ExV (FloatV 5))
      ]
      [ Interface "inflow"  "Float"  (Just (3, "outlet", Nothing))
      , Interface "outflow" "Float"  Nothing
@@ -122,14 +124,14 @@ example = Graph
   , Node
      (Just 2)
      "rain"
-     [ Parameter "amount"   "Float" (Just (FloatV 10))
+     [ Parameter "amount"   "Float" (Just $ ExV (FloatV 10))
      ]
      [ Interface "rainfall" "Float" (Just (3, "inflow", Nothing))
      ]
   , Node
      (Just 3)
      "runoffArea"
-     [ Parameter "capacity" "Float" (Just (FloatV 5))
+     [ Parameter "capacity" "Float" (Just $ ExV (FloatV 5))
      ]
      [ Interface "inflow"   "Float" Nothing
      , Interface "outlet"   "Float" Nothing

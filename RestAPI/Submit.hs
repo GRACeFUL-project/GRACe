@@ -148,19 +148,26 @@ lookat m k1 k2 =
 
 -- | Generate a `TypedValue` from an identifier tag, a type annotation,
 --   and a `PrimTypeValue`.
-fromPrimType :: String -> String -> PrimTypeValue -> TypedValue
+fromPrimType :: String -> String -> ExtPrimTypeValue -> TypedValue
 fromPrimType name typ ptv =
   case (typ, ptv) of
-    ("Float", FloatV f)  -> f ::: name # tFloat
-    ("Int", IntV i)    -> i ::: name # tInt
-    ("Sign", IntV i)    -> (fromInteger (toInteger i)) ::: name # tSign
-    ("Maybe Sign", v)    -> case v of
-      IntV i -> Just (fromInteger (toInteger i)) ::: name # tMaybe tSign
-      NullV  -> Nothing ::: name # tMaybe tSign
-      _      -> error "CRASH!"
-    ("String", StringV s) -> s ::: name # tString
-    ("Bool", BoolV b)   -> b ::: name # tBool
-    (_,_) -> error "Types don't match"
+    (t, ExV x) -> case (t,x) of
+      ("Float", FloatV f)  -> f ::: name # tFloat
+      ("Int", IntV i)    -> i ::: name # tInt
+      ("Sign", IntV i)    -> (fromInteger (toInteger i)) ::: name # tSign
+      ("Maybe Sign", v)    -> case v of
+        IntV i -> Just (fromInteger (toInteger i)) ::: name # tMaybe tSign
+        NullV  -> Nothing ::: name # tMaybe tSign
+        _      -> error "CRASH!"
+      ("String", StringV s) -> s ::: name # tString
+      ("Bool", BoolV b)   -> b ::: name # tBool
+      (_,_) -> error "Types don't match"
+    ("[Sign]", ListV xs) -> (map fixInt xs) ::: name # tList tSign
+    ("[Int]", ListV xs) -> (map fixInt xs) ::: name # tList tInt
+    (_,_)               -> error "Types don't match"
+    where fixInt a = case a of
+            ExV (IntV i) -> fromInteger (toInteger i)
+            _            -> error "Mismatched types"
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
@@ -179,7 +186,7 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
     fromParam Parameter {..} =
       case parameterValue of
         Nothing  -> case parameterType of
-          "Maybe Sign" -> return (parameterName, fromPrimType parameterName parameterType NullV)
+          "Maybe Sign" -> return (parameterName, fromPrimType parameterName parameterType (ExV NullV))
           _            -> fail ("failure in paramTVs.fromParam " ++ parameterName)
         Just ptv -> return (parameterName, fromPrimType parameterName parameterType ptv)
 
