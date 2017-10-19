@@ -1,8 +1,18 @@
 {
     "nodes": [
         {
-            "name": "acnode",
+            "name": "action",
             "parameters": [
+                    {
+                        "name": "values",
+                        "value": [0,1],
+                        "type": "[Sign]"
+                    },
+                    {
+                        "name": "costs",
+                        "value": [0,10],
+                        "type": "[Int]"
+                    },
                     {
                         "name": "numIn",
                         "value": 0,
@@ -22,13 +32,27 @@
                 {
                     "name": "outgoing",
                     "type": "[(Sign,Sign)]"
+                },
+                {
+                    "connection": [
+                        11,
+                        "costs",
+                        0
+                    ],
+                    "name": "cost",
+                    "type": "Int"
                 }
             ],
             "identity": 0
         },
         {
-            "name": "acnode",
+            "name": "criterion",
             "parameters": [
+                    {
+                        "name": "obsSign",
+                        "value": null,
+                        "type": "Maybe Sign"
+                    },
                     {
                         "name": "numIn",
                         "value": 1,
@@ -53,8 +77,13 @@
             "identity": 1
         },
         {
-            "name": "acnode",
+            "name": "criterion",
             "parameters": [
+                    {
+                        "name": "obsSign",
+                        "value": null,
+                        "type": "Maybe Sign"
+                    },
                     {
                         "name": "numIn",
                         "value": 1,
@@ -271,42 +300,6 @@
                 "identity": 8
         },
         {
-            "name": "attach",
-            "parameters": [
-                {
-                    "name": "values",
-                    "value": [0,1],
-                    "type": "[Sign]"
-                },
-                {
-                    "name": "costs",
-                    "value": [0,10],
-                    "type": "[Int]"
-                }
-            ],
-            "interface": [
-                {
-                    "connection": [
-                        0,
-                        "value",
-                        null
-                    ],
-                    "name": "atPort",
-                    "type": "Sign"
-                },
-                {
-                    "connection": [
-                        12,
-                        "costs",
-                        0
-                    ],
-                    "name": "cost",
-                    "type": "Int"
-                }
-            ],
-            "identity": 9
-        },
-        {
             "name": "evaluate",
             "parameters": [
                 {
@@ -332,7 +325,7 @@
                 },
                 {
                     "connection": [
-                        13,
+                        12,
                         "benefits",
                         0
                     ],
@@ -340,7 +333,7 @@
                     "type": "Int"
                 }
             ],
-            "identity": 10
+            "identity": 9
         },
         {
             "name": "evaluate",
@@ -368,7 +361,7 @@
                 },
                 {
                     "connection": [
-                        13,
+                        12,
                         "benefits",
                         1
                     ],
@@ -376,7 +369,7 @@
                     "type": "Int"
                 }
             ],
-            "identity": 11
+            "identity": 10
         },
         {
             "name": "budget",
@@ -398,7 +391,7 @@
                     "type": "[Int]"
                 }
             ],
-            "identity": 12
+            "identity": 11
         },
         {
             "name": "optimise",
@@ -415,7 +408,7 @@
                     "type": "[Int]"
                 }
             ],
-            "identity": 13
+            "identity": 12
         }
     ]
 }
