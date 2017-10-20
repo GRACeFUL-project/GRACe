@@ -24,12 +24,12 @@ library = Library "cld"
 
   , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
       optimise ::: "numberOfPorts" # tInt .->
-                   tGCM ("benefits" # tList (tPort tInt))
+                   tGCM ("benefits" # tList (tPort tFloat))
 
   , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" False $
-      evalBenefits ::: "values" # tList tSign .-> "weights" # tList tInt .->
+      evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
       tGCM (tPair ("atPort" # tPort tSign)
-                  ("benefit" # tPort tInt)
+                  ("benefit" # tPort tFloat)
            )
 
   , Item "action" "Node for action" "/dev/null" False $
@@ -161,33 +161,6 @@ actionNode xs ys n m = do
         else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns, costPort)
 
--- | A node that can have an observed sign but also be affected by an attached function
-critNode :: Maybe Sign -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)])
-critNode obsSign n m = do
-  valPort <- createPort
-  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
-  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
-  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
-  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
-  inDown <- constructSum inDowns
-  outUp <-  constructSum outUps
-  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
-  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
-  case obsSign of
-    Just s -> set valPort s
-    Nothing -> return ()
-  component $ do
-    v <- value valPort
-    if n > 0 then do
-      iD <- value inDown
-      assert $ iD === v
-      else
-      if m > 0 then do
-        oU <- value outUp
-        assert $ (oU === v .|| v === lit Z)
-        else return ()
-  return (valPort, zip inUps inDowns, zip outUps outDowns)
-
 -- Helper functions to construct CLDs
 ----------------------------------------
 
@@ -226,7 +199,7 @@ partialSums xs = do
       component $ add (zs !! k) b a
 
 -- CLD actions, budget, and optimisation
-attachFunction :: [Sign] -> [Int] -> GCM (Port Sign, Port Int)
+attachFunction :: (CPType a) => [Sign] -> [a] -> GCM (Port Sign, Port a)
 attachFunction xs ys = do
   sd <- return $ zip xs ys
   s <- createPort
@@ -245,7 +218,7 @@ budget num cost = do
     assert $ sum vs .<= Lit cost
   return ports
 
-optimise :: Int -> GCM [Port Int]
+optimise :: Int -> GCM [Port Float]
 optimise num = do
   ports <- mapM (const createPort) [1..num]
   tot   <- createPort
@@ -259,12 +232,12 @@ optimise num = do
 
 -- Takes a list of desired values and their weights and returns
 -- the weighted sum of benefit for each possible value
-stakeHolders :: [Sign] -> [Int] -> ([Sign], [Int])
+stakeHolders :: [Sign] -> [Float] -> ([Sign], [Float])
 stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q] )where
   sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
   ev s (d,w) = if d == s then w else 0
 
-evalBenefits :: [Sign] -> [Int] -> GCM (Port Sign, Port Int)
+evalBenefits :: [Sign] -> [Float] -> GCM (Port Sign, Port Float)
 evalBenefits x y = uncurry attachFunction $ stakeHolders x y
 
 -- Useful functions for constructing examples
@@ -362,18 +335,18 @@ stakesExample = do
   waterStorage <- cldNode Nothing 2 1
   flooding     <- cldNode Nothing 1 1
 
-  greenSpace   <- critNode Nothing 1 0
-  nuisance     <- critNode Nothing 1 0
-  pcap         <- critNode Nothing 1 0
+  greenSpace   <- funNode 1 0
+  nuisance     <- funNode 1 0
+  pcap         <- funNode 1 0
 
   -- value-cost pairs for actions
   --(bioInput,        bioCost)  <- attachFunction [Z,P] [0,10]
   --(parkingInput, parkingCost) <- attachFunction [Z,P] [0,15]
 
   -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
-  let s1 = ([P,M,Z], [2,1,0])
+  let s1 = ([P,M,Z], [0.67,0.33,0])
   -- stakeholder 2 wants less nuisance and more parking
-  let s2 = ([Z,M,P],[0,2,1])
+  let s2 = ([Z,M,P],[0,0.67,0.33])
 
   -- value-benefit pairs for goals
   (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [(fst s1) !! 0, (fst s2) !! 0] [(snd s1) !! 0, (snd s2) !! 0]
@@ -451,6 +424,9 @@ tinyExample = do
   output greenSpaceBenefit "greenspace benefit"
   output (port nuisance) "nuisance value"
   output nuisanceBenefit "nuisance benefit"
+
+-- Example with floats for weights
+
 main :: IO ()
 main = do
   runCompare stakesExample

@@ -151,7 +151,7 @@ translateGCMCommand' = \case
     return $ Port (Var vid)
   CreateGoal -> do
     vid <- getAndIncrVar
-    let varType = HZ.Int
+    let varType = HZ.Float
     let line = declVar varType (varNameStr vid)
     modify $ \st -> st { goals = vid : goals st
                        , model = model st ++ [line]

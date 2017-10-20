@@ -78,12 +78,12 @@ floodingOfSquare = do
 
 minimize :: Port Int -> GCM ()
 minimize p = do
-  g <- createGoal
+  g <- createIntGoal
   linkBy (fun negate) p g
 
 maximize :: Port Int -> GCM ()
 maximize p = do
-  g <- createGoal
+  g <- createIntGoal
   link p g
 
 -- Small example

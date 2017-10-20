@@ -27,7 +27,7 @@ data GCMCommand a where
   CreateVariable :: CPType a => Proxy a    -> GCMCommand (Variable a)
   CreatePort     :: CPType a => Proxy a    -> GCMCommand (Port a)
   -- | Unsure that hardcoding this to Int is a good idea
-  CreateGoal     ::             GCMCommand (Goal Int)
+  CreateGoal     ::             GCMCommand (Goal Float)
   CreateParam    :: CPType a => Proxy a    -> a -> GCMCommand (Param a)
   CreateAction   :: CPType a => Param a    -> GCMCommand (Action a)
   EmbedAction    ::             ActM a     -> GCMCommand ()
@@ -70,8 +70,18 @@ createVariable :: CPType a => GCM (Variable a)
 createVariable = Instr (CreateVariable Proxy)
 
 -- | Instantiate a goal in the `GCM` monad.
-createGoal :: GCM (Goal Int)
+createGoal :: GCM (Goal Float)
 createGoal = Instr CreateGoal
+
+createIntGoal :: GCM (Port Int)
+createIntGoal = do
+  g <- createGoal
+  p <- createPort
+  component $ do
+    f <- value g
+    i <- value p
+    assert $ f === (I2F i)
+  return p
 
 -- | Instantiate a parameter in the `GCM` monad.
 createParam :: CPType a => a -> GCM (Param a)

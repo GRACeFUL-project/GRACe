@@ -165,7 +165,7 @@ translateGCMCommand = \case
     return $ Port (Var vid)
   CreateGoal -> do
     vid <- gets nextVarId
-    let goal = "var int: v" ++ show vid ++ ";"
+    let goal = "var float: v" ++ show vid ++ ";"
     modify $ \st -> st { nextVarId = vid + 1
                        , goals = vid : goals st
                        , declarations = goal : declarations st

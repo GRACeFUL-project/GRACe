@@ -1,6 +1,6 @@
 module Main where
 import Compile(run)
-import GCM      ( GCM, output, component, createGoal
+import GCM      ( GCM, output, component, createIntGoal
                 , Port, createPort, link, value
                 )
 import CP       ( assert, lit, (===), (.<=), inRange )
@@ -127,7 +127,7 @@ cropTable Cotton    = (1, 1, 433)
 -- | Help function for maximizing goal.
 maximize :: Port Int -> GCM ()
 maximize p = do
-  g <- createGoal
+  g <- createIntGoal
   link p g
 
 -- | GCM program for optimizing the area of land on which to grow each of the 3
