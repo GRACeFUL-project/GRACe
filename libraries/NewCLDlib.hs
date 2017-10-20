@@ -42,7 +42,7 @@ library = Library "cld"
            )
 
   , Item "criterion" "Node for criterion" "/dev/null" False $
-      critNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
+      funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("value" # tPort tSign)
                     ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
                     ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
@@ -161,6 +161,7 @@ actionNode xs ys n m = do
         else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns, costPort)
 
+-- | A node that can have an observed sign but also be affected by an attached function
 critNode :: Maybe Sign -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)])
 critNode obsSign n m = do
   valPort <- createPort
