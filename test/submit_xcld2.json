@@ -299,8 +299,8 @@
                 },
                 {
                     "name": "weights",
-                    "value": [1,0],
-                    "type": "[Int]"
+                    "value": [1.0,0.0],
+                    "type": "[Float]"
                 }
             ],
             "interface": [
@@ -320,7 +320,7 @@
                         0
                     ],
                     "name": "benefit",
-                    "type": "Int"
+                    "type": "Float"
                 }
             ],
             "identity": 9
@@ -335,8 +335,8 @@
                 },
                 {
                     "name": "weights",
-                    "value": [1,2],
-                    "type": "[Int]"
+                    "value": [0.25,0.75],
+                    "type": "[Float]"
                 }
             ],
             "interface": [
@@ -356,7 +356,7 @@
                         1
                     ],
                     "name": "benefit",
-                    "type": "Int"
+                    "type": "Float"
                 }
             ],
             "identity": 10
@@ -395,7 +395,7 @@
             "interface": [
                 {
                     "name": "benefits",
-                    "type": "[Int]"
+                    "type": "[Float]"
                 }
             ],
             "identity": 12

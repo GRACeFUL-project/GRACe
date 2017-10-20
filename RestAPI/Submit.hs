@@ -164,10 +164,16 @@ fromPrimType name typ ptv =
       (_,_) -> error "Types don't match"
     ("[Sign]", ListV xs) -> (map fixInt xs) ::: name # tList tSign
     ("[Int]", ListV xs) -> (map fixInt xs) ::: name # tList tInt
+    ("[Float]", ListV xs) -> (map fixFloat xs) ::: name # tList tFloat
     (_,_)               -> error "Types don't match"
     where fixInt a = case a of
             ExV (IntV i) -> fromInteger (toInteger i)
             _            -> error "Mismatched types"
+          fixFloat :: ExtPrimTypeValue -> Float
+          fixFloat a = case a of
+            ExV (FloatV f) -> f
+            ExV (IntV i)   -> fromInteger (toInteger i)
+            _              -> error $ "Mismatched types" ++ (show a)
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
