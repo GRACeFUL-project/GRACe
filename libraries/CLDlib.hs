@@ -1,4 +1,4 @@
-module NewCLDlib (library) where
+module CLDlib (library) where
 import Library
 import Compile
 import Control.Monad
