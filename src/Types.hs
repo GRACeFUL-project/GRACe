@@ -69,7 +69,7 @@ data Type t where
     -- Type constants
     Const :: Const t -> Type t
     -- Contracts
-    Contract :: Type t -> Contract t -> Type t
+    Contract :: Contract t -> Type t -> Type t
 
 data Contract t where
   Pure :: (t -> Bool) -> Contract t
@@ -159,11 +159,11 @@ tPort t = Port' t
 (#) :: String -> Type t -> Type t
 (#) = Tag
 
-(@) :: Contract t -> Type t -> Type t
-(@) = Contract
+(@@) :: Contract t -> Type t -> Type t
+(@@) = Contract
 
 infixr 6 #
-infixr 7 @
+infixr 7 @@
 
 infixr 5 .->
 
