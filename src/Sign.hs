@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 
-module Sign 
+module Sign
   ( Sign(..)
   , tSign
   ) where
@@ -49,9 +49,9 @@ tSign = Iso iso tInt
 
 instance IsTyped Sign where
     typeOf _ = tSign
-    fromTyped (x ::: t) = equalM t tSign >>= \f -> return (f x) 
+    fromTyped (x ::: t) = equalM t tSign >>= \f -> return (f x)
 
-iso :: Isomorphism Int Sign 
+iso :: Isomorphism Int Sign
 iso = f <-> g
  where
   f :: Int -> Sign

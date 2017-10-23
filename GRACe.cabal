@@ -53,6 +53,7 @@ library
     , bytestring
     , haskelzinc
     , scientific
+    , vector           
   hs-source-dirs:
     src,
     RestAPI
@@ -81,6 +82,7 @@ executable GRACeServer
     , servant-server
     , servant-lucid
     , text
+    , vector
     , wai-extra
     , warp
     , haskelzinc
