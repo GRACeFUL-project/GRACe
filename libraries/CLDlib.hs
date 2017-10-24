@@ -425,8 +425,6 @@ tinyExample = do
   output (port nuisance) "nuisance value"
   output nuisanceBenefit "nuisance benefit"
 
--- Example with floats for weights
-
 main :: IO ()
 main = do
   runCompare stakesExample
