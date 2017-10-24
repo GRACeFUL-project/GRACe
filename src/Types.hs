@@ -68,6 +68,12 @@ data Type t where
     Unit  :: Type ()
     -- Type constants
     Const :: Const t -> Type t
+    -- Contracts
+    Contract :: Contract t -> Type t -> Type t
+
+data Contract t where
+  Pure :: (t -> Bool) -> Contract t
+  Dep  :: Contract a -> (a -> Contract b) -> Contract (a -> b)
 
 data Const t where
     Bool   :: Const Bool
@@ -87,6 +93,7 @@ instance Show (Type t) where
     show (List t)       = "[" ++ show t ++ "]"
     show Unit           = "()"
     show (Const c)      = show c
+    show (Contract c t) = "<<contract>> @ " ++ show t
 
 parens :: Show a => a -> String
 parens x = "(" ++ show x ++ ")"
@@ -108,6 +115,8 @@ instance Show TypedValue where
         t1 :|: t2  -> either (show . (::: t1)) (show . (::: t2)) val
         Unit       -> "()"
         Const t    -> showConst val t
+        
+        Contract c t -> show (val ::: t)
 
 showAsList :: [String] -> String
 showAsList xs = "[" ++ intercalate "," xs ++ "]"
@@ -150,7 +159,11 @@ tPort t = Port' t
 (#) :: String -> Type t -> Type t
 (#) = Tag
 
+(@@) :: Contract t -> Type t -> Type t
+(@@) = Contract
+
 infixr 6 #
+infixr 7 @@
 
 infixr 5 .->
 
@@ -226,6 +239,8 @@ instance Equal Type where
     equal Unit       Unit       = Just id
     equal (Const a)  (Const b)  = equal a b
     equal (Port' a)  (Port' b)  = fmap (\f -> fmap f) $ equal a b
+    equal (Contract c a) t2     = equal a t2
+    equal t1     (Contract c b) = equal t1 b
     equal _          _          = Nothing
 
 instance Equal Const where
@@ -245,12 +260,13 @@ findValuesOfType thisType = rec
 
    recDown (a ::: tp) =
       case tp of
-         Iso iso t  -> rec (to iso a ::: t)
-         Tag _ t    -> rec (a ::: t)
-         List t     -> concatMap (\b -> rec (b ::: t)) a
-         Pair t1 t2 -> rec (fst a ::: t1) ++ rec (snd a ::: t2)
-         t1 :|: t2  -> either (\b -> rec (b ::: t1)) (\b -> rec (b ::: t2)) a
-         _          -> []
+         Iso iso t    -> rec (to iso a ::: t)
+         Tag _ t      -> rec (a ::: t)
+         Contract _ t -> rec (a ::: t)
+         List t       -> concatMap (\b -> rec (b ::: t)) a
+         Pair t1 t2   -> rec (fst a ::: t1) ++ rec (snd a ::: t2)
+         t1 :|: t2    -> either (\b -> rec (b ::: t1)) (\b -> rec (b ::: t2)) a
+         _            -> []
 
 -- Evaluation of typed values
 eval :: (IsTyped t, IsTyped a) => TypedValue -> a -> GCM t
@@ -258,6 +274,7 @@ eval tv x = rec tv
   where
     rec tv@(val ::: t) = case t of
         Tag _ t'      -> rec (val ::: t')
+        Contract _ t' -> rec (val ::: t')
         a :-> b :-> c -> rec (uncurry val ::: Pair a b :-> c)
         a :-> b       -> castT a x >>= \x' -> rec (val x' ::: b)
         GCM t         -> val >>= \a -> rec (a ::: t)
