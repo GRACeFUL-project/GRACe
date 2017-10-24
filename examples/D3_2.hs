@@ -252,7 +252,6 @@ pump maxCap = do
   increase <- createPort
   inPort  <- createPort
   outPort <- createPort
-The example from Fig. 3.2 on page 11 of D3.2
   component $ do
     incr <- value increase
     inflow <- value inPort
@@ -340,5 +339,4 @@ hybridSFD = do
 
 main :: IO ()
 main = do
-  compileString hybridSFD
   runCompare hybridSFD
