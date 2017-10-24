@@ -36,6 +36,7 @@ serviceTests = testGroup "Unit tests"
   , testSubmit "cld" "test/submit_newcld.json"
   , testSubmit "cld" "test/submit_xcld.json"
   , testSubmit "cld" "test/submit_xcld2.json"
+  , testSubmit "fullgcm" "test/submit_d3_2.json"
   ]
 
 testSubmit :: String -> FilePath -> TestTree

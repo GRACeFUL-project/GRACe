@@ -1,24 +1,77 @@
--- | The example from Fig. 3.2 on page 11 of D3.2
-import GCM
-import CP
-import Sign
-import Control.Monad
-import Compile
+module FullGCM (library) where
 
-cldArrow :: Sign -> GCM ((Port Sign, Port Sign), (Port Sign, Port Sign))
-cldArrow s = do
-  inup <- createPort
-  indown <- createPort
-  outup <- createPort
-  outdown <- createPort
-  component $ do
-    iup <- value inup
-    ido <- value indown
-    oup <- value outup
-    odo <- value outdown
-    assert $ odo === (lit s) * ido -- flow in arrow direction
-    assert $ iup === (lit s) * oup  -- flow in opposite direction
-  return ((inup,indown),(outup,outdown))
+import Library
+
+library :: Library
+library = Library "fullgcm"
+  [ Item "node" "Generic node" "pathToNodeImage" False $
+      cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
+      tGCM (tTuple3 ("value" # tPort tSign)
+                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+           )
+
+  , Item "edge" "Causal relation" "pathToArrowImage" True $
+      cldArrow ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPair (tPort tSign) (tPort tSign))
+                                                  ("toNode"   # tPair (tPort tSign) (tPort tSign))
+                                         )
+
+  , Item "budget" "Set a maximum budget" "/dev/null" False $
+      budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
+                 tGCM ("costs" # tList (tPort tInt))
+
+  , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
+      optimise ::: "numberOfPorts" # tInt .->
+                   tGCM ("benefits" # tList (tPort tFloat))
+
+  , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" False $
+      evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
+      tGCM (tPair ("atPort" # tPort tSign)
+                  ("benefit" # tPort tFloat)
+           )
+
+  , Item "action" "CLD action node" "/dev/null" False $
+      actionNode ::: "values" # tList tSign .-> "costs" # tList tInt .->
+                     "numIn" # tInt .-> "numOut" # tInt .->
+      tGCM (tTuple4 ("value" # tPort tSign)
+                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("cost" # tPort tInt)
+           )
+
+  , Item "criterion" "Node for criterion" "/dev/null" False $
+      funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
+      tGCM (tTuple3 ("value" # tPort tSign)
+                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+           )
+
+  , Item "rain" "Rain" "./data/img/rain.png" False $
+       rain ::: "amount" # tInt .-> tGCM ("rainfall" # tPort tInt)
+
+  , Item "pump" "Pump" "./data/img/pump.png" False $
+       pump ::: "capacity" # tInt.-> tGCM (tTuple3 ("increase" # tPort tInt)
+                                                   ("inflow" # tPort tInt)
+                                                   ("outflow" # tPort tInt))
+
+  , Item "runoff area" "Runoff" "./data/img/runOffArea.png" False $
+       runoffArea ::: "storage capacity" # tInt .-> tGCM (tTuple4 ("increase" # tPort tInt)
+                                                                    ("inflow" # tPort tInt)
+                                                                    ("outlet" # tPort tInt)
+                                                                    ("overflow" # tPort tInt))
+  , Item "sink" "Sink" "/dev/null" False $
+      sink ::: tGCM ("inflow" # tPort tInt)
+  , Item "flooding" "Flooding of square" "/dev/null" False $
+      flooding ::: "numOut" # tInt .->
+      tGCM (tPair ("inflow" # tPort tInt)
+                  ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+           )
+  , Item "increaseAction" "Action to increase a parameter" "/dev/null" False $
+      increaseAction ::: "values" # tList tInt .-> "costs" # tList tInt .->
+      tGCM (tPair ("value" # tPort tInt)
+                  ("cost"  # tPort tInt)
+           )
+    ]
 
 -- | General CLD node
 cldNode :: Maybe Sign  -- Observed sign
@@ -93,28 +146,20 @@ funNode n m = do
         else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns)
 
-actionNode :: [Sign] -> [Int] -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)], Port Int)
-actionNode xs ys n m = do
-  (valPort, costPort)  <- attachFunction xs ys
-  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
-  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
-  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
-  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
-  inDown <- constructSum inDowns
-  outUp <-  constructSum outUps
-  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
-  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
+cldArrow :: Sign -> GCM ((Port Sign, Port Sign), (Port Sign, Port Sign))
+cldArrow s = do
+  inup <- createPort
+  indown <- createPort
+  outup <- createPort
+  outdown <- createPort
   component $ do
-    v <- value valPort
-    if n > 0 then do
-      iD <- value inDown
-      assert $ iD === v
-      else
-      if m > 0 then do
-        oU <- value outUp
-        assert $ (oU === v .|| v === lit Z)
-        else return ()
-  return (valPort, zip inUps inDowns, zip outUps outDowns, costPort)
+    iup <- value inup
+    ido <- value indown
+    oup <- value outup
+    odo <- value outdown
+    assert $ odo === (lit s) * ido -- flow in arrow direction
+    assert $ iup === (lit s) * oup  -- flow in opposite direction
+  return ((inup,indown),(outup,outdown))
 
 -- Helper functions to construct CLDs
 ----------------------------------------
@@ -153,66 +198,6 @@ partialSums xs = do
       a <- value after
       component $ add (zs !! k) b a
 
-budget :: Int -> Int -> GCM [Port Int]
-budget num cost = do
-  ports <- mapM (const createPort) [1..num]
-  component $ do
-    vs <- mapM value ports
-    assert $ sum vs .<= Lit cost
-  return ports
-
-optimise :: Int -> GCM [Port Float]
-optimise num = do
-  ports <- mapM (const createPort) [1..num]
-  tot   <- createPort
-  component $ do
-    t <- value tot
-    p <- mapM value ports
-    assert $ t === sum p
-  g <- createGoal
-  link tot g
-  return ports
-
--- Takes a list of desired values and their weights and returns
--- the weighted sum of benefit for each possible value
-stakeHolders :: [Sign] -> [Float] -> ([Sign], [Float])
-stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q] )where
-  sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
-  ev s (d,w) = if d == s then w else 0
-
-evalBenefits :: [Sign] -> [Float] -> GCM (Port Sign, Port Float)
-evalBenefits x y = uncurry attachFunction $ stakeHolders x y
-
--- Useful functions for constructing examples
-cldLink :: Sign -> (Port Sign, Port Sign) -> (Port Sign, Port Sign) -> GCM ()
-cldLink s (pou, pod) (qiu, qid) = do
-  ((iu, idn), (ou, od)) <- cldArrow s
-  link pou iu
-  link pod idn
-  link qiu ou
-  link qid od
-
-port :: (Port a, b, c) -> Port a
-port (p, _, _) = p
-
-inc :: Int -> (a, [(Port Sign, Port Sign)], b) -> (Port Sign, Port Sign)
-inc i (_, ps, _) = ps !! i
-
-out :: Int -> (a, b, [(Port Sign, Port Sign)]) -> (Port Sign, Port Sign)
-out i (_, _, ps) = ps !! i
-
-acout :: Int -> (a, b, [(Port Sign, Port Sign)], c) -> (Port Sign, Port Sign)
-acout i (_, _, ps, _) = ps !! i
-
-acost :: (a,b,c, Port Int) -> Port Int
-acost (_, _, _, x) = x
-
-rain :: Int -> GCM (Port Int)
-rain amount = do
-  port <- createPort
-  set port amount
-  return port
-
 attachFunction :: (CPType a, CPType b) => [a] -> [b] -> GCM (Port a, Port b)
 attachFunction xs ys = do
   sd <- return $ zip xs ys
@@ -223,6 +208,35 @@ attachFunction xs ys = do
     vd <- value d
     assert $ foldl1 (.||) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
   return (s, d)
+
+actionNode :: [Sign] -> [Int] -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)], Port Int)
+actionNode xs ys n m = do
+  (valPort, costPort)  <- attachFunction xs ys
+  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
+  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
+  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
+  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
+  inDown <- constructSum inDowns
+  outUp <-  constructSum outUps
+  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
+  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
+  component $ do
+    v <- value valPort
+    if n > 0 then do
+      iD <- value inDown
+      assert $ iD === v
+      else
+      if m > 0 then do
+        oU <- value outUp
+        assert $ (oU === v .|| v === lit Z)
+        else return ()
+  return (valPort, zip inUps inDowns, zip outUps outDowns, costPort)
+
+rain :: Int -> GCM (Port Int)
+rain amount = do
+  port <- createPort
+  set port amount
+  return port
 
 runoffArea :: Int -> GCM (Port Int, Port Int, Port Int, Port Int)
 runoffArea cap = do
@@ -280,63 +294,30 @@ flooding numOut = do
     mapM_ (\x -> assert $ ((x === Lit P .&& f .> 0) .|| (x === Lit Z .&& f .<= 0))) vs
   return (flow, zip upPorts floodPorts)
 
--- The example from Fig. 3.2 on page 11 of D3.2
--- We can play around with changing the parameters (i.e. budget and action costs)
--- and see that the solver comes up with different outcomes.
-hybridSFD :: GCM ()
-hybridSFD = do
-  -- rainFall
-  r <- rain 10
-  -- runOffArea_1
-  (incR, inf, outf, ovf) <- runoffArea 5
-  -- increaseStorageAction_1
-  (incStorage, costStorage) <- increaseAction [0,1,2] [0,2,10]
-  -- pump_1
-  (incP, inP, outP) <- pump 2
-  -- increasePumpCapacityAction_1
-  (incPump, costPump) <- increaseAction [0,1,2,3] [0,5,8,11]
-  -- sink_1
-  s <- sink
-  -- flooding_of_square
-  (flowF, outFlood) <- flooding 2
-  -- Flood nuisance
-  nuisance     <- funNode 1 0
-  -- Flood damage
-  damage       <- funNode 1 0
-  -- Budget for actions
-  let bud = 10
-  budgetPorts <- budget 2 bud
-  zipWithM link budgetPorts [costStorage, costPump]
+budget :: Int -> Int -> GCM [Port Int]
+budget num cost = do
+  ports <- mapM (const createPort) [1..num]
+  component $ do
+    vs <- mapM value ports
+    assert $ sum vs .<= Lit cost
+  return ports
 
-  -- stakeholders, s1 cares about nuisance, s2 about damage
-  let s1 = ([Z,Z], [1,0])
-  let s2 = ([Z,Z], [0,1])
-  (nuisanceInput, nuisanceBenefit) <- evalBenefits [(fst s1) !! 0, (fst s2) !! 0] [(snd s1) !! 0, (snd s2) !! 0]
-  (damageInput, damageBenefit)  <- evalBenefits [(fst s1) !! 1, (fst s2) !! 1] [(snd s1) !! 1, (snd s2) !! 1]
-  zipWithM link [nuisanceInput, damageInput] [port nuisance, port damage]
+optimise :: Int -> GCM [Port Float]
+optimise num = do
+  ports <- mapM (const createPort) [1..num]
+  tot   <- createPort
+  component $ do
+    t <- value tot
+    p <- mapM value ports
+    assert $ t === sum p
+  g <- createGoal
+  link tot g
+  return ports
 
-  --optimization
-  optimisePorts <- optimise 2
-  zipWithM link optimisePorts [nuisanceBenefit, damageBenefit]
+stakeHolders :: [Sign] -> [Float] -> ([Sign], [Float])
+stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q] )where
+  sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
+  ev s (d,w) = if d == s then w else 0
 
-  link incR incStorage
-  link incP incPump
-  link r inf
-  link outf inP
-  link outP s
-  link flowF ovf
-  cldLink P (outFlood !! 0) (inc 0 nuisance)
-  cldLink P (outFlood !! 1) (inc 0 damage)
-
-  -- Output solution
-  output (incStorage) "storage increase"
-  output (costStorage) "storage cost"
-  output (incPump)     "pump increase"
-  output (costPump) "pump cost"
-  output (port nuisance) "nuisance"
-  output (port damage)   "damage"
-
-
-main :: IO ()
-main = do
-  runCompare hybridSFD
+evalBenefits :: [Sign] -> [Float] -> GCM (Port Sign, Port Float)
+evalBenefits x y = uncurry attachFunction $ stakeHolders x y
