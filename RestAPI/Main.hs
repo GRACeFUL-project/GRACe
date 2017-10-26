@@ -8,7 +8,7 @@ module Main where
 
 import Compile0
 import GRACeGraph
-import Library hiding (Proxy, value)
+import Library hiding (Proxy, value, app)
 import Submit
 
 import Control.Monad

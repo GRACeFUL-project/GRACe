@@ -104,8 +104,11 @@ app (f ::: ft) (x ::: xt) =
                         unless (and [ applyContract c (g x)
                                     | c <- argContracts ++
                                            [ Pure p | Dep p _ <- contracts ]])
-                               (Left "Contract violation")
+                               (Left "Contract violation on argument")
                         let resultContracts = [ r (g x) | Dep _ r <- contracts ]
+                        unless (and [ applyContract c (f (g x))
+                                    | c <- resContracts ++ resultContracts ])
+                               (Left "Contract violation on result")
                         return (f (g x) ::: foldl (flip Contract) b
                                               (resultContracts ++ resContracts))
       _       -> Left "Expected a function argument"
