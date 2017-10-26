@@ -27,6 +27,8 @@ module Types
     , eval, findValuesOfType
      -- * From and to typed values
     , IsTyped(..), cast, castT
+    -- * Apply typed values
+    , app
     ) where
 
 import Utils
@@ -51,49 +53,86 @@ infixr 5 :|:
 data TypedValue = forall a . a ::: Type a
 
 data Type t where
-    -- Type isomorphisms (for defining type synonyms)
-    Iso   :: Isomorphism t1 t2 -> Type t1 -> Type t2
-    -- Function type
-    (:->) :: Type t1 -> Type t2 -> Type (t1 -> t2)
-    -- Input/output
-    IO    :: Type t -> Type (IO t)
-    GCM   :: Type t -> Type (GCM t)
-    Port' :: CPType t => Type t -> Type (Port t)
-    -- Special annotations
-    Tag   :: String -> Type t -> Type t
-    -- Type constructors
-    List  :: Type t  -> Type [t]
-    Pair  :: Type t1 -> Type t2 -> Type (t1, t2)
-    (:|:) :: Type t1 -> Type t2 -> Type (Either t1 t2)
-    Unit  :: Type ()
-    -- Type constants
-    Const :: Const t -> Type t
-    -- Contracts
-    Contract :: Contract t -> Type t -> Type t
+  -- Type isomorphisms (for defining type synonyms)
+  Iso   :: Isomorphism t1 t2 -> Type t1 -> Type t2
+  -- Function type
+  (:->) :: Type t1 -> Type t2 -> Type (t1 -> t2)
+  -- Input/output
+  IO    :: Type t -> Type (IO t)
+  GCM   :: Type t -> Type (GCM t)
+  Port' :: CPType t => Type t -> Type (Port t)
+  -- Special annotations
+  Tag   :: String -> Type t -> Type t
+  -- Type constructors
+  List  :: Type t  -> Type [t]
+  Pair  :: Type t1 -> Type t2 -> Type (t1, t2)
+  (:|:) :: Type t1 -> Type t2 -> Type (Either t1 t2)
+  Unit  :: Type ()
+  -- Type constants
+  Const :: Const t -> Type t
+  -- Contracts
+  Contract :: Contract t -> Type t -> Type t
 
-data Contract t where
-  Pure :: (t -> Bool) -> Contract t
-  Dep  :: Contract a -> (a -> Contract b) -> Contract (a -> b)
+data Contract a where
+  Pure :: (a -> Bool) -> Contract a
+  Dep  :: (a -> Bool) -> (a -> Contract b) -> Contract (a -> b)
+
+-- TODO: Deal with isomorphisms
+getContracts :: Type t -> [Contract t]
+getContracts (Tag _ t) = getContracts t
+getContracts (Contract c t) = c : getContracts t
+getContracts _ = []
+
+-- TODO: Deal with isomorphisms
+stripFluff :: Type t -> Type t
+stripFluff (Tag _ t) = stripFluff t
+stripFluff (Contract _ t) = stripFluff t
+stripFluff t = t
+
+contractsAndFluff :: Type t -> ([Contract t], Type t)
+contractsAndFluff t = (getContracts t, stripFluff t)
+
+app :: TypedValue -> TypedValue -> Either String TypedValue
+app (f ::: ft) (x ::: xt) =
+  case contractsAndFluff ft of
+      (contracts, a :-> b) ->
+                 let argContracts = getContracts a
+                     resContracts = getContracts b
+                 in case equal xt a of
+                      Nothing -> Left "Argument type does not match result type"
+                      Just g  -> do
+                        unless (and [ applyContract c (g x)
+                                    | c <- argContracts ++
+                                           [ Pure p | Dep p _ <- contracts ]])
+                               (Left "Contract violation")
+                        let resultContracts = [ r (g x) | Dep _ r <- contracts ]
+                        return (f (g x) ::: foldl (flip Contract) b
+                                              (resultContracts ++ resContracts))
+      _       -> Left "Expected a function argument"
+
+applyContract :: Contract a -> a -> Bool
+applyContract (Pure p) a = p a
+applyContract _ _ = True
 
 data Const t where
-    Bool   :: Const Bool
-    Int    :: Const Int
-    Float  :: Const Float
-    String :: Const String
+  Bool   :: Const Bool
+  Int    :: Const Int
+  Float  :: Const Float
+  String :: Const String
 
 instance Show (Type t) where
-    show (Iso _ t)      = show t
-    show (t1 :-> t2)    = show t1 +++ "->" +++ show t2
-    show (IO t)         = "IO" +++ parens t
-    show (GCM t)        = "GCM" +++ parens t
-    show (Port' t)      = "Port" +++ parens t
-    show (Tag s t)      = s +++ ":" +++ show t
-    show t@(Pair _ _)   = showTuple t
-    show (t1 :|: t2)    = show t1 +++ "|" +++ show t2
-    show (List t)       = "[" ++ show t ++ "]"
-    show Unit           = "()"
-    show (Const c)      = show c
-    show (Contract c t) = "<<contract>> @ " ++ show t
+  show (Iso _ t)      = show t
+  show (t1 :-> t2)    = show t1 +++ "->" +++ show t2
+  show (IO t)         = "IO" +++ parens t
+  show (GCM t)        = "GCM" +++ parens t
+  show (Port' t)      = "Port" +++ parens t
+  show (Tag s t)      = s +++ ":" +++ show t
+  show t@(Pair _ _)   = showTuple t
+  show (t1 :|: t2)    = show t1 +++ "|" +++ show t2
+  show (List t)       = "[" ++ show t ++ "]"
+  show Unit           = "()"
+  show (Const c)      = show c
+  show (Contract c t) = "<<contract>> @ " ++ show t
 
 parens :: Show a => a -> String
 parens x = "(" ++ show x ++ ")"

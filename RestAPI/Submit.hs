@@ -51,13 +51,10 @@ idents (_ ::: t) = go t
     go _                = []
 
 
--- | Perform a function application under `TypedValue` representation, for a
--- single argument.
 apply1 :: TypedValue -> TypedValue -> GCM TypedValue
-apply1 (f ::: (t1 :-> t2)) (x ::: t3) =
-  case equal t3 t1 of
-    Nothing -> fail "- equal failed in apply1"
-    Just g -> return $ f (g x) ::: t2
+apply1 f x = case app f x of
+  Left error -> fail error
+  Right tv   -> return tv
 
 -- | Perform function application under `TypedValue` representation, if
 -- possible.
