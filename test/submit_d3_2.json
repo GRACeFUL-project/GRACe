@@ -1,0 +1,421 @@
+{
+    "nodes":
+    [
+        {
+            "name": "rain",
+            "parameters": [
+                {
+                    "value": 10,
+                    "name": "amount",
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        2,
+                        "inflow",
+                        null
+                    ],
+                    "name": "rainfall",
+                    "type": "Int"
+                }
+            ],
+            "identity": 0
+        },
+        {
+            "name": "increaseAction",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [0,1,2],
+                    "type": "[Int]"
+                },
+                {
+                    "name": "costs",
+                    "value": [0,2,10],
+                    "type": "[Int]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        2,
+                        "increase",
+                        null
+                    ],
+                    "name": "value",
+                    "type": "Int"
+                },
+                {
+                    "connection": [
+                        14,
+                        "costs",
+                        0
+                    ],
+                    "name": "cost",
+                    "type": "Int"
+                }
+            ],
+            "identity": 1
+        },
+        {
+            "name": "runoff area",
+            "parameters": [
+                {
+                    "value": 5,
+                    "name": "storage capacity",
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "increase",
+                    "type": "Int"
+                },
+                {
+                    "name": "inflow",
+                    "type": "Int"
+                },
+                {
+                    "name": "outlet",
+                    "type": "Int"
+                },
+                {
+                    "name": "overflow",
+                    "type": "Int"
+                }
+            ],
+            "identity": 2
+        },
+        {
+            "name": "increaseAction",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [0,1,2,3],
+                    "type": "[Int]"
+                },
+                {
+                    "name": "costs",
+                    "value": [0,5,8,11],
+                    "type": "[Int]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        4,
+                        "increase",
+                        null
+                    ],
+                    "name": "value",
+                    "type": "Int"
+                },
+                {
+                    "connection": [
+                        14,
+                        "costs",
+                        1
+                    ],
+                    "name": "cost",
+                    "type": "Int"
+                }
+            ],
+            "identity": 3
+        },
+        {
+            "name": "pump",
+            "parameters": [
+                {
+                    "value": 2,
+                    "name": "capacity",
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        2,
+                        "outlet",
+                        null
+                    ],
+                    "name": "inflow",
+                    "type": "Int"
+                },
+                {
+                    "name": "outflow",
+                    "type": "Int"
+                }
+            ],
+            "identity": 4
+        },
+        {
+            "name": "sink",
+            "parameters": [],
+            "interface": [
+                {
+                    "connection": [
+                        4,
+                        "outflow",
+                        null
+                    ],
+                    "name": "inflow",
+                    "type": "Int"
+                }
+            ],
+            "identity": 5
+        },
+        {
+            "name": "flooding",
+            "parameters":[
+                {
+                    "name": "numOut",
+                    "value": 2,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        2,
+                        "overflow",
+                        null
+                    ],
+                    "name": "inflow",
+                    "type": "Int"
+                },
+                {
+                    "name": "outgoing",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 6
+        },
+        {
+            "name": "criterion",
+            "parameters": [
+                {
+                    "name": "numIn",
+                    "value": 1,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 0,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 7
+        },
+        {
+            "name": "criterion",
+            "parameters": [
+                {
+                    "name": "numIn",
+                    "value": 1,
+                    "type": "Int"
+                },
+                {
+                    "name": "numOut",
+                    "value": 0,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "value",
+                    "type": "Sign"
+                },
+                {
+                    "name": "incoming",
+                    "type": "[(Sign,Sign)]"
+                }
+            ],
+            "identity": 8
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": 1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        6,
+                        "outgoing",
+                        0
+                    ],
+                    "name": "fromNode",
+                    "type": "(Sign,Sign)"
+                },
+                {
+                    "connection": [
+                        7,
+                        "incoming",
+                        0
+                    ],
+                    "name": "toNode",
+                    "type": "(Sign,Sign)"
+                }
+                ],
+                "identity": 9
+        },
+        {
+            "name": "edge",
+            "parameters": [
+                {
+                    "name": "sign",
+                    "value": 1,
+                    "type": "Sign"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        6,
+                        "outgoing",
+                        1
+                    ],
+                    "name": "fromNode",
+                    "type": "(Sign,Sign)"
+                },
+                {
+                    "connection": [
+                        8,
+                        "incoming",
+                        0
+                    ],
+                    "name": "toNode",
+                    "type": "(Sign,Sign)"
+                }
+                ],
+                "identity": 10
+        },
+        {
+            "name": "evaluate",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [0,0],
+                    "type": "[Sign]"
+                },
+                {
+                    "name": "weights",
+                    "value": [1.0,0.0],
+                    "type": "[Float]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        7,
+                        "value",
+                        null
+                    ],
+                    "name": "atPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        13,
+                        "benefits",
+                        0
+                    ],
+                    "name": "benefit",
+                    "type": "Float"
+                }
+            ],
+            "identity": 11
+        },
+        {
+            "name": "evaluate",
+            "parameters": [
+                {
+                    "name": "values",
+                    "value": [0,0],
+                    "type": "[Sign]"
+                },
+                {
+                    "name": "weights",
+                    "value": [0.0,1.0],
+                    "type": "[Float]"
+                }
+            ],
+            "interface": [
+                {
+                    "connection": [
+                        8,
+                        "value",
+                        null
+                    ],
+                    "name": "atPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        13,
+                        "benefits",
+                        1
+                    ],
+                    "name": "benefit",
+                    "type": "Float"
+                }
+            ],
+            "identity": 12
+        },
+        {
+            "name": "optimise",
+            "parameters": [
+                {
+                    "name": "numberOfPorts",
+                    "value": 2,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "benefits",
+                    "type": "[Float]"
+                }
+            ],
+            "identity": 13
+        },
+        {
+            "name": "budget",
+            "parameters": [
+                {
+                    "name": "numberOfPorts",
+                    "value": 2,
+                    "type": "Int"
+                },
+                {
+                    "name": "maximumBudget",
+                    "value": 10,
+                    "type": "Int"
+                }
+            ],
+            "interface": [
+                {
+                    "name": "costs",
+                    "type": "[Int]"
+                }
+            ],
+            "identity": 14
+        }
+    ]
+}
