@@ -281,8 +281,15 @@ flooding numOut = do
   return (flow, zip upPorts floodPorts)
 
 -- The example from Fig. 3.2 on page 11 of D3.2
+-- (which can be found at https://www.graceful-project.eu/publications/deliverables-outcomes/)
+-- Here we would like to avoid the flooding of the square (and thus nuisance and damage for our stakeholders)
+-- The runoff storage and pump capacity are insufficient to prevent flooding given the amount of rain,
+-- but can be increased with the increaseStorageAction and increasePumpCapacityAction
 -- We can play around with changing the parameters (i.e. budget and action costs)
--- and see that the solver comes up with different outcomes.
+-- and see that the solver comes up with different outcomes for which actions should be chosen.
+-- With the current parameters we need to increase the combined storage and pump capacity by 3
+-- to avoid flooding, and the only way to do so within our budget of 10 is to increase storage by 1
+-- and increase pump capacity by 2.
 hybridSFD :: GCM ()
 hybridSFD = do
   -- rainFall

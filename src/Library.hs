@@ -62,7 +62,7 @@ instance ToJSON Item where
         , "interface"  .= ports t
         , "comment"    .= c
         , "icon"       .= i
-        , "relational"    .= toJSON r
+        , "relational" .= toJSON r
         ]
 
 parameters :: Type a -> Value
