@@ -17,6 +17,7 @@ module Library
     ( module Types
     , Library(..)
     , Item(..), item
+    , insert, combine
       -- Re export
     , module GCM
     , module CP
@@ -93,3 +94,9 @@ ports tp = case tp of
     _ :-> t2   -> ports t2
     Iso _ t    -> ports t
     _          -> []
+
+insert :: [Item] -> Library -> Library
+insert its (Library n is) = Library n (is ++ its)
+
+combine :: String -> Library -> Library -> Library
+combine n (Library _ is) (Library _ js) = Library n (is ++ js)

@@ -1,4 +1,4 @@
-module CLDlib (library) where
+module CLDlib (library, attachFunction) where
 import Library
 import Compile
 import Control.Monad
@@ -199,7 +199,7 @@ partialSums xs = do
       component $ add (zs !! k) b a
 
 -- CLD actions, budget, and optimisation
-attachFunction :: (CPType a) => [Sign] -> [a] -> GCM (Port Sign, Port a)
+attachFunction :: (CPType a, CPType b) => [b] -> [a] -> GCM (Port b, Port a)
 attachFunction xs ys = do
   sd <- return $ zip xs ys
   s <- createPort
