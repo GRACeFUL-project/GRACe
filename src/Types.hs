@@ -157,7 +157,7 @@ instance Show TypedValue where
         t1 :|: t2  -> either (show . (::: t1)) (show . (::: t2)) val
         Unit       -> "()"
         Const t    -> showConst val t
-        
+
         Contract c t -> show (val ::: t)
 
 showAsList :: [String] -> String

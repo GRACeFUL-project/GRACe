@@ -83,7 +83,12 @@ tagParam _ = Null
 ports :: Type a -> [Value]
 ports tp = case tp of
     -- base
-    Tag r (Tag iT (Tag oT (Tag n (Port' t)))) -> [tagPort tp]
+    Tag r (Tag iT (Tag oT (Tag n x))) -> case x of
+        Port' _ -> [tagPort tp]
+        Pair (Port' _) (Port' _) -> [tagPort tp]
+        List (Port' _) -> [tagPort tp]
+        List (Pair (Port' _) (Port' _)) -> [tagPort tp]
+        _       -> []
     -- recurse
     Tag _ t    -> ports t
     GCM t      -> ports t

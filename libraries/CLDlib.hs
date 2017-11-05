@@ -16,7 +16,7 @@ library = Library "cld"
   , Item "edge" "Causal relation" "pathToArrowImage" "causalRelation" $
       cldArrow ::: "sign" # tSign .->
       tGCM (tPair ("false" # "multiple" # "none" # "fromNode" # tPair (tPort tSign) (tPort tSign))
-                  ("false" # "non3" # "multiple" # "toNode" # tPair (tPort tSign) (tPort tSign)))
+                  ("false" # "none" # "multiple" # "toNode" # tPair (tPort tSign) (tPort tSign)))
 
   , Item "budget" "Set a maximum budget" "/dev/null" "calculation" $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
