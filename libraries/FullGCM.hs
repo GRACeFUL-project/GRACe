@@ -8,25 +8,30 @@ library :: Library
 library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
   is =
     [ Item "pump" "Pump" "./data/img/pump.png" "Relational" $
-       pump ::: "capacity" # tInt.-> tGCM (tTuple3 ("increase" # tPort tInt)
-                                                   ("inflow" # tPort tInt)
-                                                   ("outflow" # tPort tInt))
+       pump ::: "capacity" # tInt.->
+       tGCM (tTuple3 ("true" # "single" # "none" # "increase" # tPort tInt)
+                     ("true" # "single" # "none" #"inflow" # tPort tInt)
+                     ("true" # "none" # "single" # "outflow" # tPort tInt))
+
     , Item "runoff area" "Runoff" "./data/img/runOffArea.png" "Relational" $
-       runoffArea ::: "storage capacity" # tInt .-> tGCM (tTuple4 ("increase" # tPort tInt)
-                                                                    ("inflow" # tPort tInt)
-                                                                    ("outlet" # tPort tInt)
-                                                                    ("overflow" # tPort tInt))
+       runoffArea ::: "storage capacity" # tInt .->
+       tGCM (tTuple4 ("true" # "single" # "none" # "increase" # tPort tInt)
+                     ("true" # "single" # "none" # "inflow" # tPort tInt)
+                     ("true" # "none" # "single" # "outlet" # tPort tInt)
+                     ("true" # "none" # "single" # "overflow" # tPort tInt))
+
     , Item "sink" "Sink" "/dev/null" "Nodal" $
-        sink ::: tGCM ("inflow" # tPort tInt)
+        sink ::: tGCM ("true" # "single" # "none" # "inflow" # tPort tInt)
+
     , Item "flooding" "Flooding of square" "/dev/null" "Relational" $
         flooding ::: "numOut" # tInt .->
-        tGCM (tPair ("inflow" # tPort tInt)
-                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+        tGCM (tPair ("true" # "single" # "none" # "inflow" # tPort tInt)
+                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
              )
     , Item "increaseAction" "Action to increase a parameter" "/dev/null" "Nodal" $
         increaseAction ::: "values" # tList tInt .-> "costs" # tList tInt .->
-        tGCM (tPair ("value" # tPort tInt)
-                    ("cost"  # tPort tInt)
+        tGCM (tPair ("false" # "none" # "none" # "value" # tPort tInt)
+                    ("false" # "none" # "arbitrary" # "cost"  # tPort tInt)
              )
     ]
 

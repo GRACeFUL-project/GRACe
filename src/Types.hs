@@ -312,7 +312,7 @@ findValuesOfType thisType = rec
 
 -- Evaluation of typed values
 eval :: (IsTyped t, IsTyped a) => TypedValue -> a -> GCM t
-eval tv x = rec tv 
+eval tv x = rec tv
   where
     rec tv@(val ::: t) = case t of
         Tag _ t'      -> rec (val ::: t')

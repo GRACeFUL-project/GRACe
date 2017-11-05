@@ -192,6 +192,7 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
       case parameterValue of
         Nothing  -> case parameterType of
           "Maybe Sign" -> return (parameterName, fromPrimType parameterName parameterType (ExV NullV))
+          "Maybe Int" -> return (parameterName, fromPrimType parameterName parameterType (ExV NullV))
           _            -> fail ("failure in paramTVs.fromParam " ++ parameterName)
         Just ptv -> return (parameterName, fromPrimType parameterName parameterType ptv)
 

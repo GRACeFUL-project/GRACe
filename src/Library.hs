@@ -32,6 +32,7 @@ import Utils
 
 import Data.Aeson
 import qualified Data.Text as T
+import qualified Data.List as L
 
 type Id  = String
 type URL = String
@@ -74,10 +75,23 @@ parameters = toJSONList . rec
         t@(Tag n t1) :-> t2 -> tagParam t : rec t2
         _                   -> []
 
+-- We want to annotate the actual types, not the types they are isomorphic to.
+prettyShow :: Type a -> String
+prettyShow t = case t of
+  Iso _ (t1 :|: Unit) -> "Maybe " ++ prettyShow t1
+  Iso _ tInt          -> "Sign"
+  List t1             -> "[" ++ prettyShow t1 ++ "]"
+  Port' t1            -> "Port " ++ "(" ++ prettyShow t1 ++ ")"
+  tp@(Pair t1 t2)          -> "(" ++ L.intercalate "," (prettyCollect tp) ++ ")"
+  _     -> show t
+  where prettyCollect :: Type t -> [String]
+        prettyCollect (Pair t1 t2) = prettyCollect t1 ++ prettyCollect t2
+        prettyCollect t = [prettyShow t]
+
 tagParam :: Type a -> Value
 tagParam (Tag n t) = object
     [ "name"        .= n
-    , "type"        .= show t ]
+    , "type"        .= prettyShow t ]
 tagParam _ = Null
 
 ports :: Type a -> [Value]
@@ -101,7 +115,7 @@ ports tp = case tp of
 tagPort :: Type a -> Value
 tagPort (Tag r (Tag iT (Tag oT (Tag n t)))) = object
     [ "name"         .= n
-    , "type"         .= show t
+    , "type"         .= prettyShow t
     , "description"  .= n
     , "imgURL"       .= T.concat ["./data/interfaces/", T.pack n, ".png"]
     , "label"        .= head n
