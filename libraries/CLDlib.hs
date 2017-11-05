@@ -6,46 +6,46 @@ import Control.Monad
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" "Generic node" "pathToNodeImage" False $
+  [ Item "node" "Generic node" "pathToNodeImage" "causalNode" $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple3 ("value" # tPort tSign)
-                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+      tGCM (tTuple3 ("false" # "none" # "none" # "value" # tPort tSign)
+                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
-  , Item "edge" "Causal relation" "pathToArrowImage" True $
-      cldArrow ::: "sign" # tSign .-> tGCM (tPair ("fromNode" # tPair (tPort tSign) (tPort tSign))
-                                                  ("toNode"   # tPair (tPort tSign) (tPort tSign))
-                                         )
+  , Item "edge" "Causal relation" "pathToArrowImage" "causalRelation" $
+      cldArrow ::: "sign" # tSign .->
+      tGCM (tPair ("false" # "multiple" # "none" # "fromNode" # tPair (tPort tSign) (tPort tSign))
+                  ("false" # "non3" # "multiple" # "toNode" # tPair (tPort tSign) (tPort tSign)))
 
-  , Item "budget" "Set a maximum budget" "/dev/null" False $
+  , Item "budget" "Set a maximum budget" "/dev/null" "calculation" $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
-                 tGCM ("costs" # tList (tPort tInt))
+                 tGCM ("false" # "arbitrary" # "none" # "costs" # tList (tPort tInt))
 
-  , Item "optimise" "Optimise the sum of some ports" "/dev/null" False $
+  , Item "optimise" "Optimise the sum of some ports" "/dev/null" "calculation" $
       optimise ::: "numberOfPorts" # tInt .->
-                   tGCM ("benefits" # tList (tPort tFloat))
+                   tGCM ("false" # "arbitrary" # "none" # "benefits" # tList (tPort tFloat))
 
-  , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" False $
+  , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" "calculation" $
       evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
-      tGCM (tPair ("atPort" # tPort tSign)
-                  ("benefit" # tPort tFloat)
+      tGCM (tPair ("false" # "none" # "single" # "atPort" # tPort tSign)
+                  ("false" # "none" # "single" # "benefit" # tPort tFloat)
            )
 
-  , Item "action" "Node for action" "/dev/null" False $
+  , Item "action" "Node for action" "/dev/null" "causalNode" $
       actionNode ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple4 ("value" # tPort tSign)
-                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("cost" # tPort tInt)
+      tGCM (tTuple4 ("false" # "none" # "none" # "value" # tPort tSign)
+                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("false" # "none" # "arbitrary" # "cost" # tPort tInt)
            )
 
-  , Item "criterion" "Node for criterion" "/dev/null" False $
+  , Item "criterion" "Node for criterion" "/dev/null" "causalNode" $
       funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple3 ("value" # tPort tSign)
-                    ("incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+      tGCM (tTuple3 ("false" # "none" # "none" # "value" # tPort tSign)
+                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
   ]

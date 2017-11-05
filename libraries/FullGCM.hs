@@ -7,29 +7,29 @@ import qualified Crud
 library :: Library
 library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
   is =
-    [ Item "pump" "Pump" "./data/img/pump.png" False $
+    [ Item "pump" "Pump" "./data/img/pump.png" "Relational" $
        pump ::: "capacity" # tInt.-> tGCM (tTuple3 ("increase" # tPort tInt)
                                                    ("inflow" # tPort tInt)
                                                    ("outflow" # tPort tInt))
-    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" False $
+    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" "Relational" $
        runoffArea ::: "storage capacity" # tInt .-> tGCM (tTuple4 ("increase" # tPort tInt)
                                                                     ("inflow" # tPort tInt)
                                                                     ("outlet" # tPort tInt)
                                                                     ("overflow" # tPort tInt))
-    , Item "sink" "Sink" "/dev/null" False $
+    , Item "sink" "Sink" "/dev/null" "Nodal" $
         sink ::: tGCM ("inflow" # tPort tInt)
-    , Item "flooding" "Flooding of square" "/dev/null" False $
+    , Item "flooding" "Flooding of square" "/dev/null" "Relational" $
         flooding ::: "numOut" # tInt .->
         tGCM (tPair ("inflow" # tPort tInt)
                     ("outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
              )
-    , Item "increaseAction" "Action to increase a parameter" "/dev/null" False $
+    , Item "increaseAction" "Action to increase a parameter" "/dev/null" "Nodal" $
         increaseAction ::: "values" # tList tInt .-> "costs" # tList tInt .->
         tGCM (tPair ("value" # tPort tInt)
                     ("cost"  # tPort tInt)
              )
     ]
-    
+
 runoffArea :: Int -> GCM (Port Int, Port Int, Port Int, Port Int)
 runoffArea cap = do
   increase <- createPort

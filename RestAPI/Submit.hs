@@ -99,6 +99,8 @@ put cid tv@(x ::: t) m =
     Tag n (Pair (Port' p) (Port' q)) ->
       return $ Map.insert (n ++ cid) (x ::: Pair (Port' p) (Port' q)) m
 
+    Tag _ (Tag n p) -> put cid (x ::: (Tag n p)) m -- Peel off tags
+
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | @'putItem' m i@ puts the `Id` and `TypedValue` from i into m.
@@ -216,7 +218,7 @@ nodeLibrary ns Library {..} = Library "" $ catMaybes $ map (nodeItem items) ns
   where
     nodeItem :: [Item] -> Node -> Maybe Item
     nodeItem is Node {..} = case (identity, find (\i -> itemId i == name) is) of
-       (Just ident, Just it) -> Just (Item (show ident) (comment it) (icon it) (relational it) (f it))
+       (Just ident, Just it) -> Just (Item (show ident) (description it) (imgURL it) (itemType it) (f it))
        _                     -> Nothing
 
 -- | Construct a `GCM` program from a list of `Node`s and a `Library`.

@@ -196,7 +196,7 @@ tGCM :: Type t -> Type (GCM t)
 tGCM = GCM
 
 tPort :: CPType t => Type t -> Type (Port t)
-tPort t = Port' t 
+tPort t = Port' t
 
 (#) :: String -> Type t -> Type t
 (#) = Tag

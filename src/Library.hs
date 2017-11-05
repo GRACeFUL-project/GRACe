@@ -46,24 +46,24 @@ instance ToJSON Library where
         [ "library" .= toJSONList is]
 
 data Item = Item
-    { itemId     :: Id
-    , comment    :: String
-    , icon       :: URL
-    , relational :: Bool
-    , f          :: TypedValue
+    { itemId      :: Id
+    , description :: String
+    , imgURL      :: URL
+    , itemType    :: String
+    , f           :: TypedValue
     } deriving Show
 
 item :: Id -> TypedValue -> Item
-item n = Item n "no comment" "" False
+item n = Item n "no comment" "" ""
 
 instance ToJSON Item where
-    toJSON (Item n c i r (f ::: t)) = object
-        [ "name"       .= n
-        , "parameters" .= parameters t
-        , "interface"  .= ports t
-        , "comment"    .= c
-        , "icon"       .= i
-        , "relational" .= toJSON r
+    toJSON (Item n c i l (f ::: t)) = object
+        [ "name"        .= n
+        , "parameters"  .= parameters t
+        , "interface"   .= ports t
+        , "description" .= c
+        , "imgURL"      .= i
+        , "itemType"    .= l
         ]
 
 parameters :: Type a -> Value
@@ -71,21 +71,19 @@ parameters = toJSONList . rec
   where
     rec :: Type a -> [Value]
     rec tp = case tp of
-        t@(Tag n t1) :-> t2 -> tag t : rec t2
+        t@(Tag n t1) :-> t2 -> tagParam t : rec t2
         _                   -> []
 
-tag :: Type a -> Value
-tag (Tag n t) = object
-    [ "name"      .= n
-    , "type"      .= show t
-    , "imgURL"    .= T.concat ["./data/interfaces/", T.pack n, ".png"]
-    , "hoverText" .= n ]
-tag _ = Null
+tagParam :: Type a -> Value
+tagParam (Tag n t) = object
+    [ "name"        .= n
+    , "type"        .= show t ]
+tagParam _ = Null
 
 ports :: Type a -> [Value]
 ports tp = case tp of
     -- base
-    Tag n (Port' t) -> [tag tp]
+    Tag r (Tag iT (Tag oT (Tag n (Port' t)))) -> [tagPort tp]
     -- recurse
     Tag _ t    -> ports t
     GCM t      -> ports t
@@ -94,6 +92,18 @@ ports tp = case tp of
     _ :-> t2   -> ports t2
     Iso _ t    -> ports t
     _          -> []
+
+tagPort :: Type a -> Value
+tagPort (Tag r (Tag iT (Tag oT (Tag n t)))) = object
+    [ "name"         .= n
+    , "type"         .= show t
+    , "description"  .= n
+    , "imgURL"       .= T.concat ["./data/interfaces/", T.pack n, ".png"]
+    , "label"        .= head n
+    , "rotation"     .= r
+    , "incomingType" .= iT
+    , "outgoingType" .= oT]
+tagPort _ = Null
 
 insert :: [Item] -> Library -> Library
 insert its (Library n is) = Library n (is ++ its)
