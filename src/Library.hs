@@ -48,24 +48,24 @@ instance ToJSON Library where
 
 data Item = Item
     { itemId      :: Id
-    , description :: String
-    , imgURL      :: URL
-    , itemType    :: String
+    , annotations :: [String]
     , f           :: TypedValue
     } deriving Show
 
 item :: Id -> TypedValue -> Item
-item n = Item n "no comment" "" ""
+item n = Item n []
 
 instance ToJSON Item where
-    toJSON (Item n c i l (f ::: t)) = object
+    toJSON (Item n as (f ::: t)) = object $
         [ "name"        .= n
         , "parameters"  .= parameters t
-        , "interface"   .= ports t
-        , "description" .= c
-        , "imgURL"      .= i
-        , "itemType"    .= l
+        , "interface"   .= ports [] t
         ]
+        ++ jsonAnnotations as
+
+jsonAnnotations :: [String] -> [(T.Text, Value)]
+jsonAnnotations as = map (\(k,v) -> (T.pack k) .= (drop 2 v)) kvs
+  where kvs = map (break (== ':')) as
 
 parameters :: Type a -> Value
 parameters = toJSONList . rec
@@ -94,35 +94,33 @@ tagParam (Tag n t) = object
     , "type"        .= prettyShow t ]
 tagParam _ = Null
 
-ports :: Type a -> [Value]
-ports tp = case tp of
+ports :: [String] -> Type a -> [Value]
+ports as tp = case tp of
     -- base
-    Tag r (Tag iT (Tag oT (Tag n x))) -> case x of
-        Port' _ -> [tagPort tp]
-        Pair (Port' _) (Port' _) -> [tagPort tp]
-        List (Port' _) -> [tagPort tp]
-        List (Pair (Port' _) (Port' _)) -> [tagPort tp]
-        _       -> []
+    Tag n x -> case x of
+        Port' _ -> [tagPort as tp]
+        Pair (Port' _) (Port' _)        -> [tagPort as tp]
+        List (Port' _)                  -> [tagPort as tp]
+        List (Pair (Port' _) (Port' _)) -> [tagPort as tp]
+        Tag _ _                         -> ports (as ++ [n]) x
+        _                               -> []
     -- recurse
-    Tag _ t    -> ports t
-    GCM t      -> ports t
-    List t     -> ports t
-    Pair t1 t2 -> ports t1 ++ ports t2
-    _ :-> t2   -> ports t2
-    Iso _ t    -> ports t
+    GCM t      -> ports as t
+    List t     -> ports as t
+    Pair t1 t2 -> ports as t1 ++ ports as t2
+    _ :-> t2   -> ports as t2
+    Iso _ t    -> ports as t
     _          -> []
 
-tagPort :: Type a -> Value
-tagPort (Tag r (Tag iT (Tag oT (Tag n t)))) = object
+tagPort :: [String] -> Type a -> Value
+tagPort as (Tag n t) = object $
     [ "name"         .= n
     , "type"         .= prettyShow t
     , "description"  .= n
     , "imgURL"       .= T.concat ["./data/interfaces/", T.pack n, ".png"]
-    , "label"        .= head n
-    , "rotation"     .= r
-    , "incomingType" .= iT
-    , "outgoingType" .= oT]
-tagPort _ = Null
+    , "label"        .= head n]
+    ++ jsonAnnotations as
+tagPort _ _ = Null
 
 insert :: [Item] -> Library -> Library
 insert its (Library n is) = Library n (is ++ its)

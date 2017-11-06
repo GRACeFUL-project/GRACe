@@ -7,31 +7,43 @@ import qualified Crud
 library :: Library
 library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
   is =
-    [ Item "pump" "Pump" "./data/img/pump.png" "Relational" $
+    [ Item "pump" ["description: Pump", "imgURL: ./data/img/pump.png", "itemType: Relational"] $
        pump ::: "capacity" # tInt.->
-       tGCM (tTuple3 ("true" # "single" # "none" # "increase" # tPort tInt)
-                     ("true" # "single" # "none" #"inflow" # tPort tInt)
-                     ("true" # "none" # "single" # "outflow" # tPort tInt))
+       tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "increase" # tPort tInt)
+                     ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "inflow" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "outflow" # tPort tInt))
 
-    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" "Relational" $
+    , Item "runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png", "itemType: Relational"] $
        runoffArea ::: "storage capacity" # tInt .->
-       tGCM (tTuple4 ("true" # "single" # "none" # "increase" # tPort tInt)
-                     ("true" # "single" # "none" # "inflow" # tPort tInt)
-                     ("true" # "none" # "single" # "outlet" # tPort tInt)
-                     ("true" # "none" # "single" # "overflow" # tPort tInt))
+       tGCM (tTuple4 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "increase" # tPort tInt)
+                     ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "inflow" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "outlet" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "overflow" # tPort tInt))
 
-    , Item "sink" "Sink" "/dev/null" "Nodal" $
-        sink ::: tGCM ("true" # "single" # "none" # "inflow" # tPort tInt)
+    , Item "sink" ["description: Sink", "imgURL: /dev/null", "itemType: Nodal"] $
+        sink ::: tGCM ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                       "inflow" # tPort tInt)
 
-    , Item "flooding" "Flooding of square" "/dev/null" "Relational" $
+    , Item "flooding" ["description: Flooding of square", "imgURL: /dev/null", "itemType: Relational"] $
         flooding ::: "numOut" # tInt .->
-        tGCM (tPair ("true" # "single" # "none" # "inflow" # tPort tInt)
-                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+        tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                     "inflow" # tPort tInt)
+                    ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
              )
-    , Item "increaseAction" "Action to increase a parameter" "/dev/null" "Nodal" $
+    , Item "increaseAction" ["description: Action to increase a parameter", "imgURL: /dev/null", "itemType: Nodal"] $
         increaseAction ::: "values" # tList tInt .-> "costs" # tList tInt .->
-        tGCM (tPair ("false" # "none" # "none" # "value" # tPort tInt)
-                    ("false" # "none" # "arbitrary" # "cost"  # tPort tInt)
+        tGCM (tPair ("rotation: false" # "incomingType: none" # "outgoingType: none" #
+                     "value" # tPort tInt)
+                    ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "cost"  # tPort tInt)
              )
     ]
 

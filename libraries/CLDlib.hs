@@ -6,46 +6,61 @@ import Control.Monad
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" "Generic node" "pathToNodeImage" "causalNode" $
+  [ Item "node" ["description: Generic node", "imgURL: pathToNodeImage", "itemType: causalNode"] $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple3 ("false" # "none" # "none" # "value" # tPort tSign)
-                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+      tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
+                     "value" # tPort tSign)
+                    ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
+                     "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
-  , Item "edge" "Causal relation" "pathToArrowImage" "causalRelation" $
+  , Item "edge" ["description: Causal relation", "imgURL: pathToArrowImage", "itemType: causalRelation"] $
       cldArrow ::: "sign" # tSign .->
-      tGCM (tPair ("false" # "multiple" # "none" # "fromNode" # tPair (tPort tSign) (tPort tSign))
-                  ("false" # "none" # "multiple" # "toNode" # tPair (tPort tSign) (tPort tSign)))
+      tGCM (tPair ("rotation: false" # "incomingType: multiple" # "outgoingType: none" #
+                   "fromNode" # tPair (tPort tSign) (tPort tSign))
+                  ("rotation: false" # "incomingType: none" # "outgoingType: multiple" #
+                   "toNode" # tPair (tPort tSign) (tPort tSign)))
 
-  , Item "budget" "Set a maximum budget" "/dev/null" "calculation" $
+  , Item "budget" ["description: Set a maximum budget", "imgURL: /dev/null", "itemType: calculation"] $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
-                 tGCM ("false" # "arbitrary" # "none" # "costs" # tList (tPort tInt))
+                 tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
+                       "costs" # tList (tPort tInt))
 
-  , Item "optimise" "Optimise the sum of some ports" "/dev/null" "calculation" $
+  , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null", "itemType: calculation"] $
       optimise ::: "numberOfPorts" # tInt .->
-                   tGCM ("false" # "arbitrary" # "none" # "benefits" # tList (tPort tFloat))
+                   tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
+                         "benefits" # tList (tPort tFloat))
 
-  , Item "evaluate" "Evaluate benefits of possible values" "/dev/null" "calculation" $
+  , Item "evaluate" ["description: Evaluate benefits of possible values", "imgURL: /dev/null", "itemType: calculation"] $
       evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
-      tGCM (tPair ("false" # "none" # "single" # "atPort" # tPort tSign)
-                  ("false" # "none" # "single" # "benefit" # tPort tFloat)
+      tGCM (tPair ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                   "atPort" # tPort tSign)
+                  ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                   "benefit" # tPort tFloat)
            )
 
-  , Item "action" "Node for action" "/dev/null" "causalNode" $
+  , Item "action" ["description: Node for action", "imgURL: /dev/null", "itemType: causalNode"] $
       actionNode ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple4 ("false" # "none" # "none" # "value" # tPort tSign)
-                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("false" # "none" # "arbitrary" # "cost" # tPort tInt)
+      tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
+                     "value" # tPort tSign)
+                    ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
+                     "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "cost" # tPort tInt)
            )
 
-  , Item "criterion" "Node for criterion" "/dev/null" "causalNode" $
+  , Item "criterion" ["description: Node for criterion", "imgURL: /dev/null", "itemType: causalNode"] $
       funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
-      tGCM (tTuple3 ("false" # "none" # "none" # "value" # tPort tSign)
-                    ("true" # "arbitrary" # "none" # "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
-                    ("true" # "none" # "arbitrary" # "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
+      tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" # "value" # tPort tSign)
+                    ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
+                     "incoming" # tList (tPair (tPort tSign) (tPort tSign)))
+                    ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+                     "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
   ]

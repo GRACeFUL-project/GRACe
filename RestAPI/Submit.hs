@@ -63,9 +63,9 @@ apply = foldM apply1
 
 -- | Perform a function application inside an `Item`.
 applyItem :: (Id -> GCM TypedValue) -> Item -> GCM Item
-applyItem f (Item n c i r tv) = do
+applyItem f (Item n as tv) = do
   tvs <- apply tv =<< mapM f (idents tv)
-  return (Item n c i r tvs)
+  return (Item n as tvs)
 
 -- | Perform application on the entire `Library`.
 applyLibrary :: Library -> (Id -> Id -> GCM TypedValue) -> GCM Library
@@ -105,7 +105,7 @@ put cid tv@(x ::: t) m =
 
 -- | @'putItem' m i@ puts the `Id` and `TypedValue` from i into m.
 putItem :: Map Id TypedValue -> Item -> GCM (Map Id TypedValue)
-putItem m (Item n _ _ _ (x ::: GCM t)) = do
+putItem m (Item n _ (x ::: GCM t)) = do
   x1 <- x
   put n (x1 ::: t) m
 putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
@@ -219,7 +219,7 @@ nodeLibrary ns Library {..} = Library "" $ catMaybes $ map (nodeItem items) ns
   where
     nodeItem :: [Item] -> Node -> Maybe Item
     nodeItem is Node {..} = case (identity, find (\i -> itemId i == name) is) of
-       (Just ident, Just it) -> Just (Item (show ident) (description it) (imgURL it) (itemType it) (f it))
+       (Just ident, Just it) -> Just (Item (show ident) [] (f it))
        _                     -> Nothing
 
 -- | Construct a `GCM` program from a list of `Node`s and a `Library`.

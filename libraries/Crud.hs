@@ -4,20 +4,26 @@ import Library
 
 library :: Library
 library = Library "crud"
-    [ Item "rain" "Rain" "./data/img/rain.png" "Nodal" $
+    [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png", "itemType: Nodal"] $
          rain ::: "amount" # tInt .->
-         tGCM ("true" # "none" # "arbitrary" # "rainfall" # tPort tInt)
+         tGCM ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+               "rainfall" # tPort tInt)
 
-    , Item "simple pump" "Pump" "./data/img/pump.png" "Relational" $
+    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pump.png", "itemType: Relational"] $
        simplePump ::: "capacity" # tInt.->
-       tGCM (tPair ("true" # "single" # "none" # "inflow" # tPort tInt)
-                   ("true" # "none" # "single" # "outflow" # tPort tInt))
+       tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                    "inflow" # tPort tInt)
+                   ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                    "outflow" # tPort tInt))
 
-    , Item "simple runoff area" "Runoff" "./data/img/runOffArea.png" "Relational" $
+    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png", "itemType: Relational"] $
        simpleRunoffArea ::: "storage capacity" # tInt .->
-       tGCM (tTuple3 ("true" # "single" # "none" # "inflow" # tPort tInt)
-                     ("true" # "none" # "single" # "outlet" # tPort tInt)
-                     ("true" # "none" # "single" # "overflow" # tPort tInt))
+       tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "inflow" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "outlet" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "overflow" # tPort tInt))
     ]
 
 rain :: Int -> GCM (Port Int)
