@@ -17,7 +17,7 @@ main :: IO ()
 main = do
     -- Setup
     server <- spawnProcess "stack" ["exec", "--", "GRACeServer", "-l", "libraries"]
-    threadDelay 3000000  -- wait a second for the server to get started
+    threadDelay 10000000  -- wait a second for the server to get started
 
     -- Test
     defaultMain (testGroup "Test all"

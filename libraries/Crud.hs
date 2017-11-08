@@ -4,19 +4,22 @@ import Library
 
 library :: Library
 library = Library "crud"
-    [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png", "itemType: Nodal"] $
+    [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png",
+                   "graphElement: nodal", "layer: domain"] $
          rain ::: "amount" # tInt .->
          tGCM ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
                "rainfall" # tPort tInt)
 
-    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pump.png", "itemType: Relational"] $
+    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pump.png",
+                          "graphElement: relational", "layer: domain"] $
        simplePump ::: "capacity" # tInt.->
        tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                     "inflow" # tPort tInt)
                    ("rotation: true" # "incomingType: none" # "outgoingType: single" #
                     "outflow" # tPort tInt))
 
-    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png", "itemType: Relational"] $
+    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png",
+                                 "graphElement: relational", "layer: domain"] $
        simpleRunoffArea ::: "storage capacity" # tInt .->
        tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                       "inflow" # tPort tInt)

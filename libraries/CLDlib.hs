@@ -1,4 +1,4 @@
-module CLDlib (library, attachFunction) where
+module CLDlib (library, attachFunction, actionNode, funNode) where
 import Library
 import Compile
 import Control.Monad
@@ -6,7 +6,8 @@ import Control.Monad
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" ["description: Generic node", "imgURL: pathToNodeImage", "itemType: causalNode"] $
+  [ Item "node" ["description: Generic node", "imgURL: pathToNodeImage",
+                 "graphElement: nodal", "layer: causal"] $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
                      "value" # tPort tSign)
@@ -16,24 +17,28 @@ library = Library "cld"
                      "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
 
-  , Item "edge" ["description: Causal relation", "imgURL: pathToArrowImage", "itemType: causalRelation"] $
+  , Item "edge" ["description: Causal relation", "imgURL: pathToArrowImage",
+                 "graphElement: relational", "layer: causal"] $
       cldArrow ::: "sign" # tSign .->
       tGCM (tPair ("rotation: false" # "incomingType: multiple" # "outgoingType: none" #
                    "fromNode" # tPair (tPort tSign) (tPort tSign))
                   ("rotation: false" # "incomingType: none" # "outgoingType: multiple" #
                    "toNode" # tPair (tPort tSign) (tPort tSign)))
 
-  , Item "budget" ["description: Set a maximum budget", "imgURL: /dev/null", "itemType: calculation"] $
+  , Item "budget" ["description: Set a maximum budget", "imgURL: /dev/null",
+                   "layer: problem"] $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
                  tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
                        "costs" # tList (tPort tInt))
 
-  , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null", "itemType: calculation"] $
+  , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null",
+                     "layer: problem"] $
       optimise ::: "numberOfPorts" # tInt .->
                    tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
                          "benefits" # tList (tPort tFloat))
 
-  , Item "evaluate" ["description: Evaluate benefits of possible values", "imgURL: /dev/null", "itemType: calculation"] $
+  , Item "evaluate" ["description: Evaluate benefits of possible values", "imgURL: /dev/null",
+                     "layer: problem"] $
       evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
       tGCM (tPair ("rotation: false" # "incomingType: none" # "outgoingType: single" #
                    "atPort" # tPort tSign)
@@ -41,7 +46,8 @@ library = Library "cld"
                    "benefit" # tPort tFloat)
            )
 
-  , Item "action" ["description: Node for action", "imgURL: /dev/null", "itemType: causalNode"] $
+  , Item "action" ["description: Node for action", "imgURL: /dev/null",
+                   "graphElement: nodal", "layer: causal"] $
       actionNode ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -54,7 +60,8 @@ library = Library "cld"
                      "cost" # tPort tInt)
            )
 
-  , Item "criterion" ["description: Node for criterion", "imgURL: /dev/null", "itemType: causalNode"] $
+  , Item "criterion" ["description: Node for criterion", "imgURL: /dev/null",
+                      "graphElement: nodal", "layer: causal"] $
       funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" # "value" # tPort tSign)
                     ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #

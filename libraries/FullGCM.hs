@@ -7,7 +7,8 @@ import qualified Crud
 library :: Library
 library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
   is =
-    [ Item "pump" ["description: Pump", "imgURL: ./data/img/pump.png", "itemType: Relational"] $
+    [ Item "pump" ["description: Pump", "imgURL: ./data/img/pump.png",
+                   "graphElement: relational", "layer: domain"] $
        pump ::: "capacity" # tInt.->
        tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                       "increase" # tPort tInt)
@@ -16,7 +17,8 @@ library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
                      ("rotation: true" # "incomingType: none" # "outgoingType: single" #
                       "outflow" # tPort tInt))
 
-    , Item "runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png", "itemType: Relational"] $
+    , Item "runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png",
+                          "graphElement: relational", "layer: domain"] $
        runoffArea ::: "storage capacity" # tInt .->
        tGCM (tTuple4 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                       "increase" # tPort tInt)
@@ -27,18 +29,21 @@ library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
                      ("rotation: true" # "incomingType: none" # "outgoingType: single" #
                       "overflow" # tPort tInt))
 
-    , Item "sink" ["description: Sink", "imgURL: /dev/null", "itemType: Nodal"] $
+    , Item "sink" ["description: Sink", "imgURL: /dev/null",
+                   "graphElement: nodal", "layer: domain"] $
         sink ::: tGCM ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                        "inflow" # tPort tInt)
 
-    , Item "flooding" ["description: Flooding of square", "imgURL: /dev/null", "itemType: Relational"] $
+    , Item "flooding" ["description: Flooding of square", "imgURL: /dev/null",
+                       "graphElement: relational", "layer: domain"] $
         flooding ::: "numOut" # tInt .->
         tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                      "inflow" # tPort tInt)
                     ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
                      "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
              )
-    , Item "increaseAction" ["description: Action to increase a parameter", "imgURL: /dev/null", "itemType: Nodal"] $
+    , Item "increaseAction" ["description: Action to increase a parameter", "imgURL: /dev/null",
+                             "graphElement: nodal", "layer: domain"] $
         increaseAction ::: "values" # tList tInt .-> "costs" # tList tInt .->
         tGCM (tPair ("rotation: false" # "incomingType: none" # "outgoingType: none" #
                      "value" # tPort tInt)
@@ -90,7 +95,7 @@ sink = do
   return port
 
 increaseAction :: [Int] -> [Int] -> GCM (Port Int, Port Int)
-increaseAction vals costs = CLDlib.attachFunction vals costs
+increaseAction = CLDlib.attachFunction
 
 flooding :: Int -> GCM (Port Int, [(Port Sign, Port Sign)])
 flooding numOut = do
