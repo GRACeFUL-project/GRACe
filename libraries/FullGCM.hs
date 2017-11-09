@@ -18,7 +18,7 @@ library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
                       "outflow" # tPort tInt))
 
     , Item "runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png",
-                          "graphElement: relational", "layer: domain"] $
+                          "graphElement: nodal", "layer: domain"] $
        runoffArea ::: "storage capacity" # tInt .->
        tGCM (tTuple4 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                       "increase" # tPort tInt)
