@@ -37,6 +37,14 @@ library = Library "cld"
                    tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
                          "benefits" # tList (tPort tFloat))
 
+  , Item "optimise happiness" ["description: Optimise the sum of stakeholder happiness", "imgURL: /dev/null",
+                     "layer: problem"] $
+      optimiseHappiness ::: "numberOfStakeholders" # tInt .->
+                   tGCM (tPair ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
+                         "happiness" # tList (tPort tFloat))
+                        ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                         "totalHappiness" # tPort tFloat))
+
   , Item "evaluate" ["description: Evaluate benefits of possible values", "imgURL: /dev/null",
                      "layer: problem"] $
       evalBenefits ::: "values" # tList tSign .-> "weights" # tList tFloat .->
@@ -69,6 +77,23 @@ library = Library "cld"
                     ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
                      "outgoing" # tList (tPair (tPort tSign) (tPort tSign)))
            )
+
+   , Item "stakeholder" ["description: Stakeholder", "imgURL: /dev/null",
+                         "layer: problem"] $
+     stakeHolder ::: "preferences" # tList (tList tSign) .-> "weights" # tList (tFloat) .->
+     tGCM (tPair ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
+                  "criteria" # tList (tPort tSign))
+                 ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                  "happiness" # (tPort tFloat)))
+
+   , Item "critEdge" ["description: Edge to link a stakeholder to a criterion", "imgURL: /dev/null",
+                      "graphElement: relational", "layer: problem"] $
+     simpleEdge ::: tGCM (tPair
+                          ("rotation: false" # "incomingType: single" # "outgoingType: none" #
+                           "inPort" # tPort tSign)
+                          ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                           "outPort" # tPort tSign)
+                         )
 
   ]
 
@@ -159,6 +184,40 @@ funNode n m = do
         assert $ (oU === v .|| v === lit Z)
         else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns)
+
+-- | A node for criteria that can be linked to many stakeholders
+newCritNode :: Int -> Int -> Int -> GCM ([Port Sign], [(Port Sign, Port Sign)], [(Port Sign, Port Sign)])
+newCritNode n m numSH = do
+  valPort <- createPort
+  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
+  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
+  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
+  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
+  inDown <- constructSum inDowns
+  outUp <-  constructSum outUps
+  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
+  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
+  vals <- mapM (\_ -> createPort) [1..numSH]
+  mapM_ (\x -> link x valPort) vals
+  component $ do
+    v <- value valPort
+    if n > 0 then do
+      iD <- value inDown
+      assert $ iD === v
+      else
+      if m > 0 then do
+        oU <- value outUp
+        assert $ (oU === v .|| v === lit Z)
+        else return ()
+  return (vals, zip inUps inDowns, zip outUps outDowns)
+
+-- | An edge to link two ports together
+simpleEdge :: GCM (Port Sign, Port Sign)
+simpleEdge = do
+  pin <- createPort
+  pout <- createPort
+  link pin pout
+  return (pin,pout)
 
 actionNode :: [Sign] -> [Int] -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)], Port Int)
 actionNode xs ys n m = do
@@ -252,15 +311,62 @@ optimise num = do
   link tot g
   return ports
 
+optimiseHappiness :: Int -> GCM ([Port Float], Port Float)
+optimiseHappiness num = do
+  ports <- mapM (const createPort) [1..num]
+  tot   <- createPort
+  component $ do
+    t <- value tot
+    p <- mapM value ports
+    assert $ t === sum p
+  g <- createGoal
+  link tot g
+  return (ports, tot)
+
 -- Takes a list of desired values and their weights and returns
 -- the weighted sum of benefit for each possible value
 stakeHolders :: [Sign] -> [Float] -> ([Sign], [Float])
-stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q] )where
+stakeHolders xs ys = ([M,Z,P,Q], map (sH xs ys) [M,Z,P,Q]) where
+  sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
+  ev s (d,w) = if d == s then w else 0
+
+-- Takes a list of desired values and their weights and returns
+-- the weighted sum of benefit for each possible value
+sh2 :: [Sign] -> [Float] -> [(Sign,Float)]
+sh2 xs ys = zip [M,Z,P,Q] (map (sH xs ys) [M,Z,P,Q]) where
   sH vs ws s = foldl (+) 0 (map (ev s) (zip vs ws))
   ev s (d,w) = if d == s then w else 0
 
 evalBenefits :: [Sign] -> [Float] -> GCM (Port Sign, Port Float)
 evalBenefits x y = uncurry attachFunction $ stakeHolders x y
+
+-- A stakeholder has a list of acceptable values and priority weight for
+-- each criterion.
+-- The ports contain the values of the criteria and the stakeholder's happiness.
+stakeHolder :: [[Sign]] -> [Float] -> GCM ([Port Sign], Port Float)
+stakeHolder preferences weights = do
+  let n = length preferences
+  crits <- mapM (const createPort) [1..n]
+  happies <- mapM (const createPort) [1..n]
+  happiness <- createPort
+  let options = map (\(vs,w) -> sh2 vs (take (length vs) (repeat w))) (zip preferences weights)
+  component $ do
+    cs <- mapM value crits
+    vh  <- value happiness
+    hs <- mapM value happies
+    mapM_ (\(c,h,ops)-> assert $
+            foldl1 (.||) [ (c === Lit cr) .&& (h === Lit w) | (cr, w) <- ops ])
+      (zip3 cs hs options)
+    assert $ vh === sum hs
+  return (crits, happiness)
+
+-- A component for linking one port to many ports.
+oneToMany :: CPType a => Int -> GCM (Port a, [Port a])
+oneToMany num = do
+  ports <- mapM (const createPort) [1..num]
+  port <- createPort
+  mapM_ (\p -> link p port) ports
+  return (port, ports)
 
 -- Useful functions for constructing examples
 cldLink :: Sign -> (Port Sign, Port Sign) -> (Port Sign, Port Sign) -> GCM ()
@@ -376,14 +482,14 @@ stakesExample = do
   (pcapInput,            pcapBenefit)  <- evalBenefits [(fst s1) !! 2, (fst s2) !! 2] [(snd s1) !! 2, (snd s2) !! 2]
 
   budgetPorts <- budget 2 bud
-  optimisePorts <- optimise 3
+  optimisePorts <- optimiseHappiness 3
 
   zipWithM link [greenSpaceInput, nuisanceInput, pcapInput]
                 [port greenSpace, port nuisance, port pcap]
 
   zipWithM link budgetPorts [acost bioswale, acost fparking]
 
-  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit, pcapBenefit]
+  zipWithM link (fst optimisePorts) [greenSpaceBenefit, nuisanceBenefit, pcapBenefit]
 
   cldLink P (acout 0 bioswale)     (inc 0 waterStorage)
   cldLink P (acout 1 bioswale)     (inc 0 greenSpace)
@@ -398,6 +504,63 @@ stakesExample = do
   output nuisanceBenefit "nuisance benefit"
   output (port pcap) "pcap value"
   output pcapBenefit "pcap benefit"
+  output (snd optimisePorts) "Total happiness"
+
+-- Same as above but with different stakeholder functions, should give identical results
+stakesExample2 :: GCM ()
+stakesExample2 = do
+  let bud = 20
+
+  -- Nodes
+  bioswale <- actionNode [Z,P] [0,10] 0 2
+  fparking <- actionNode [Z,P] [0,15] 0 2
+
+  waterStorage <- cldNode Nothing 2 1
+  flooding     <- cldNode Nothing 1 1
+
+  greenSpace   <- funNode 1 0
+  nuisance     <- funNode 1 0
+  pcap         <- funNode 1 0
+
+  -- value-cost pairs for actions
+  --(bioInput,        bioCost)  <- attachFunction [Z,P] [0,10]
+  --(parkingInput, parkingCost) <- attachFunction [Z,P] [0,15]
+
+  -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
+  --let s1 = ([P,M,Z], [0.67,0.33,0])
+  ([g1,n1,p1], h1) <- stakeHolder [[P],[M],[P,M,Z]] [0.67, 0.33, 0]
+  -- stakeholder 2 wants less nuisance and more parking
+  --let s2 = ([Z,M,P],[0,0.67,0.33])
+  ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[M],[P]] [0,0.67,0.33]
+
+  budgetPorts <- budget 2 bud
+  optimisePorts <- optimiseHappiness 2
+
+  zipWithM link [g1, n1, p1]
+                [port greenSpace, port nuisance, port pcap]
+  zipWithM link [g2, n2, p2]
+                [port greenSpace, port nuisance, port pcap]
+
+  zipWithM link budgetPorts [acost bioswale, acost fparking]
+
+  zipWithM link (fst optimisePorts) [h1,h2]
+
+  cldLink P (acout 0 bioswale)     (inc 0 waterStorage)
+  cldLink P (acout 1 bioswale)     (inc 0 greenSpace)
+  cldLink P (acout 0 fparking)     (inc 1 waterStorage)
+  cldLink P (acout 1 fparking)     (inc 0 pcap)
+  cldLink M (out 0 waterStorage) (inc 0 flooding)
+  cldLink P (out 0 flooding)     (inc 0 nuisance)
+
+  output (port greenSpace) "greenSpace value"
+  --output greenSpaceBenefit "greenspace benefit"
+  output (port nuisance) "nuisance value"
+  --output nuisanceBenefit "nuisance benefit"
+  output (port pcap) "pcap value"
+  --output pcapBenefit "pcap benefit"
+  output h1 "Happiness of stakeholder 1"
+  output h2 "Happiness of stakeholder 2"
+  output (snd optimisePorts) "Total happiness"
 
 -- Tiny example to translate to json
 tinyExample :: GCM ()
@@ -450,5 +613,6 @@ tinyExample = do
 main :: IO ()
 main = do
   runCompare stakesExample
+  runCompare stakesExample2
   --runCompare tinyExample
   --compileString simpleExample

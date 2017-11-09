@@ -161,10 +161,11 @@ fromPrimType name typ ptv =
       ("String", StringV s) -> s ::: name # tString
       ("Bool", BoolV b)   -> b ::: name # tBool
       (_,_) -> error "Types don't match"
-    ("[Sign]", ListV xs) -> (map fixInt xs) ::: name # tList tSign
-    ("[Int]", ListV xs) -> (map fixInt xs) ::: name # tList tInt
-    ("[Float]", ListV xs) -> (map fixFloat xs) ::: name # tList tFloat
-    (_,_)               -> error "Types don't match"
+    ("[Sign]", ListV xs) -> map fixInt xs ::: name # tList tSign
+    ("[Int]", ListV xs) -> map fixInt xs ::: name # tList tInt
+    ("[Float]", ListV xs) -> map fixFloat xs ::: name # tList tFloat
+    ("[[Sign]]", ListV xs) -> map thingy xs ::: name # tList (tList tSign)
+    (_,_)               -> error $ "Types don't match " ++ name
     where fixInt a = case a of
             ExV (IntV i) -> fromInteger (toInteger i)
             _            -> error "Mismatched types"
@@ -173,6 +174,9 @@ fromPrimType name typ ptv =
             ExV (FloatV f) -> f
             ExV (IntV i)   -> fromInteger (toInteger i)
             _              -> error $ "Mismatched types" ++ (show a)
+          thingy x = case x of
+            ListV xs -> map fixInt xs
+            _        -> error $ "Mismatched types" ++ (show x)
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
