@@ -311,7 +311,7 @@
                 {
                     "connection": [
                         12,
-                        "happiness",
+                        "benefits",
                         0
                     ],
                     "name": "happiness",
@@ -342,7 +342,7 @@
                 {
                     "connection": [
                         12,
-                        "happiness",
+                        "benefits",
                         1
                     ],
                     "name": "happiness",
@@ -374,21 +374,21 @@
             "identity": 11
         },
         {
-            "name": "optimise happiness",
+            "name": "optimise",
             "parameters": [
                 {
-                    "name": "numberOfStakeholders",
+                    "name": "numberOfPorts",
                     "value": 2,
                     "type": "Int"
                 }
             ],
             "interface": [
                 {
-                    "name": "happiness",
+                    "name": "benefit",
                     "type": "[Float]"
                 },
                 {
-                    "name": "totalHappiness",
+                    "name": "totalBenefits",
                     "type": "Float"
                 }
 

@@ -37,16 +37,10 @@ library = Library "cld"
   , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null",
                      "layer: problem"] $
       optimise ::: "numberOfPorts" # tInt .->
-                   tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
-                         "benefits" # tList (tPort tFloat))
-
-  , Item "optimise happiness" ["description: Optimise the sum of stakeholder happiness", "imgURL: /dev/null",
-                     "layer: problem"] $
-      optimiseHappiness ::: "numberOfStakeholders" # tInt .->
                    tGCM (tPair ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
-                         "happiness" # tList (tPort tFloat))
+                         "benefits" # tList (tPort tFloat))
                         ("rotation: false" # "incomingType: none" # "outgoingType: single" #
-                         "totalHappiness" # tPort tFloat))
+                         "totalBenefits" # tPort tFloat))
 
   , Item "evaluate" ["description: Evaluate benefits of possible values", "imgURL: /dev/null",
                      "layer: problem"] $
@@ -279,20 +273,8 @@ budget num cost = do
     assert $ t .<= Lit cost
   return (ports, total)
 
-optimise :: Int -> GCM [Port Float]
+optimise :: Int -> GCM ([Port Float], Port Float)
 optimise num = do
-  ports <- mapM (const createPort) [1..num]
-  tot   <- createPort
-  component $ do
-    t <- value tot
-    p <- mapM value ports
-    assert $ t === sum p
-  g <- createGoal
-  link tot g
-  return ports
-
-optimiseHappiness :: Int -> GCM ([Port Float], Port Float)
-optimiseHappiness num = do
   ports <- mapM (const createPort) [1..num]
   tot   <- createPort
   component $ do
@@ -401,7 +383,7 @@ simpleExample = do
 
   zipWithM link budgetPorts [bioCost, pumpCost]
 
-  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
+  zipWithM link (fst optimisePorts) [greenSpaceBenefit, nuisanceBenefit]
 
 
   cldLink P (out 0 bioswale)     (inc 0 waterStorage)
@@ -424,10 +406,6 @@ simpleExample = do
   output (port nuisance) "nuisance value"
   output nuisanceInput "nuisance input"
   output nuisanceBenefit "nuisance benefit"
-  output (head budgetPorts) "budget"
-  output (head $ tail budgetPorts) "budget"
-  output (head optimisePorts) "opt1"
-  output (head $ tail optimisePorts) "opt2"
 
 -- Example with stakeholders and different criteria
 -- we can play around with changing the budget, costs, and preferences/priorities
@@ -462,7 +440,7 @@ stakesExample = do
   (pcapInput,            pcapBenefit)  <- evalBenefits [(fst s1) !! 2, (fst s2) !! 2] [(snd s1) !! 2, (snd s2) !! 2]
 
   (budgetPorts, totalcost) <- budget 2 bud
-  optimisePorts <- optimiseHappiness 3
+  optimisePorts <- optimise 3
 
   zipWithM link [greenSpaceInput, nuisanceInput, pcapInput]
                 [port greenSpace, port nuisance, port pcap]
@@ -515,7 +493,7 @@ stakesExample2 = do
   ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[M],[P]] [0,0.67,0.33]
 
   (budgetPorts, totalCost) <- budget 2 bud
-  optimisePorts <- optimiseHappiness 2
+  optimisePorts <- optimise 2
 
   zipWithM link [g1, n1, p1]
                 [port greenSpace, port nuisance, port pcap]
@@ -578,7 +556,7 @@ tinyExample = do
 
   zipWithM link budgetPorts [bioCost]
 
-  zipWithM link optimisePorts [greenSpaceBenefit, nuisanceBenefit]
+  zipWithM link (fst optimisePorts) [greenSpaceBenefit, nuisanceBenefit]
 
   cldLink P (out 0 bioswale)     (inc 0 waterStorage)
   cldLink P (out 1 bioswale)     (inc 0 greenSpace)
