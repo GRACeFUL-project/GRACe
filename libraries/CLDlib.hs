@@ -28,8 +28,11 @@ library = Library "cld"
   , Item "budget" ["description: Set a maximum budget", "imgURL: /dev/null",
                    "layer: problem"] $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
-                 tGCM ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
+                 tGCM (tPair
+                       ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
                        "costs" # tList (tPort tInt))
+                       ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                       "totalCost" # tPort tInt))
 
   , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null",
                      "layer: problem"] $
@@ -185,32 +188,6 @@ funNode n m = do
         else return ()
   return (valPort, zip inUps inDowns, zip outUps outDowns)
 
--- | A node for criteria that can be linked to many stakeholders
-newCritNode :: Int -> Int -> Int -> GCM ([Port Sign], [(Port Sign, Port Sign)], [(Port Sign, Port Sign)])
-newCritNode n m numSH = do
-  valPort <- createPort
-  inUps <- mapM (\_ -> createPort) [1..n]    -- Flows up incoming arrows
-  inDowns <- mapM (\_ -> createPort) [1..n]  -- Flows down incoming arrows
-  outUps <- mapM (\_ -> createPort) [1..m]   -- Flows up outgoing arrows
-  outDowns <- mapM (\_ -> createPort) [1..m] -- Flows down outgoing arrows
-  inDown <- constructSum inDowns
-  outUp <-  constructSum outUps
-  mapM_ (\x -> link x valPort) inUps -- flows up incoming arrows
-  mapM_ (\x -> link x valPort) outDowns -- flows down outgoing arrows
-  vals <- mapM (\_ -> createPort) [1..numSH]
-  mapM_ (\x -> link x valPort) vals
-  component $ do
-    v <- value valPort
-    if n > 0 then do
-      iD <- value inDown
-      assert $ iD === v
-      else
-      if m > 0 then do
-        oU <- value outUp
-        assert $ (oU === v .|| v === lit Z)
-        else return ()
-  return (vals, zip inUps inDowns, zip outUps outDowns)
-
 -- | An edge to link two ports together
 simpleEdge :: GCM (Port Sign, Port Sign)
 simpleEdge = do
@@ -291,13 +268,16 @@ attachFunction xs ys = do
     assert $ foldl1 (.||) [ (vs === Lit sig) .&& (vd === Lit res) | (sig, res) <- sd ]
   return (s, d)
 
-budget :: Int -> Int -> GCM [Port Int]
+budget :: Int -> Int -> GCM ([Port Int], Port Int)
 budget num cost = do
+  total <- createPort
   ports <- mapM (const createPort) [1..num]
   component $ do
     vs <- mapM value ports
-    assert $ sum vs .<= Lit cost
-  return ports
+    t <- value total
+    assert $ t === sum vs
+    assert $ t .<= Lit cost
+  return (ports, total)
 
 optimise :: Int -> GCM [Port Float]
 optimise num = do
@@ -413,7 +393,7 @@ simpleExample = do
   greenSpace   <- funNode 1 0
   nuisance     <- funNode 1 0
 
-  budgetPorts <- budget 2 bud
+  (budgetPorts, total) <- budget 2 bud
   optimisePorts <- optimise 2
 
   zipWithM link [bioInput, pumpsInput, greenSpaceInput, nuisanceInput]
@@ -481,7 +461,7 @@ stakesExample = do
   (nuisanceInput,     nuisanceBenefit) <- evalBenefits [(fst s1) !! 1, (fst s2) !! 1] [(snd s1) !! 1, (snd s2) !! 1]
   (pcapInput,            pcapBenefit)  <- evalBenefits [(fst s1) !! 2, (fst s2) !! 2] [(snd s1) !! 2, (snd s2) !! 2]
 
-  budgetPorts <- budget 2 bud
+  (budgetPorts, totalcost) <- budget 2 bud
   optimisePorts <- optimiseHappiness 3
 
   zipWithM link [greenSpaceInput, nuisanceInput, pcapInput]
@@ -505,6 +485,7 @@ stakesExample = do
   output (port pcap) "pcap value"
   output pcapBenefit "pcap benefit"
   output (snd optimisePorts) "Total happiness"
+  output totalcost "Total cost"
 
 -- Same as above but with different stakeholder functions, should give identical results
 stakesExample2 :: GCM ()
@@ -533,7 +514,7 @@ stakesExample2 = do
   --let s2 = ([Z,M,P],[0,0.67,0.33])
   ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[M],[P]] [0,0.67,0.33]
 
-  budgetPorts <- budget 2 bud
+  (budgetPorts, totalCost) <- budget 2 bud
   optimisePorts <- optimiseHappiness 2
 
   zipWithM link [g1, n1, p1]
@@ -561,6 +542,7 @@ stakesExample2 = do
   output h1 "Happiness of stakeholder 1"
   output h2 "Happiness of stakeholder 2"
   output (snd optimisePorts) "Total happiness"
+  output totalCost "Total cost"
 
 -- Tiny example to translate to json
 tinyExample :: GCM ()
@@ -588,7 +570,7 @@ tinyExample = do
   (greenSpaceInput, greenSpaceBenefit) <- evalBenefits [(fst s1) !! 0, (fst s2) !! 0] [(snd s1) !! 0, (snd s2) !! 0]
   (nuisanceInput,     nuisanceBenefit) <- evalBenefits [(fst s1) !! 1, (fst s2) !! 1] [(snd s1) !! 1, (snd s2) !! 1]
 
-  budgetPorts <- budget 1 bud
+  (budgetPorts, totalcost) <- budget 1 bud
   optimisePorts <- optimise 2
 
   zipWithM link [bioInput, greenSpaceInput, nuisanceInput]
