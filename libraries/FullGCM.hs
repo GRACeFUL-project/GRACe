@@ -3,9 +3,10 @@ module FullGCM (library) where
 import Library
 import qualified CLDlib
 import qualified Crud
+import qualified Actions
 
 library :: Library
-library = insert is (combine "fullgcm" CLDlib.library Crud.library) where
+library = insert is (combineList "fullgcm" [CLDlib.library, Crud.library, Actions.library]) where
   is =
     [ Item "pump" ["description: Pump", "imgURL: ./data/img/pump.png",
                    "graphElement: relational", "layer: domain"] $

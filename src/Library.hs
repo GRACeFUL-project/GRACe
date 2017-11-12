@@ -17,7 +17,7 @@ module Library
     ( module Types
     , Library(..)
     , Item(..), item
-    , insert, combine
+    , insert, combine, combineList
       -- Re export
     , module GCM
     , module CP
@@ -126,4 +126,7 @@ insert :: [Item] -> Library -> Library
 insert its (Library n is) = Library n (is ++ its)
 
 combine :: String -> Library -> Library -> Library
-combine n (Library _ is) (Library _ js) = Library n (is ++ js)
+combine n l1 l2 = Library n (items l1 ++ items l2)
+
+combineList :: String -> [Library] -> Library
+combineList n libs = Library n $ foldl (++) [] (map items libs)

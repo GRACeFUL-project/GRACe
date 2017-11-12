@@ -29,7 +29,10 @@ library
     GRACeGraph,
     Sign,
     CLDlib,
-    Crud
+    Crud,
+    Actions,
+    Criteria
+
   other-modules:
     TestFW.GenT,
     Program
