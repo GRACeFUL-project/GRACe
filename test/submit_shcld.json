@@ -436,7 +436,7 @@
                 },
                 {
                     "connection": [
-                        10,
+                        9,
                         "criteria",
                         1
                     ],
@@ -446,6 +446,32 @@
 
             ],
             "identity": 14
+        },
+        {
+            "name": "critEdge",
+            "parameters": [],
+            "interface": [
+                {
+                    "connection": [
+                        1,
+                        "value",
+                        null
+                    ],
+                    "name": "inPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        10,
+                        "criteria",
+                        0
+                    ],
+                    "name": "outPort",
+                    "type": "Sign"
+                }
+
+            ],
+            "identity": 15
         },
         {
             "name": "critEdge",
@@ -471,7 +497,7 @@
                 }
 
             ],
-            "identity": 15
+            "identity": 16
         }
     ]
 }
