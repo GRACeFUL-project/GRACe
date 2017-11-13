@@ -73,7 +73,7 @@ libraries = hdr . return . M.keys
 submit :: Libraries -> String -> Graph -> Handler (Resp Value)
 submit libs n graph = hdr $ do
   lib <- getLib libs n
-  out <- liftIO $ runGCM $ mkGCM (nodes graph) lib
+  out <- liftIO $ runGCM False $ mkGCM (nodes graph) lib
   let res = fromMaybe Null $ decode $ BS.pack out
   return $ object ["result" .= res]
 

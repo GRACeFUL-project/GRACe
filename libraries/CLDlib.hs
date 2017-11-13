@@ -572,7 +572,7 @@ tinyExample = do
 
 main :: IO ()
 main = do
-  runCompare stakesExample
-  runCompare stakesExample2
+  runCompare False stakesExample
+  runCompare False stakesExample2
   --runCompare tinyExample
   --compileString simpleExample

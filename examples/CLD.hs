@@ -275,11 +275,11 @@ vanKouwen4 = do
 
 main :: IO ()
 main = do
-  --runCompare tinyExample
-  --compileString drudzelHenrion
-  --runCompare drudzelHenrion
-  runCompare vanKouwen4
-  --runCompare tinyExample2
-  --runCompare positiveLoop
-  --runCompare posNegLoop
-  runCompare negativeLoop
+  --runCompare False tinyExample
+  --compileString  False drudzelHenrion
+  --runCompare  False drudzelHenrion
+  runCompare  False vanKouwen4
+  --runCompare  False tinyExample2
+  --runCompare  False positiveLoop
+  --runCompare  False posNegLoop
+  runCompare  False negativeLoop

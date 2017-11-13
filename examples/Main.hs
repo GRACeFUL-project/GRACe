@@ -6,6 +6,6 @@ import GCM
 import Compile
 
 main = do
-  runCompare Small.example
-  runCompare E.example
-  runCompare E.energySystem
+  runCompare False Small.example
+  runCompare False E.example
+  runCompare False E.energySystem

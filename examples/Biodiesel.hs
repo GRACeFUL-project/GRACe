@@ -279,4 +279,4 @@ problem = do
   output euroPort "Profits EUR"
 
 main :: IO ()
-main = putStr =<< runGCM problem
+main = putStr =<< runGCM False problem

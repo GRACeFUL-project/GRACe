@@ -36,18 +36,18 @@ compileCompare ex = do
 
 -- | Run a GRACe program, setting the first argument to True for haskelzinc
 -- compiler, False for old compiler.
-run :: Bool -> GCM a -> IO String
-run True p  = runGCM' p
-run False p = runGCM p
+run :: Bool -> Bool -> GCM a -> IO String
+run True showAll p  = runGCM' showAll p
+run False showAll p = runGCM showAll p
 
 -- | Run using both compilers to compare results.
-runCompare :: GCM a -> IO ()
-runCompare ex = do
+runCompare :: Bool -> GCM a -> IO ()
+runCompare showAll ex = do
   putStrLn ""
   putStrLn "Results via old compiler:"
-  putStr =<< runGCM ex
+  putStr =<< runGCM showAll ex
   putStrLn "Results via haskelzinc:"
-  putStr =<< runGCM' ex
+  putStr =<< runGCM' showAll ex
 
 example :: GCM ()
 example = do
@@ -62,6 +62,6 @@ example = do
 test :: IO ()
 test = do
   compileCompare example
-  runCompare example
-  putStr =<< run True example
-  putStr =<< run False example
+  runCompare False example
+  putStr =<< run True False example
+  putStr =<< run False False example
