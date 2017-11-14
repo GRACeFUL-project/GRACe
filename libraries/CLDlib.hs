@@ -1,4 +1,6 @@
-module CLDlib (library, attachFunction, actionNode, funNode) where
+module CLDlib (library, attachFunction, actionNode, funNode,
+               cldNode, stakeHolder, budget, optimise, port, cldLink,
+               acout, acost, inc, out) where
 import Library
 import Compile
 import Control.Monad
@@ -487,22 +489,27 @@ stakesExample2 = do
 
   -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
   --let s1 = ([P,M,Z], [0.67,0.33,0])
-  ([g1,n1,p1], h1) <- stakeHolder [[P],[M],[P,M,Z]] [0.67, 0.33, 0]
+  ([g1,n1,p1], h1) <- stakeHolder [[P],[P,M,Z],[P,M,Z]] [1, 0, 0]
   -- stakeholder 2 wants less nuisance and more parking
   --let s2 = ([Z,M,P],[0,0.67,0.33])
-  ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[M],[P]] [0,0.67,0.33]
+  ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[P,M,Z],[P]] [0,0,1]
+
+  -- stakeholder 3 wants more parking
+  ([g3,n3,p3],h3) <- stakeHolder [[P,M,Z],[P,M,Z],[P,M,Z]] [0,0,0]
 
   (budgetPorts, totalCost) <- budget 2 bud
-  optimisePorts <- optimise 2
+  optimisePorts <- optimise 3
 
   zipWithM link [g1, n1, p1]
                 [port greenSpace, port nuisance, port pcap]
   zipWithM link [g2, n2, p2]
                 [port greenSpace, port nuisance, port pcap]
+  zipWithM link [g3, n3, p3]
+                [port greenSpace, port nuisance, port pcap]
 
   zipWithM link budgetPorts [acost bioswale, acost fparking]
 
-  zipWithM link (fst optimisePorts) [h1,h2]
+  zipWithM link (fst optimisePorts) [h1,h2,h3]
 
   cldLink P (acout 0 bioswale)     (inc 0 waterStorage)
   cldLink P (acout 1 bioswale)     (inc 0 greenSpace)
@@ -519,6 +526,7 @@ stakesExample2 = do
   --output pcapBenefit "pcap benefit"
   output h1 "Happiness of stakeholder 1"
   output h2 "Happiness of stakeholder 2"
+  output h3 "Happiness of stakeholder 3"
   output (snd optimisePorts) "Total happiness"
   output totalCost "Total cost"
 
@@ -572,7 +580,7 @@ tinyExample = do
 
 main :: IO ()
 main = do
-  runCompare False stakesExample
-  runCompare False stakesExample2
+  --runCompare True stakesExample
+  runCompare True stakesExample2
   --runCompare tinyExample
   --compileString simpleExample
