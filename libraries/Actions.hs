@@ -9,7 +9,7 @@ import qualified CLDlib  -- assuming CLDlib exports actionNode
 library :: Library
 library = Library "actions"
   [
-    Item "bioswaleStreetAction" ["description: Apply Bioswale to Street", "imgURL: ./data/img/bioswaleStreetAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,0,-1,0,2,-2", "layer: domain"] $
+    Item "bioswaleStreetAction" ["description: Apply Bioswale to Street", "imgURL: ./data/img/bioswaleStreetAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,0,-1,0,2,-2", "layer: causal"] $
       bioswaleStreetAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -21,7 +21,7 @@ library = Library "actions"
                     ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                      "cost" # tPort tInt)
            )
-   ,Item "bioswaleParkingAction" ["description: Apply Bioswale to Paved Parking", "imgURL: ./data/img/bioswaleParkingAction.png", "graphElement: nodal", "superClass:action", "crit: 2,2,-1,-1,0,0,2,-2", "layer:domain"] $
+   ,Item "bioswaleParkingAction" ["description: Apply Bioswale to Paved Parking", "imgURL: ./data/img/bioswaleParkingAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,-1,-1,0,0,2,-2", "layer: causal"] $
       bioswaleParkingAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -33,7 +33,7 @@ library = Library "actions"
                           ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                            "cost" # tPort tInt)
            )
-   ,Item "bioswaleGreenSpaceAction" ["description: Apply Bioswale to Green Space", "imgURL: ./data/img/bioswaleGreenSpaceAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,0,0,0,0,-1", "layer: domain"] $
+   ,Item "bioswaleGreenSpaceAction" ["description: Apply Bioswale to Green Space", "imgURL: ./data/img/bioswaleGreenSpaceAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,0,0,0,0,-1", "layer: causal"] $
       bioswaleGreenSpaceAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -45,7 +45,7 @@ library = Library "actions"
                           ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                            "cost" # tPort tInt)
            )
-   ,Item "makeParkingFloodableAction" ["description: Make Parking Floodable", "imgURL: ./data/img/makeParkingFloodableAction.png", "graphElement: nodal", "superClass: action", "crit: 2,1,0,0,0,0,0,-2", "layer: domain"] $
+   ,Item "makeParkingFloodableAction" ["description: Make Parking Floodable", "imgURL: ./data/img/makeParkingFloodableAction.png", "graphElement: nodal", "superClass: action", "crit: 2,1,0,0,0,0,0,-2", "layer: causal"] $
       makeParkingFloodableAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -57,7 +57,7 @@ library = Library "actions"
                     ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                      "cost" # tPort tInt)
            )
-   ,Item "floodableParkingOnGreenSpaceAction" ["description: Build Floodable Parking on Green Space", "imgURL: ./data/img/floodableParkingOnGreenSpaceAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,2,0,0,-1,-1", "layer: domain"] $
+   ,Item "floodableParkingOnGreenSpaceAction" ["description: Build Floodable Parking on Green Space", "imgURL: ./data/img/floodableParkingOnGreenSpaceAction.png", "graphElement: nodal", "superClass: action", "crit: 2,2,0,2,0,0,-1,-1", "layer: causal"] $
       floodableParkingOnGreenSpaceAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -69,7 +69,7 @@ library = Library "actions"
                           ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                            "cost" # tPort tInt)
            )
-   ,Item "publicGreenRoofAction" ["description: Apply Green Roof to Public Building", "imgURL: ./data/img/publicGreenRoofAction.png", "graphElement: nodal", "superClass: action", "crit: 1,0,0,0,0,0,1,-1", "layer: domain"] $
+   ,Item "publicGreenRoofAction" ["description: Apply Green Roof to Public Building", "imgURL: ./data/img/publicGreenRoofAction.png", "graphElement: nodal", "superClass: action", "crit: 1,0,0,0,0,0,1,-1", "layer: causal"] $
       publicGreenRoofAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -81,7 +81,7 @@ library = Library "actions"
                           ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                            "cost" # tPort tInt)
            )
-   ,Item "privateGreenRoofAction" ["description: Apply Green Roof to Private Building", "imgURL: ./data/img/privateGreenRoofAction.png", "graphElement: nodal", "superClass: action", "crit: 1,0,0,0,0,0,1,-1", "layer: domain"] $
+   ,Item "privateGreenRoofAction" ["description: Apply Green Roof to Private Building", "imgURL: ./data/img/privateGreenRoofAction.png", "graphElement: nodal", "superClass: action", "crit: 1,0,0,0,0,0,1,-1", "layer: causal"] $
       privateGreenRoofAction ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple4 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
