@@ -74,7 +74,7 @@ data Type t where
   Contract :: Contract t -> Type t -> Type t
 
 data Contract a where
-  Pure :: (a -> Bool) -> Contract a
+  Prop :: (a -> Bool) -> Contract a
   Dep  :: (a -> Bool) -> (a -> Contract b) -> Contract (a -> b)
 
 -- TODO: Deal with isomorphisms
@@ -93,29 +93,26 @@ contractsAndFluff :: Type t -> ([Contract t], Type t)
 contractsAndFluff t = (getContracts t, stripFluff t)
 
 app :: TypedValue -> TypedValue -> Either String TypedValue
-app (f ::: ft) (x ::: xt) =
+app (f ::: ft) (xin ::: xt) =
   case contractsAndFluff ft of
-      (contracts, a :-> b) ->
-                 let argContracts = getContracts a
-                     resContracts = getContracts b
-                 in case equal xt a of
-                      Nothing -> Left "Argument type does not match result type"
-                      Just g  -> do
-                        unless (and [ applyContract c (g x)
-                                    | c <- argContracts ++
-                                           [ Pure p | Dep p _ <- contracts ]])
-                               (Left "Contract violation on argument")
-                        let resultContracts = [ r (g x) | Dep _ r <- contracts ]
-                        unless (and [ applyContract c (f (g x))
-                                    | c <- resContracts ++ resultContracts ])
-                               (Left "Contract violation on result")
-                        return (f (g x) ::: foldl (flip Contract) b
-                                              (resultContracts ++ resContracts))
-      _       -> Left "Expected a function argument"
-
-applyContract :: Contract a -> a -> Bool
-applyContract (Pure p) a = p a
-applyContract _ _ = True
+    (contracts, a :-> b) ->
+       let argContracts = getContracts a
+           resContracts = getContracts b
+       in case equal xt a of
+            Nothing -> Left "Argument type does not match result type"
+            Just conv  -> do
+              let x = conv xin
+              unless (and [ p x
+                          | p <- [ p | Prop p <- argContracts ] ++
+                                 [ p | Dep p _ <- contracts ]])
+                     (Left "Contract violation on argument")
+              let resultContracts = [ r x | Dep _ r <- contracts ]
+              unless (and [ p (f x)
+                          | p <- [ p | Prop p <- resContracts ++ resultContracts ] ])
+                     (Left "Contract violation on result")
+              return (f x ::: foldl (flip Contract) b
+                              (resultContracts ++ resContracts))
+    _       -> Left "Expected a function argument"
 
 data Const t where
   Bool   :: Const Bool
