@@ -7,10 +7,10 @@ library = Library "crud"
     [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png",
                    "graphElement: nodal", "layer: domain"] $
          rain ::: "amount" # tInt .->
-         tGCM ("rotation: true" # "incomingType: none" # "outgoingType: arbitrary" #
+         tGCM ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                "rainfall" # tPort tInt)
 
-    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pump.png",
+    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pumpSimple.png",
                           "graphElement: relational", "layer: domain"] $
        simplePump ::: "capacity" # tInt.->
        tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
@@ -18,12 +18,12 @@ library = Library "crud"
                    ("rotation: true" # "incomingType: none" # "outgoingType: single" #
                     "outflow" # tPort tInt))
 
-    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffArea.png",
-                                 "graphElement: relational", "layer: domain"] $
+    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffAreaSimple.png",
+                                 "graphElement: nodal", "layer: domain"] $
        simpleRunoffArea ::: "storage capacity" # tInt .->
        tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
                       "inflow" # tPort tInt)
-                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                     ("rotation: false" # "incomingType: none" # "outgoingType: single" #
                       "outlet" # tPort tInt)
                      ("rotation: true" # "incomingType: none" # "outgoingType: single" #
                       "overflow" # tPort tInt))

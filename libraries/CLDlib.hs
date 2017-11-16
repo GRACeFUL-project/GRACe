@@ -8,7 +8,7 @@ import Control.Monad
 -- Missing urls to appropriate images
 library :: Library
 library = Library "cld"
-  [ Item "node" ["description: Generic node", "imgURL: pathToNodeImage",
+  [ Item "node" ["description: Generic node", "imgURL: ./data/img/node.png",
                  "graphElement: nodal", "layer: causal"] $
       cldNode ::: "obsSign" # (tMaybe tSign) .-> "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" #
@@ -27,7 +27,7 @@ library = Library "cld"
                   ("rotation: false" # "incomingType: none" # "outgoingType: multiple" #
                    "toNode" # tPair (tPort tSign) (tPort tSign)))
 
-  , Item "budget" ["description: Set a maximum budget", "imgURL: /dev/null",
+  , Item "budget" ["description: Set a maximum budget", "imgURL: ./data/img/budget.png",
                    "layer: problem"] $
       budget ::: "numberOfPorts" # tInt .-> "maximumBudget" # tInt .->
                  tGCM (tPair
@@ -36,7 +36,7 @@ library = Library "cld"
                        ("rotation: false" # "incomingType: none" # "outgoingType: single" #
                        "totalCost" # tPort tInt))
 
-  , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: /dev/null",
+  , Item "optimise" ["description: Optimise the sum of some ports", "imgURL: ./data/img/optimize.png",
                      "layer: problem"] $
       optimise ::: "numberOfPorts" # tInt .->
                    tGCM (tPair ("rotation: false" # "incomingType: arbitrary" # "outgoingType: none" #
@@ -53,7 +53,7 @@ library = Library "cld"
                    "benefit" # tPort tFloat)
            )
 
-  , Item "action" ["description: Node for action", "imgURL: /dev/null",
+  , Item "action" ["description: Node for action", "imgURL: ./data/img/action.png",
                    "graphElement: nodal", "layer: causal"] $
       actionNode ::: "values" # tList tSign .-> "costs" # tList tInt .->
                      "numIn" # tInt .-> "numOut" # tInt .->
@@ -67,7 +67,7 @@ library = Library "cld"
                      "cost" # tPort tInt)
            )
 
-  , Item "criterion" ["description: Node for criterion", "imgURL: /dev/null",
+  , Item "criterion" ["description: Node for criterion", "imgURL: ./data/img/criterion.png",
                       "graphElement: nodal", "layer: causal"] $
       funNode ::: "numIn" # tInt .-> "numOut" # tInt .->
       tGCM (tTuple3 ("rotation: false" # "incomingType: none" # "outgoingType: none" # "value" # tPort tSign)
