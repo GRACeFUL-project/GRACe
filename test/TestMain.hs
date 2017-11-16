@@ -17,7 +17,7 @@ main :: IO ()
 main = do
     -- Setup
     server <- spawnProcess "stack" ["exec", "--", "GRACeServer", "-l", "libraries"]
-    threadDelay 3000000  -- wait a second for the server to get started
+    threadDelay 10000000  -- wait a second for the server to get started
 
     -- Test
     defaultMain (testGroup "Test all"
@@ -31,11 +31,13 @@ main = do
 
 serviceTests = testGroup "Unit tests"
   [ testService "library/crud" [] "test/library_crud.exp"
+  , testService "library/cld"  [] "test/library_cld.exp"
   , testService "libraries" [] "test/libraries.exp"
   , testSubmit "crud" "test/submit_crud.json"
   , testSubmit "cld" "test/submit_newcld.json"
   , testSubmit "cld" "test/submit_xcld.json"
   , testSubmit "cld" "test/submit_xcld2.json"
+  , testSubmit "cld" "test/submit_shcld.json"
   , testSubmit "fullgcm" "test/submit_d3_2.json"
   ]
 

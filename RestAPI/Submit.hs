@@ -63,9 +63,9 @@ apply = foldM apply1
 
 -- | Perform a function application inside an `Item`.
 applyItem :: (Id -> GCM TypedValue) -> Item -> GCM Item
-applyItem f (Item n c i r tv) = do
+applyItem f (Item n as tv) = do
   tvs <- apply tv =<< mapM f (idents tv)
-  return (Item n c i r tvs)
+  return (Item n as tvs)
 
 -- | Perform application on the entire `Library`.
 applyLibrary :: Library -> (Id -> Id -> GCM TypedValue) -> GCM Library
@@ -99,11 +99,13 @@ put cid tv@(x ::: t) m =
     Tag n (Pair (Port' p) (Port' q)) ->
       return $ Map.insert (n ++ cid) (x ::: Pair (Port' p) (Port' q)) m
 
+    Tag _ (Tag n p) -> put cid (x ::: (Tag n p)) m -- Peel off tags
+
     _ -> fail $ "- unable to split the Type of value " ++ show tv ++ " :: " ++ show t
 
 -- | @'putItem' m i@ puts the `Id` and `TypedValue` from i into m.
 putItem :: Map Id TypedValue -> Item -> GCM (Map Id TypedValue)
-putItem m (Item n _ _ _ (x ::: GCM t)) = do
+putItem m (Item n _ (x ::: GCM t)) = do
   x1 <- x
   put n (x1 ::: t) m
 putItem _ y = fail $ "- tried to putItem non-GCM value " ++ show y
@@ -159,10 +161,11 @@ fromPrimType name typ ptv =
       ("String", StringV s) -> s ::: name # tString
       ("Bool", BoolV b)   -> b ::: name # tBool
       (_,_) -> error "Types don't match"
-    ("[Sign]", ListV xs) -> (map fixInt xs) ::: name # tList tSign
-    ("[Int]", ListV xs) -> (map fixInt xs) ::: name # tList tInt
-    ("[Float]", ListV xs) -> (map fixFloat xs) ::: name # tList tFloat
-    (_,_)               -> error "Types don't match"
+    ("[Sign]", ListV xs) -> map fixInt xs ::: name # tList tSign
+    ("[Int]", ListV xs) -> map fixInt xs ::: name # tList tInt
+    ("[Float]", ListV xs) -> map fixFloat xs ::: name # tList tFloat
+    ("[[Sign]]", ListV xs) -> map thingy xs ::: name # tList (tList tSign)
+    (_,_)               -> error $ "Types don't match " ++ name
     where fixInt a = case a of
             ExV (IntV i) -> fromInteger (toInteger i)
             _            -> error "Mismatched types"
@@ -171,6 +174,9 @@ fromPrimType name typ ptv =
             ExV (FloatV f) -> f
             ExV (IntV i)   -> fromInteger (toInteger i)
             _              -> error $ "Mismatched types" ++ (show a)
+          thingy x = case x of
+            ListV xs -> map fixInt xs
+            _        -> error $ "Mismatched types" ++ (show x)
 
 -- | Extract all `Node` parameters.
 -- TODO This is not a very nice way to leave it.
@@ -190,6 +196,7 @@ paramTVs ns = Map.fromList <$> mapM fromNode ns
       case parameterValue of
         Nothing  -> case parameterType of
           "Maybe Sign" -> return (parameterName, fromPrimType parameterName parameterType (ExV NullV))
+          "Maybe Int" -> return (parameterName, fromPrimType parameterName parameterType (ExV NullV))
           _            -> fail ("failure in paramTVs.fromParam " ++ parameterName)
         Just ptv -> return (parameterName, fromPrimType parameterName parameterType ptv)
 
@@ -216,7 +223,7 @@ nodeLibrary ns Library {..} = Library "" $ catMaybes $ map (nodeItem items) ns
   where
     nodeItem :: [Item] -> Node -> Maybe Item
     nodeItem is Node {..} = case (identity, find (\i -> itemId i == name) is) of
-       (Just ident, Just it) -> Just (Item (show ident) (comment it) (icon it) (relational it) (f it))
+       (Just ident, Just it) -> Just (Item (show ident) [] (f it))
        _                     -> Nothing
 
 -- | Construct a `GCM` program from a list of `Node`s and a `Library`.

@@ -93,7 +93,7 @@ example =
       fill rainP [(Just pump_cap, pump_flow), (Nothing, sin)]
 
       -- Minimise overflow goal
-      goal <- createGoal
+      goal <- createIntGoal
       component $ do
                     v <- value sof
                     g <- value goal

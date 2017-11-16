@@ -4,27 +4,39 @@ import Library
 
 library :: Library
 library = Library "crud"
-    [ Item "rain" "Rain" "./data/img/rain.png" False $
-         rain ::: "amount" # tFloat .-> tGCM ("rainfall" # tPort tFloat)
+    [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png",
+                   "graphElement: nodal", "layer: domain"] $
+         rain ::: "amount" # tInt .->
+         tGCM ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
+               "rainfall" # tPort tInt)
 
-    , Item "pump" "Pump" "./data/img/pump.png" False $
-        pump ::: "capacity" # tFloat.-> tGCM (tPair ("inflow" # tPort tFloat)
-                                                    ("outflow" # tPort tFloat))
+    , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pumpSimple.png",
+                          "graphElement: relational", "layer: domain"] $
+       simplePump ::: "capacity" # tInt.->
+       tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                    "inflow" # tPort tInt)
+                   ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                    "outflow" # tPort tInt))
 
-    , Item "runoff area" "Runoff" "./data/img/runOffArea.png" False $
-        runoffArea ::: "storage capacity" # tFloat .-> tGCM (tTuple3 ("inflow" # tPort tFloat)
-                                                                     ("outlet" # tPort tFloat)
-                                                                     ("overflow" # tPort tFloat))
+    , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffAreaSimple.png",
+                                 "graphElement: nodal", "layer: domain"] $
+       simpleRunoffArea ::: "storage capacity" # tInt .->
+       tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
+                      "inflow" # tPort tInt)
+                     ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                      "outlet" # tPort tInt)
+                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                      "overflow" # tPort tInt))
     ]
 
-rain :: Float -> GCM (Port Float)
+rain :: Int -> GCM (Port Int)
 rain amount = do
   port <- createPort
   set port amount
   return port
 
-pump :: Float -> GCM (Port Float, Port Float)
-pump maxCap = do
+simplePump :: Int -> GCM (Port Int, Port Int)
+simplePump maxCap = do
   inPort  <- createPort
   outPort <- createPort
 
@@ -37,8 +49,8 @@ pump maxCap = do
 
   return (inPort, outPort)
 
-runoffArea :: Float -> GCM (Port Float, Port Float, Port Float)
-runoffArea cap = do
+simpleRunoffArea :: Int -> GCM (Port Int, Port Int, Port Int)
+simpleRunoffArea cap = do
   inflow <- createPort
   outlet <- createPort
   overflow <- createPort

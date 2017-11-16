@@ -17,6 +17,7 @@ module Library
     ( module Types
     , Library(..)
     , Item(..), item
+    , insert, combine, combineList
       -- Re export
     , module GCM
     , module CP
@@ -31,6 +32,7 @@ import Utils
 
 import Data.Aeson
 import qualified Data.Text as T
+import qualified Data.List as L
 
 type Id  = String
 type URL = String
@@ -45,51 +47,86 @@ instance ToJSON Library where
         [ "library" .= toJSONList is]
 
 data Item = Item
-    { itemId     :: Id
-    , comment    :: String
-    , icon       :: URL
-    , relational :: Bool
-    , f          :: TypedValue
+    { itemId      :: Id
+    , annotations :: [String]
+    , f           :: TypedValue
     } deriving Show
 
 item :: Id -> TypedValue -> Item
-item n = Item n "no comment" "" False
+item n = Item n []
 
 instance ToJSON Item where
-    toJSON (Item n c i r (f ::: t)) = object
-        [ "name"       .= n
-        , "parameters" .= parameters t
-        , "interface"  .= ports t
-        , "comment"    .= c
-        , "icon"       .= i
-        , "relational"    .= toJSON r
+    toJSON (Item n as (f ::: t)) = object $
+        [ "name"        .= n
+        , "parameters"  .= parameters t
+        , "interface"   .= ports [] t
         ]
+        ++ jsonAnnotations as
+
+jsonAnnotations :: [String] -> [(T.Text, Value)]
+jsonAnnotations as = map (\(k,v) -> (T.pack k) .= (drop 2 v)) kvs
+  where kvs = map (break (== ':')) as
 
 parameters :: Type a -> Value
 parameters = toJSONList . rec
   where
     rec :: Type a -> [Value]
     rec tp = case tp of
-        t@(Tag n t1) :-> t2 -> tag t : rec t2
+        t@(Tag n t1) :-> t2 -> tagParam t : rec t2
         _                   -> []
 
-tag :: Type a -> Value
-tag (Tag n t) = object
-    [ "name"      .= n
-    , "type"      .= show t
-    , "imgURL"    .= T.concat ["./data/interfaces/", T.pack n, ".png"]
-    , "hoverText" .= n ]
-tag _ = Null
+-- We want to annotate the actual types, not the types they are isomorphic to.
+prettyShow :: Type a -> String
+prettyShow t = case t of
+  Iso _ (t1 :|: Unit) -> "Maybe " ++ prettyShow t1
+  Iso _ tInt          -> "Sign"
+  List t1             -> "[" ++ prettyShow t1 ++ "]"
+  Port' t1            -> "Port " ++ "(" ++ prettyShow t1 ++ ")"
+  tp@(Pair t1 t2)          -> "(" ++ L.intercalate "," (prettyCollect tp) ++ ")"
+  _     -> show t
+  where prettyCollect :: Type t -> [String]
+        prettyCollect (Pair t1 t2) = prettyCollect t1 ++ prettyCollect t2
+        prettyCollect t = [prettyShow t]
 
-ports :: Type a -> [Value]
-ports tp = case tp of
+tagParam :: Type a -> Value
+tagParam (Tag n t) = object
+    [ "name"        .= n
+    , "type"        .= prettyShow t ]
+tagParam _ = Null
+
+ports :: [String] -> Type a -> [Value]
+ports as tp = case tp of
     -- base
-    Tag n (Port' t) -> [tag tp]
+    Tag n x -> case x of
+        Port' _ -> [tagPort as tp]
+        Pair (Port' _) (Port' _)        -> [tagPort as tp]
+        List (Port' _)                  -> [tagPort as tp]
+        List (Pair (Port' _) (Port' _)) -> [tagPort as tp]
+        Tag _ _                         -> ports (as ++ [n]) x
+        _                               -> []
     -- recurse
-    Tag _ t    -> ports t
-    GCM t      -> ports t
-    List t     -> ports t
-    Pair t1 t2 -> ports t1 ++ ports t2
-    _ :-> t2   -> ports t2
-    Iso _ t    -> ports t
+    GCM t      -> ports as t
+    List t     -> ports as t
+    Pair t1 t2 -> ports as t1 ++ ports as t2
+    _ :-> t2   -> ports as t2
+    Iso _ t    -> ports as t
     _          -> []
+
+tagPort :: [String] -> Type a -> Value
+tagPort as (Tag n t) = object $
+    [ "name"         .= n
+    , "type"         .= prettyShow t
+    , "description"  .= n
+    , "imgURL"       .= T.concat ["./data/interfaces/", T.pack n, ".png"]
+    , "label"        .= head n]
+    ++ jsonAnnotations as
+tagPort _ _ = Null
+
+insert :: [Item] -> Library -> Library
+insert its (Library n is) = Library n (is ++ its)
+
+combine :: String -> Library -> Library -> Library
+combine n l1 l2 = Library n (items l1 ++ items l2)
+
+combineList :: String -> [Library] -> Library
+combineList n libs = Library n $ foldl (++) [] (map items libs)

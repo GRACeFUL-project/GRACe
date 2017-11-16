@@ -1,12 +1,12 @@
 {
     "nodes": [
         {
-            "name": "pump",
+            "name": "simple pump",
             "parameters": [
                 {
                     "value": 5,
                     "name": "capacity",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "interface": [
@@ -17,11 +17,11 @@
                         null
                     ],
                     "name": "inflow",
-                    "type": "Float"
+                    "type": "Int"
                 },
                 {
                     "name": "outflow",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "identity": 1
@@ -32,7 +32,7 @@
                 {
                     "value": 10,
                     "name": "amount",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "interface": [
@@ -43,32 +43,32 @@
                         null
                     ],
                     "name": "rainfall",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "identity": 2
         },
         {
-            "name": "runoff area",
+            "name": "simple runoff area",
             "parameters": [
                 {
                     "value": 7,
                     "name": "storage capacity",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "interface": [
                 {
                     "name": "inflow",
-                    "type": "Float"
+                    "type": "Int"
                 },
                 {
                     "name": "outlet",
-                    "type": "Float"
+                    "type": "Int"
                 },
                 {
                     "name": "overflow",
-                    "type": "Float"
+                    "type": "Int"
                 }
             ],
             "identity": 3

@@ -154,7 +154,7 @@ instance Show TypedValue where
         t1 :|: t2  -> either (show . (::: t1)) (show . (::: t2)) val
         Unit       -> "()"
         Const t    -> showConst val t
-        
+
         Contract c t -> show (val ::: t)
 
 showAsList :: [String] -> String
@@ -193,7 +193,7 @@ tGCM :: Type t -> Type (GCM t)
 tGCM = GCM
 
 tPort :: CPType t => Type t -> Type (Port t)
-tPort t = Port' t 
+tPort t = Port' t
 
 (#) :: String -> Type t -> Type t
 (#) = Tag
@@ -309,7 +309,7 @@ findValuesOfType thisType = rec
 
 -- Evaluation of typed values
 eval :: (IsTyped t, IsTyped a) => TypedValue -> a -> GCM t
-eval tv x = rec tv 
+eval tv x = rec tv
   where
     rec tv@(val ::: t) = case t of
         Tag _ t'      -> rec (val ::: t')

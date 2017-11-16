@@ -1,1 +1,1 @@
-{"result":{"atPort11":0,"benefit11":1.0,"value3":2,"cost3":8,"increase4":2,"value8":0,"inflow6":0,"benefit12":1.0,"value7":0,"inflow2":10,"atPort12":0,"value1":1,"cost1":2,"outflow4":4,"inflow5":4,"rainfall0":10,"overflow2":0,"increase2":1,"inflow4":4,"outlet2":4}}
+{"result":{"atPort11":0,"totalBenefits13":2.0,"benefit11":1.0,"value3":2,"cost3":8,"increase4":2,"value8":0,"inflow6":0,"totalCost14":10,"benefit12":1.0,"value7":0,"inflow2":10,"atPort12":0,"value1":1,"cost1":2,"outflow4":4,"inflow5":4,"rainfall0":10,"overflow2":0,"increase2":1,"inflow4":4,"outlet2":4}}

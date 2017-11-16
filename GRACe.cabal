@@ -27,7 +27,12 @@ library
     Utils,
     Library,
     GRACeGraph,
-    Sign
+    Sign,
+    CLDlib,
+    Crud,
+    Actions,
+    Criteria
+
   other-modules:
     TestFW.GenT,
     Program
@@ -56,7 +61,8 @@ library
     , vector           
   hs-source-dirs:
     src,
-    RestAPI
+    RestAPI,
+    libraries             
   default-language:
     Haskell2010
 

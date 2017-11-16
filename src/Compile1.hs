@@ -28,18 +28,21 @@ import qualified Interfaces.MZPrinter as HZPrinter
 
 debug = True
 
-runGCM' :: GCM a -> IO String
-runGCM' gcm = do
+runGCM' :: Bool -> GCM a -> IO String
+runGCM' showAll gcm = do
   writeFile   "model.mzn" (HZPrinter.layoutModel $ compileGCM' gcm)
   callCommand "mzn2fzn model.mzn"
   out <- readProcess "fzn-gecode" [ "-p", "4"
-                                  , "-n", "-1"
+                                  , "-n", k
                                   , "model.fzn"] ""
   res <- readProcess "solns2out"  [ "--soln-sep", ","
                                   , "--search-complete-msg", ""
                                   , "model.ozn"] out
   unless debug $ callCommand "rm model.mzn model.ozn model.fzn"
   return res
+  where k = case showAll of
+          True -> "0"
+          False -> "-1"
 
 data CompilationState = CompilationState
   { model             :: HZ.MZModel

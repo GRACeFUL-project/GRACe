@@ -171,4 +171,4 @@ problem = do
   output cotArea "Cotton area"
 
 main :: IO ()
-main = putStr =<< run True problem
+main = putStr =<< run True False problem
