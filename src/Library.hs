@@ -122,11 +122,14 @@ tagPort as (Tag n t) = object $
     ++ jsonAnnotations as
 tagPort _ _ = Null
 
+-- | Insert new items into a library
 insert :: [Item] -> Library -> Library
 insert its (Library n is) = Library n (is ++ its)
 
+-- | Combine 2 libraries
 combine :: String -> Library -> Library -> Library
 combine n l1 l2 = Library n (items l1 ++ items l2)
 
+-- | Combine any number of libraries
 combineList :: String -> [Library] -> Library
 combineList n libs = Library n $ foldl (++) [] (map items libs)
