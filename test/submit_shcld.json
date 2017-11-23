@@ -416,6 +416,15 @@
                     ],
                     "name": "outPort",
                     "type": "Sign"
+                },
+                {
+                    "connection": [
+                        9,
+                        "colors",
+                        0
+                    ],
+                    "name": "color",
+                    "type": "Float"
                 }
 
             ],
@@ -442,6 +451,15 @@
                     ],
                     "name": "outPort",
                     "type": "Sign"
+                },
+                {
+                    "connection": [
+                        9,
+                        "colors",
+                        1
+                    ],
+                    "name": "color",
+                    "type": "Float"
                 }
 
             ],
@@ -468,6 +486,15 @@
                     ],
                     "name": "outPort",
                     "type": "Sign"
+                },
+                {
+                    "connection": [
+                        10,
+                        "colors",
+                        0
+                    ],
+                    "name": "color",
+                    "type": "Float"
                 }
 
             ],
@@ -493,6 +520,15 @@
                         1
                     ],
                     "name": "outPort",
+                    "type": "Sign"
+                },
+                {
+                    "connection": [
+                        10,
+                        "colors",
+                        1
+                    ],
+                    "name": "color",
                     "type": "Sign"
                 }
 
