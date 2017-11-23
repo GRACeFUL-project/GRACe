@@ -3,6 +3,7 @@
 *.o
 *.hi
 *.mzn
+*.ozn
 *~
 .stack-work/
 dist/
