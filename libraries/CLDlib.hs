@@ -80,18 +80,23 @@ library = Library "cld"
    , Item "stakeholder" ["description: Stakeholder", "imgURL: /dev/null",
                          "layer: problem"] $
      stakeHolder ::: "preferences" # tList (tList tSign) .-> "weights" # tList (tFloat) .->
-     tGCM (tPair ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
-                  "criteria" # tList (tPort tSign))
-                 ("rotation: true" # "incomingType: none" # "outgoingType: single" #
-                  "happiness" # (tPort tFloat)))
+     tGCM (tTuple3 ("rotation: true" # "incomingType: arbitrary" # "outgoingType: none" #
+                    "criteria" # tList (tPort tSign))
+                   ("rotation: true" # "incomingType: none" # "outgoingType: single" #
+                    "happiness" # (tPort tFloat))
+                   ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
+                    "colors" # tList (tPort tFloat))
+            )
 
    , Item "critEdge" ["description: Edge to link a stakeholder to a criterion", "imgURL: /dev/null",
                       "graphElement: relational", "layer: problem"] $
-     simpleEdge ::: tGCM (tPair
+     simpleEdge ::: tGCM (tTuple3
                           ("rotation: false" # "incomingType: single" # "outgoingType: none" #
                            "inPort" # tPort tSign)
                           ("rotation: false" # "incomingType: none" # "outgoingType: single" #
                            "outPort" # tPort tSign)
+                          ("rotation: false" # "incomingType: single" # "outgoingType: none" #
+                           "color" # tPort tFloat)
                          )
 
   ]
@@ -185,12 +190,13 @@ funNode n m = do
   return (valPort, zip inUps inDowns, zip outUps outDowns)
 
 -- | An edge to link two ports together
-simpleEdge :: GCM (Port Sign, Port Sign)
+simpleEdge :: GCM (Port Sign, Port Sign, Port Float)
 simpleEdge = do
   pin <- createPort
   pout <- createPort
+  color <- createPort
   link pin pout
-  return (pin,pout)
+  return (pin,pout, color)
 
 actionNode :: [Sign] -> [Int] -> Int -> Int -> GCM (Port Sign,[(Port Sign, Port Sign)], [(Port Sign, Port Sign)], Port Int)
 actionNode xs ys n m = do
@@ -307,7 +313,7 @@ evalBenefits x y = uncurry attachFunction $ stakeHolders x y
 -- A stakeholder has a list of acceptable values and priority weight for
 -- each criterion.
 -- The ports contain the values of the criteria and the stakeholder's happiness.
-stakeHolder :: [[Sign]] -> [Float] -> GCM ([Port Sign], Port Float)
+stakeHolder :: [[Sign]] -> [Float] -> GCM ([Port Sign], Port Float, [Port Float])
 stakeHolder preferences weights = do
   let n = length preferences
   crits <- mapM (const createPort) [1..n]
@@ -322,7 +328,7 @@ stakeHolder preferences weights = do
             foldl1 (.||) [ (c === Lit cr) .&& (h === Lit w) | (cr, w) <- ops ])
       (zip3 cs hs options)
     assert $ vh === sum hs
-  return (crits, happiness)
+  return (crits, happiness, happies)
 
 -- A component for linking one port to many ports.
 oneToMany :: CPType a => Int -> GCM (Port a, [Port a])
@@ -489,13 +495,13 @@ stakesExample2 = do
 
   -- stakeholder 1 wants more green spaces and less nuisance, doesn't care about parking
   --let s1 = ([P,M,Z], [0.67,0.33,0])
-  ([g1,n1,p1], h1) <- stakeHolder [[P],[P,M,Z],[P,M,Z]] [1, 0, 0]
+  ([g1,n1,p1], h1,hs1) <- stakeHolder [[P],[P,M,Z],[P,M,Z]] [1, 0, 0]
   -- stakeholder 2 wants less nuisance and more parking
   --let s2 = ([Z,M,P],[0,0.67,0.33])
-  ([g2,n2,p2], h2) <- stakeHolder [[P,M,Z],[P,M,Z],[P]] [0,0,1]
+  ([g2,n2,p2], h2, hs2) <- stakeHolder [[P,M,Z],[P,M,Z],[P]] [0,0,1]
 
   -- stakeholder 3 wants more parking
-  ([g3,n3,p3],h3) <- stakeHolder [[P,M,Z],[P,M,Z],[P,M,Z]] [0,0,0]
+  ([g3,n3,p3],h3,hs3) <- stakeHolder [[P,M,Z],[P,M,Z],[P,M,Z]] [0,0,0]
 
   (budgetPorts, totalCost) <- budget 2 bud
   optimisePorts <- optimise 3
