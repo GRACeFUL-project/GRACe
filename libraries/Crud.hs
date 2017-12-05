@@ -2,31 +2,36 @@ module Crud (library) where
 
 import Library
 
+type Annotation = String
+rotF, rotT, inN, inS, outN, outS, outA :: Annotation
+rotF  =  "rotation: false"
+rotT  =  "rotation: true"
+inN   =  "incomingType: none"
+inS   =  "incomingType: single"
+outN  =  "outgoingType: none"
+outS  =  "outgoingType: single"
+outA  =  "outgoingType: arbitrary"
+
 library :: Library
 library = Library "crud"
     [ Item "rain" ["description: Rain", "imgURL: ./data/img/rain.png",
                    "graphElement: nodal", "layer: domain"] $
          rain ::: "amount" # tInt .->
-         tGCM ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
-               "rainfall" # tPort tInt)
+           tGCM (  rotF # inN # outA # "rainfall" # tPort tInt  )
 
     , Item "simple pump" ["description: Pump", "imgURL: ./data/img/pumpSimple.png",
                           "graphElement: relational", "layer: domain"] $
-       simplePump ::: "capacity" # tInt.->
-       tGCM (tPair ("rotation: true" # "incomingType: single" # "outgoingType: none" #
-                    "inflow" # tPort tInt)
-                   ("rotation: true" # "incomingType: none" # "outgoingType: single" #
-                    "outflow" # tPort tInt))
+       simplePump ::: "capacity" # tInt .->
+         tGCM (tPair  (rotT # inS # outN # "inflow"  # tPort tInt)
+                      (rotT # inN # outS # "outflow" # tPort tInt)
+              )
 
     , Item "simple runoff area" ["description: Runoff", "imgURL: ./data/img/runOffAreaSimple.png",
                                  "graphElement: nodal", "layer: domain"] $
        simpleRunoffArea ::: "storage capacity" # tInt .->
-       tGCM (tTuple3 ("rotation: true" # "incomingType: single" # "outgoingType: none" #
-                      "inflow" # tPort tInt)
-                     ("rotation: false" # "incomingType: none" # "outgoingType: single" #
-                      "outlet" # tPort tInt)
-                     ("rotation: true" # "incomingType: none" # "outgoingType: single" #
-                      "overflow" # tPort tInt))
+       tGCM (tTuple3  (rotT # inS # outN # "inflow"   # tPort tInt)
+                      (rotF # inN # outS # "outlet"   # tPort tInt)
+                      (rotT # inN # outS # "overflow" # tPort tInt))
     ]
 
 rain :: Int -> GCM (Port Int)
