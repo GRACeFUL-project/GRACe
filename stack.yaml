@@ -8,14 +8,12 @@ packages:
   extra-dep: true
 extra-deps:
 - aeson-1.1.0.0
-- haskelzinc-0.3.0.9
 - hint-0.7.0
 - http-api-data-0.3.5
 - parsec-numbers-0.1.0
 - parsec3-1.0.1.8
 - servant-0.10
 - servant-server-0.10
-- parsec3-1.0.1.8
 resolver: lts-8.17
 
 # Build inside Docker container
