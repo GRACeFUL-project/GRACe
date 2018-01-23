@@ -30,6 +30,7 @@ library
     Sign,
     CLDlib,
     Crud,
+    CrudProperties,
     Actions,
     Criteria
 
@@ -109,6 +110,7 @@ test-suite test
   other-modules:
     TestOutParser,
     TestFW.TestGCMCheck
+
   build-depends:
     base             >= 4.9  && <4.10,
     GRACe            >= 0.1  && <0.2,

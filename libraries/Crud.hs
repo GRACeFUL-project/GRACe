@@ -1,4 +1,7 @@
-module Crud (library) where
+module Crud (library
+            , rain
+            , simplePump
+            ) where
 
 import Library
 

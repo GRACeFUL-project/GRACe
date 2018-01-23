@@ -4,6 +4,7 @@
 *.hi
 *.mzn
 *.ozn
+*.fzn
 *~
 .stack-work/
 dist/

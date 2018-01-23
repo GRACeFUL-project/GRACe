@@ -134,7 +134,7 @@ prop_pump :: GCMP ()
 prop_pump = do
   k   <- forall (fmap abs QC.arbitrary)
   pmp <- liftGCM $ pump k
-  property $ portVal (inflow pmp) .< lit k
+  property "Inflow within capacity" $ portVal (inflow pmp) .< lit k
 
 prop_example :: GCMP ()
 prop_example = do
@@ -151,6 +151,5 @@ prop_example = do
     link (inflow pmp) outl
     link sin rain
 
-  property $ (portVal ovfl .> 0) ==> (portVal (outflow pmp) === lit cap)
+  property "If overflow then outflow at capacity" $ (portVal ovfl .> 0) ==> (portVal (outflow pmp) === lit cap)
 
-portVal (Port v) = val v

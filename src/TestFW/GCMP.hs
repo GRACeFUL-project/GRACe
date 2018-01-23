@@ -16,8 +16,9 @@ forall = lift . liftGen
 liftGCM :: GCM a -> GCMP a
 liftGCM = lift . lift
 
-property :: CPExp Bool -> GCMP ()
-property expr =
+-- add string argument to name property?
+property :: String -> CPExp Bool -> GCMP ()
+property label expr =
   do s <- get
      put (s + 1)
      liftGCM $ do
@@ -25,9 +26,7 @@ property expr =
        component $ do
          v <- value p
          assert $ v === expr
-       output p $ "prop_" ++ (show s)
+       output p $ "prop_" ++ (show s) ++ " " ++ label
 
 makeGenerator :: GCMP a -> QC.Gen (GCM a)
 makeGenerator gcmp = runGenT $ S.evalStateT gcmp 0
-
--- --------------------------------------------------------------

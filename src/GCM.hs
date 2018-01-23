@@ -183,8 +183,12 @@ fun f = do
 -- * Ports
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--- A port is just a variable
+-- | A port is just a variable
 newtype Port a = Port (Variable a) deriving (Show, Functor)
+
+-- | Convenience function to extract a port's value
+portVal :: Port a -> CPExp a
+portVal (Port v) = val v
 
 -- | A parameter port is a port with a default value.
 data Param a = Param a (Port a)

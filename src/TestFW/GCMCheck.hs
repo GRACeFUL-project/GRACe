@@ -6,31 +6,35 @@ import qualified Test.QuickCheck as QC
 
 import Compile0
 import TestFW.GCMP
-import OutParser
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.Map as M
+
+type Solution = M.Map String Bool
 
 -- | GCM property run function
 --
 -- Runs the property 100 times and prints the first fail if any.
-check :: GCMP a -> IO ()
-check prop = do
-  results <- sequence [do
-                        putStr $ "\r      \r"++show (100 - i)
-                        checkOnce prop
-                      | i <- [0..99]]
+check :: String -> GCMP a -> IO ()
+check pname prop = do
+  putStrLn $ "Checking " ++ pname ++ "..."
+  results <- sequence [checkOnce prop | i <- [0..99]]
   putStr "\r"
   case msum results of
-    Just sol -> putStrLn (show sol) >> putStrLn "----- Test failed! -----"
+    Just sol -> do
+      putStrLn $ "Failing property: " ++ (show $ M.toList sol)
+      putStrLn "----- Test failed! -----"
     Nothing -> putStrLn "+++++ Test passed! +++++"
 
 -- | Run a GCM property once and return a failing solution if any are found.
 checkOnce :: GCMP a -> IO (Maybe Solution)
 checkOnce prop = do
   prg <- QC.generate $ makeGenerator prop
-  out <- runDef $ compileGCM prg
-  print out
-  return $ case out of
-    Sat sols -> msum $ map verify sols
-    _ -> Nothing
+  out <- runGCM False prg
+  let sols = decode $ BS.pack out :: Maybe Solution
+  return $ case sols of
+    Just s -> verify s
+    Nothing -> Nothing
 
 -- | Check if a solution passes all properties in it.
 --
@@ -39,7 +43,7 @@ checkOnce prop = do
 --
 -- If the solution fails it is returned otherwise nothing is returned.
 verify :: Solution -> Maybe Solution
-verify (Sol vars opt) = if propsSat then Nothing else Just $ Sol vars opt
+verify m = if propsSat then Nothing else Just $ m
   where
-    props = filter (isPrefixOf "prop_" . fst) vars
-    propsSat = all ((B True ==) . snd) props
+    props = M.filterWithKey (\k _ -> isPrefixOf "prop_" k) m
+    propsSat = and (M.elems props)
