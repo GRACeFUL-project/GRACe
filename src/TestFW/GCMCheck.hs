@@ -17,15 +17,15 @@ type Solution = M.Map String Bool
 -- Runs the property 100 times and prints the first fail if any.
 check :: String -> GCMP a -> IO ()
 check pname prop = do
-  putStrLn $ "Checking " ++ pname ++ "..."
+  putStrLn $ "Testing " ++ pname ++ "..."
   results <- sequence [checkOnce prop | i <- [0..99]]
   putStr "\r"
   case msum results of
     Just sol -> do
-      putStrLn $ "Failing testcase: "
+      putStrLn $ "Failing test case: "
       mapM_ print $ M.toList sol
-      putStrLn "----- Tests failed! -----"
-    Nothing -> putStrLn "+++++ Tests passed! +++++"
+      putStrLn "----- Test failed! -----"
+    Nothing -> putStrLn "+++++ Test passed! +++++"
 
 -- | Run a GCM property once and return a failing solution if any are found.
 checkOnce :: GCMP a -> IO (Maybe Solution)
