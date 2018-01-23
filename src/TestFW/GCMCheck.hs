@@ -22,9 +22,10 @@ check pname prop = do
   putStr "\r"
   case msum results of
     Just sol -> do
-      putStrLn $ "Failing property: " ++ (show $ M.toList sol)
-      putStrLn "----- Test failed! -----"
-    Nothing -> putStrLn "+++++ Test passed! +++++"
+      putStrLn $ "Failing testcase: "
+      mapM_ print $ M.toList sol
+      putStrLn "----- Tests failed! -----"
+    Nothing -> putStrLn "+++++ Tests passed! +++++"
 
 -- | Run a GCM property once and return a failing solution if any are found.
 checkOnce :: GCMP a -> IO (Maybe Solution)
