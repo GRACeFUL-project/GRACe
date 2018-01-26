@@ -16,7 +16,6 @@ forall = lift . liftGen
 liftGCM :: GCM a -> GCMP a
 liftGCM = lift . lift
 
--- add string argument to name property?
 property :: String -> CPExp Bool -> GCMP ()
 property label expr =
   do s <- get

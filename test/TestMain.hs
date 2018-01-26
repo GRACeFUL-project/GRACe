@@ -10,7 +10,6 @@ import Test.Tasty.HUnit
 import System.Process
 import System.FilePath (replaceExtension)
 
-import TestOutParser (tests)
 import TestFW.TestGCMCheck (tests)
 
 main :: IO ()
@@ -21,8 +20,7 @@ main = do
 
     -- Test
     defaultMain (testGroup "Test all"
-      [ TestOutParser.tests
-      , TestFW.TestGCMCheck.tests
+      [ TestFW.TestGCMCheck.tests
       , serviceTests
       ]) `catch` \(e :: ExitCode) -> return ()
 

@@ -4,8 +4,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 
-import OutParser
 import TestFW.GCMCheck
+
+import Data.Map (fromList)
 
 -- | Main to run GCMCheck tests exclusively.
 main :: IO ()
@@ -30,7 +31,7 @@ unitTests = testGroup "Unit tests"
 unit_no_prop :: Assertion
 unit_no_prop = expected @=? actual
   where
-    sol = Sol [("mu", B False), ("groda", D 0.005)] True
+    sol = fromList [("mu", False), ("groda", True)]
     expected = Nothing
     actual = verify sol
 
@@ -38,7 +39,7 @@ unit_no_prop = expected @=? actual
 unit_one_prop_passed :: Assertion
 unit_one_prop_passed = expected @=? actual
   where
-    sol = Sol [("mu", B False), ("prop_gurka", B True), ("groda", D 0.005)] True
+    sol = fromList [("mu", False), ("prop_gurka", True), ("groda", False)]
     expected = Nothing
     actual = verify sol
 
@@ -46,12 +47,11 @@ unit_one_prop_passed = expected @=? actual
 unit_one_prop_failed :: Assertion
 unit_one_prop_failed = expected @=? actual
   where
-    sol = Sol [ ("mu", B False)
-              , ("smu", N 42)
-              , ("prop_gurka", B False)
-              , ("groda", D 0.005)
+    sol = fromList [ ("mu", False)
+              , ("smu", True)
+              , ("prop_gurka", False)
+              , ("groda", False)
               ]
-              True
     expected = Just sol
     actual = verify sol
 
@@ -59,12 +59,11 @@ unit_one_prop_failed = expected @=? actual
 unit_two_prop_passed :: Assertion
 unit_two_prop_passed = expected @=? actual
   where
-    sol = Sol [ ("mu", B False)
-              , ("prop_gurka", B True)
-              , ("groda", D 0.005)
-              , ("prop_prop", B True)
+    sol = fromList [ ("mu", False)
+              , ("prop_gurka", True)
+              , ("groda", False)
+              , ("prop_prop", True)
               ]
-              False
     expected = Nothing
     actual = verify sol
 
@@ -72,12 +71,11 @@ unit_two_prop_passed = expected @=? actual
 unit_two_prop_one_failed :: Assertion
 unit_two_prop_one_failed = expected @=? actual
   where
-    sol = Sol [ ("mu", B False)
-              , ("prop_gurka", B True)
-              , ("groda", D 0.005)
-              , ("prop_prop", B False)
+    sol = fromList [ ("mu", False)
+              , ("prop_gurka", True)
+              , ("groda", True)
+              , ("prop_prop", False)
               ]
-              False
     expected = Just sol
     actual = verify sol
 
@@ -85,11 +83,10 @@ unit_two_prop_one_failed = expected @=? actual
 unit_two_prop_two_failed :: Assertion
 unit_two_prop_two_failed = expected @=? actual
   where
-    sol = Sol [ ("mu", B False)
-              , ("prop_gurka", B False)
-              , ("groda", D 0.005)
-              , ("prop_prop", B False)
+    sol = fromList [ ("mu", False)
+              , ("prop_gurka", False)
+              , ("groda", True)
+              , ("prop_prop", False)
               ]
-              False
     expected = Just sol
     actual = verify sol
