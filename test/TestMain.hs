@@ -29,8 +29,8 @@ main = do
 
 serviceTests = testGroup "Unit tests"
   [ testService "libraries" [] "test/libraries.exp"
-  --, testService "library/cld"  [] "test/library_cld.exp"
-  --, testService "library/crud" [] "test/library_crud.exp"
+  , testService "library/cld"  [] "test/library_cld.exp"
+  , testService "library/crud" [] "test/library_crud.exp"
   , testSubmit "crud" "test/submit_crud.json"
   , testSubmit "cld" "test/submit_newcld.json"
   , testSubmit "cld" "test/submit_xcld.json"
