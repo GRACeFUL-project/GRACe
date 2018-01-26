@@ -1,6 +1,7 @@
 module Crud (library
             , rain
             , simplePump
+            , simpleRunoffArea
             ) where
 
 import Library

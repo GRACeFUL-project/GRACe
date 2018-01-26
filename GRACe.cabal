@@ -181,3 +181,14 @@ executable OilCrops
     examples
   default-language:
     Haskell2010
+
+executable TestLibraries
+  main-is:
+    TestLibraries.hs
+  build-depends:
+    base,
+    GRACe
+  hs-source-dirs:
+    test
+  default-language:
+    Haskell2010
