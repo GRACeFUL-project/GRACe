@@ -52,6 +52,14 @@ library = insert is (combineList "fullgcm" [CLDlib.library, Crud.library, Criter
                     ("rotation: false" # "incomingType: none" # "outgoingType: arbitrary" #
                      "cost"  # tPort tInt)
              )
+    , Item "quantify" ["description: Quantify a qualitative value", "imgURL: missing",
+                             "graphElement: relational", "layer: problem"] $
+        quantify ::: "reference" # tInt .->
+        tGCM (tPair ("rotation: false" # "incomingType: single" # "outgoingType: none" #
+                     "qualValue" # tPort tSign)
+                    ("rotation: false" # "incomingType: none" # "outgoingType: single" #
+                     "quantValue"  # tPort tInt)
+             )
     ]
 
 runoffArea :: Int -> GCM (Port Int, Port Int, Port Int, Port Int)
@@ -109,3 +117,15 @@ flooding numOut = do
     vs <- mapM value floodPorts
     mapM_ (\x -> assert $ ((x === Lit P .&& f .> 0) .|| (x === Lit Z .&& f .<= 0))) vs
   return (flow, zip upPorts floodPorts)
+
+quantify :: Int -> GCM (Port Sign, Port Int)
+quantify reference = do
+  qual <- createPort
+  quant <- createPort
+  component $ do
+    s <- value qual
+    i <- value quant
+    assert $ (s === Lit P) ==> (i .> lit reference)
+    assert $ (s === Lit M) ==> (i .< lit reference)
+    assert $ (s === Lit Z) ==> (i === lit reference)
+  return (qual, quant)
